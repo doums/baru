@@ -13,6 +13,8 @@ const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
 const POWER_STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
 const ENERGY_FULL_DESIGN: &'static str = "/sys/class/power_supply/BAT0/energy_full_design";
 const CORETEMP_PATH: &'static str = "/sys/devices/platform/coretemp.0/hwmon/hwmon7";
+const BACKLIGHT_PATH: &'static str =
+    "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const DEFAULT_FONT: &'static str = "+@fn=0;";
 const ICON_FONT: &'static str = "+@fn=1;";
 const DEFAULT_COLOR: &'static str = "+@fg=0;";
@@ -39,11 +41,11 @@ impl<'a> Bar<'a> {
     }
 
     fn battery(self: &Self) -> Result<String, Error> {
-        let energy_full_design = read_and_trim(ENERGY_FULL_DESIGN)?;
-        let energy_now = read_and_trim(ENERGY_NOW)?;
+        let energy_full_design = read_and_parse(ENERGY_FULL_DESIGN)?;
+        let energy_now = read_and_parse(ENERGY_NOW)?;
         let status = read_and_trim(POWER_STATUS)?;
-        let capacity = energy_full_design.parse::<u64>()?;
-        let energy = energy_now.parse::<u64>()?;
+        let capacity = energy_full_design as u64;
+        let energy = energy_now as u64;
         let battery_level = u32::try_from(100u64 * energy / capacity)?;
         let mut color = match battery_level {
             0..=10 => self.red,
@@ -56,7 +58,7 @@ impl<'a> Bar<'a> {
             "{}{}{}{}{} {}%",
             color,
             self.icon,
-            get_battery_icon(&status.trim(), battery_level),
+            get_battery_icon(&status, battery_level),
             self.default_font,
             self.default_color,
             battery_level
@@ -64,15 +66,12 @@ impl<'a> Bar<'a> {
     }
 
     fn core_temperature(self: &Self) -> Result<String, Error> {
-        let core_1_str = read_and_trim(&format!("{}/temp2_input", CORETEMP_PATH))?;
-        let core_2_str = read_and_trim(&format!("{}/temp3_input", CORETEMP_PATH))?;
-        let core_3_str = read_and_trim(&format!("{}/temp4_input", CORETEMP_PATH))?;
-        let core_4_str = read_and_trim(&format!("{}/temp5_input", CORETEMP_PATH))?;
-        let core_1 = core_1_str.parse::<f32>()?;
-        let core_2 = core_2_str.parse::<f32>()?;
-        let core_3 = core_3_str.parse::<f32>()?;
-        let core_4 = core_4_str.parse::<f32>()?;
-        let average = (((core_1 + core_2 + core_3 + core_4) / 4f32) / 1000f32).round() as i32;
+        let core_1 = read_and_parse(&format!("{}/temp2_input", CORETEMP_PATH))?;
+        let core_2 = read_and_parse(&format!("{}/temp3_input", CORETEMP_PATH))?;
+        let core_3 = read_and_parse(&format!("{}/temp4_input", CORETEMP_PATH))?;
+        let core_4 = read_and_parse(&format!("{}/temp5_input", CORETEMP_PATH))?;
+        let average =
+            (((core_1 + core_2 + core_3 + core_4) as f32 / 4f32) / 1000f32).round() as i32;
         let mut color = self.default_color;
         let icon = match average {
             0..=50 => "󱃃",
@@ -89,18 +88,41 @@ impl<'a> Bar<'a> {
         ))
     }
 
+    fn brightness(self: &Self) -> Result<String, Error> {
+        let brightness = read_and_parse(&format!("{}/actual_brightness", BACKLIGHT_PATH))?;
+        let max_brightness = read_and_parse(&format!("{}/max_brightness", BACKLIGHT_PATH))?;
+        let percentage = 100 * brightness / max_brightness;
+        Ok(format!(
+            "{}󰃟{} {}%",
+            self.icon, self.default_font, percentage
+        ))
+    }
+
     pub fn update(self: &Self) -> Result<(), Error> {
         let date_time = date_time();
         let battery = self.battery()?;
+        let brightness = self.brightness()?;
         let temperature = self.core_temperature()?;
-        println!("{}  {}   {}", temperature, battery, date_time);
+        println!(
+            "{}  {}  {}   {}",
+            temperature, brightness, battery, date_time
+        );
         Ok(())
     }
 }
 
-fn read_and_trim<'a>(file: &'a str) -> Result<String, io::Error> {
-    let content = fs::read_to_string(file)?;
+fn read_and_trim<'a>(file: &'a str) -> Result<String, Error> {
+    let content = fs::read_to_string(file)
+        .map_err(|err| format!("error while reading the file \"{}\": {}", file, err))?;
     Ok(content.trim().to_string())
+}
+
+fn read_and_parse<'a>(file: &'a str) -> Result<i32, Error> {
+    let content = read_and_trim(file)?;
+    let data = content
+        .parse::<i32>()
+        .map_err(|err| format!("error while parsing the file \"{}\": {}", file, err))?;
+    Ok(data)
 }
 
 fn date_time() -> String {
