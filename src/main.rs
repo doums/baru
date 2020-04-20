@@ -11,7 +11,7 @@ use std::time::Duration;
 const TICK_RATE: Duration = Duration::from_millis(250);
 
 fn main() -> Result<(), io::Error> {
-    let bar = Bar::new();
+    let mut bar = Bar::new();
     loop {
         bar.update().unwrap_or_else(|err| {
             println!("bar error: {}", err);

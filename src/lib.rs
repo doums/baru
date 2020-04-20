@@ -6,9 +6,11 @@ use chrono::prelude::*;
 mod error;
 use error::Error;
 use std::convert::TryFrom;
-use std::fs;
-use std::io;
+use std::fs::{self, File};
+use std::io::prelude::*;
+use std::io::{self, BufReader};
 
+const PROC_STAT: &'static str = "/proc/stat";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
 const POWER_STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
 const ENERGY_FULL_DESIGN: &'static str = "/sys/class/power_supply/BAT0/energy_full_design";
@@ -27,6 +29,8 @@ pub struct Bar<'a> {
     default_color: &'a str,
     red: &'a str,
     green: &'a str,
+    prev_idle: i32,
+    prev_total: i32,
 }
 
 impl<'a> Bar<'a> {
@@ -37,6 +41,8 @@ impl<'a> Bar<'a> {
             default_color: DEFAULT_COLOR,
             red: RED,
             green: GREEN,
+            prev_idle: 0,
+            prev_total: 0,
         }
     }
 
@@ -63,6 +69,30 @@ impl<'a> Bar<'a> {
             self.default_color,
             battery_level
         ))
+    }
+
+    fn cpu(self: &mut Self) -> Result<String, Error> {
+        let proc_stat = File::open(PROC_STAT)?;
+        let mut reader = BufReader::new(proc_stat);
+        let mut buf = String::new();
+        reader.read_line(&mut buf)?;
+        let mut data = buf.split_whitespace();
+        data.next();
+        let times: Vec<i32> = data
+            .map(|n| {
+                n.parse::<i32>()
+                    .expect(&format!("error while parsing the file \"{}\"", PROC_STAT))
+            })
+            .collect();
+        let idle = times[3] + times[4];
+        let total = times.iter().fold(0, |acc, i| acc + i);
+        let diff_idle = idle - self.prev_idle;
+        let diff_total = total - self.prev_total;
+        let usage = (1000 * (diff_total - diff_idle) / diff_total) / 10;
+        self.prev_idle = idle;
+        self.prev_total = total;
+        println!("{:#?}", usage);
+        Ok("eheh".to_string())
     }
 
     fn core_temperature(self: &Self) -> Result<String, Error> {
@@ -98,10 +128,11 @@ impl<'a> Bar<'a> {
         ))
     }
 
-    pub fn update(self: &Self) -> Result<(), Error> {
+    pub fn update(self: &mut Self) -> Result<(), Error> {
         let date_time = date_time();
         let battery = self.battery()?;
         let brightness = self.brightness()?;
+        let cpu = self.cpu()?;
         let temperature = self.core_temperature()?;
         println!(
             "{}  {}  {}   {}",
