@@ -91,11 +91,18 @@ impl<'a> Bar<'a> {
         let total = times.iter().fold(0, |acc, i| acc + i);
         let diff_idle = idle - self.prev_idle;
         let diff_total = total - self.prev_total;
-        let usage = (1000 * (diff_total - diff_idle) / diff_total) / 10;
+        let usage = ((1000_f32 * (diff_total - diff_idle) as f32 / diff_total as f32) / 10_f32)
+            .round() as i32;
         self.prev_idle = idle;
         self.prev_total = total;
-        println!("{:#?}", usage);
-        Ok("eheh".to_string())
+        let mut color = self.default_color;
+        if usage >= 90 {
+            color = self.red;
+        }
+        Ok(format!(
+            "{}{}{}{}{} {}%",
+            color, self.icon, "󰻠", self.default_font, self.default_color, usage
+        ))
     }
 
     fn core_temperature(self: &Self) -> Result<String, Error> {
@@ -104,7 +111,7 @@ impl<'a> Bar<'a> {
         let core_3 = read_and_parse(&format!("{}/temp4_input", self.coretemp_path))?;
         let core_4 = read_and_parse(&format!("{}/temp5_input", self.coretemp_path))?;
         let average =
-            (((core_1 + core_2 + core_3 + core_4) as f32 / 4f32) / 1000f32).round() as i32;
+            (((core_1 + core_2 + core_3 + core_4) as f32 / 4_f32) / 1000_f32).round() as i32;
         let mut color = self.default_color;
         let icon = match average {
             0..=50 => "󱃃",
@@ -138,8 +145,8 @@ impl<'a> Bar<'a> {
         let cpu = self.cpu()?;
         let temperature = self.core_temperature()?;
         println!(
-            "{}  {}  {}   {}",
-            temperature, brightness, battery, date_time
+            "{}  {}  {}  {}   {}",
+            cpu, temperature, brightness, battery, date_time
         );
         Ok(())
     }
