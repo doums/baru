@@ -14,7 +14,7 @@ const PROC_STAT: &'static str = "/proc/stat";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
 const POWER_STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
 const ENERGY_FULL_DESIGN: &'static str = "/sys/class/power_supply/BAT0/energy_full_design";
-const CORETEMP_PATH: &'static str = "/sys/devices/platform/coretemp.0/hwmon/hwmon7";
+const CORETEMP_PATH: &'static str = "/sys/devices/platform/coretemp.0/hwmon";
 const BACKLIGHT_PATH: &'static str =
     "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const DEFAULT_FONT: &'static str = "+@fn=0;";
@@ -31,11 +31,13 @@ pub struct Bar<'a> {
     green: &'a str,
     prev_idle: i32,
     prev_total: i32,
+    coretemp_path: String,
 }
 
 impl<'a> Bar<'a> {
-    pub fn new() -> Self {
-        Bar {
+    pub fn new() -> Result<Self, Error> {
+        let path = find_temp_dir(CORETEMP_PATH)?;
+        Ok(Bar {
             default_font: DEFAULT_FONT,
             icon: ICON_FONT,
             default_color: DEFAULT_COLOR,
@@ -43,7 +45,8 @@ impl<'a> Bar<'a> {
             green: GREEN,
             prev_idle: 0,
             prev_total: 0,
-        }
+            coretemp_path: path,
+        })
     }
 
     fn battery(self: &Self) -> Result<String, Error> {
@@ -96,10 +99,10 @@ impl<'a> Bar<'a> {
     }
 
     fn core_temperature(self: &Self) -> Result<String, Error> {
-        let core_1 = read_and_parse(&format!("{}/temp2_input", CORETEMP_PATH))?;
-        let core_2 = read_and_parse(&format!("{}/temp3_input", CORETEMP_PATH))?;
-        let core_3 = read_and_parse(&format!("{}/temp4_input", CORETEMP_PATH))?;
-        let core_4 = read_and_parse(&format!("{}/temp5_input", CORETEMP_PATH))?;
+        let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp_path))?;
+        let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp_path))?;
+        let core_3 = read_and_parse(&format!("{}/temp4_input", self.coretemp_path))?;
+        let core_4 = read_and_parse(&format!("{}/temp5_input", self.coretemp_path))?;
         let average =
             (((core_1 + core_2 + core_3 + core_4) as f32 / 4f32) / 1000f32).round() as i32;
         let mut color = self.default_color;
@@ -154,6 +157,28 @@ fn read_and_parse<'a>(file: &'a str) -> Result<i32, Error> {
         .parse::<i32>()
         .map_err(|err| format!("error while parsing the file \"{}\": {}", file, err))?;
     Ok(data)
+}
+
+fn find_temp_dir<'a>(str_path: &'a str) -> Result<String, Error> {
+    let entries = fs::read_dir(str_path).map_err(|err| {
+        format!(
+            "error while reading the directory \"{}\": {}",
+            str_path, err
+        )
+    })?;
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(p) = path.to_str() {
+                return Ok(p.to_string());
+            }
+        }
+    }
+    Err(Error::new(format!(
+        "error while resolving coretemp path: no directory found under \"{}\"",
+        str_path
+    )))
 }
 
 fn date_time() -> String {
