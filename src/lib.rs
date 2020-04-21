@@ -2,9 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+mod sound;
 use chrono::prelude::*;
 mod error;
 use error::Error;
+use sound::Sound;
 use std::convert::TryFrom;
 use std::fs::{self, File};
 use std::io::prelude::*;
@@ -32,6 +34,7 @@ pub struct Bar<'a> {
     prev_idle: i32,
     prev_total: i32,
     coretemp_path: String,
+    sound: Sound,
 }
 
 impl<'a> Bar<'a> {
@@ -46,16 +49,22 @@ impl<'a> Bar<'a> {
             prev_idle: 0,
             prev_total: 0,
             coretemp_path: path,
+            sound: Sound::new(),
         })
     }
 
-    fn battery(self: &Self) -> Result<String, Error> {
+    fn sound(&self) -> Result<String, Error> {
+        self.sound.data()?;
+        Ok("eheh".to_string())
+    }
+
+    fn battery(&self) -> Result<String, Error> {
         let energy_full_design = read_and_parse(ENERGY_FULL_DESIGN)?;
         let energy_now = read_and_parse(ENERGY_NOW)?;
         let status = read_and_trim(POWER_STATUS)?;
         let capacity = energy_full_design as u64;
         let energy = energy_now as u64;
-        let battery_level = u32::try_from(100u64 * energy / capacity)?;
+        let battery_level = u32::try_from(100_u64 * energy / capacity)?;
         let mut color = match battery_level {
             0..=10 => self.red,
             _ => self.default_color,
@@ -74,7 +83,7 @@ impl<'a> Bar<'a> {
         ))
     }
 
-    fn cpu(self: &mut Self) -> Result<String, Error> {
+    fn cpu(&mut self) -> Result<String, Error> {
         let proc_stat = File::open(PROC_STAT)?;
         let mut reader = BufReader::new(proc_stat);
         let mut buf = String::new();
@@ -105,7 +114,7 @@ impl<'a> Bar<'a> {
         ))
     }
 
-    fn core_temperature(self: &Self) -> Result<String, Error> {
+    fn core_temperature(&self) -> Result<String, Error> {
         let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp_path))?;
         let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp_path))?;
         let core_3 = read_and_parse(&format!("{}/temp4_input", self.coretemp_path))?;
@@ -128,7 +137,7 @@ impl<'a> Bar<'a> {
         ))
     }
 
-    fn brightness(self: &Self) -> Result<String, Error> {
+    fn brightness(&self) -> Result<String, Error> {
         let brightness = read_and_parse(&format!("{}/actual_brightness", BACKLIGHT_PATH))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", BACKLIGHT_PATH))?;
         let percentage = 100 * brightness / max_brightness;
