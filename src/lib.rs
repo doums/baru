@@ -6,11 +6,11 @@ mod sound;
 use chrono::prelude::*;
 mod error;
 use error::Error;
-use sound::Sound;
+use sound::{PulseAudio, Sound};
 use std::convert::TryFrom;
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{self, BufReader};
+use std::io::BufReader;
 
 const PROC_STAT: &'static str = "/proc/stat";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
@@ -35,6 +35,7 @@ pub struct Bar<'a> {
     prev_total: i32,
     coretemp_path: String,
     sound: Sound,
+    prev_pa: Option<PulseAudio>,
 }
 
 impl<'a> Bar<'a> {
@@ -50,12 +51,38 @@ impl<'a> Bar<'a> {
             prev_total: 0,
             coretemp_path: path,
             sound: Sound::new(),
+            prev_pa: None,
         })
     }
 
-    fn sound(&self) -> Result<String, Error> {
-        self.sound.data()?;
-        Ok("eheh".to_string())
+    fn sound(&mut self) -> Result<String, Error> {
+        let data = self.sound.data()?;
+        if data.is_some() {
+            self.prev_pa = data;
+        }
+        let icon;
+        let mut color = self.default_color;
+        if let Some(info) = self.prev_pa {
+            if info.out_muted {
+                icon = "󰸈"
+            } else {
+                icon = match info.out_volume {
+                    0..=9 => "󰕿",
+                    10..=40 => "󰖀",
+                    _ => "󰕾",
+                }
+            }
+            if info.out_volume > 150 {
+                color = self.red;
+            }
+            Ok(format!(
+                "{:3}% {}{}{}{}{}",
+                info.out_volume, color, self.icon, icon, self.default_font, self.default_color
+            ))
+        } else {
+            icon = "󰖁";
+            Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
+        }
     }
 
     fn battery(&self) -> Result<String, Error> {
@@ -66,20 +93,26 @@ impl<'a> Bar<'a> {
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
         let mut color = match battery_level {
-            0..=10 => self.red,
+            0..=10 => {
+                if status == "Discharging" {
+                    self.red
+                } else {
+                    self.default_color
+                }
+            }
             _ => self.default_color,
         };
         if status == "Full" {
             color = self.green
         }
         Ok(format!(
-            "{}{}{}{}{} {}%",
+            "{:3}% {}{}{}{}{}",
+            battery_level,
             color,
             self.icon,
             get_battery_icon(&status, battery_level),
             self.default_font,
-            self.default_color,
-            battery_level
+            self.default_color
         ))
     }
 
@@ -109,8 +142,8 @@ impl<'a> Bar<'a> {
             color = self.red;
         }
         Ok(format!(
-            "{}{}{}{}{} {}%",
-            color, self.icon, "󰻠", self.default_font, self.default_color, usage
+            "{:3}% {}{}{}{}{}",
+            usage, color, self.icon, "󰻠", self.default_font, self.default_color
         ))
     }
 
@@ -123,17 +156,17 @@ impl<'a> Bar<'a> {
             (((core_1 + core_2 + core_3 + core_4) as f32 / 4_f32) / 1000_f32).round() as i32;
         let mut color = self.default_color;
         let icon = match average {
-            0..=50 => "󱃃",
-            51..=70 => "󰔏",
-            71..=100 => "󱃂",
+            0..=49 => "󱃃",
+            50..=69 => "󰔏",
+            70..=100 => "󱃂",
             _ => "󰸁",
         };
         if average > 75 {
             color = self.red;
         }
         Ok(format!(
-            "{}{}{}{}{} {}°",
-            color, self.icon, icon, self.default_font, self.default_color, average
+            "{:3}° {}{}{}{}{}",
+            average, color, self.icon, icon, self.default_font, self.default_color
         ))
     }
 
@@ -142,20 +175,21 @@ impl<'a> Bar<'a> {
         let max_brightness = read_and_parse(&format!("{}/max_brightness", BACKLIGHT_PATH))?;
         let percentage = 100 * brightness / max_brightness;
         Ok(format!(
-            "{}󰃟{} {}%",
-            self.icon, self.default_font, percentage
+            "{:3}% {}󰃟{}",
+            percentage, self.icon, self.default_font
         ))
     }
 
-    pub fn update(self: &mut Self) -> Result<(), Error> {
+    pub fn update(&mut self) -> Result<(), Error> {
         let date_time = date_time();
         let battery = self.battery()?;
         let brightness = self.brightness()?;
         let cpu = self.cpu()?;
         let temperature = self.core_temperature()?;
+        let sound = self.sound()?;
         println!(
-            "{}  {}  {}  {}   {}",
-            cpu, temperature, brightness, battery, date_time
+            "{}  {}  {}  {}  {}   {}",
+            cpu, temperature, brightness, sound, battery, date_time
         );
         Ok(())
     }
