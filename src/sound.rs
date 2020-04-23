@@ -66,10 +66,7 @@ fn run(tx: Sender<PulseAudio>) -> Result<(), Error> {
             .arg("list-sinks")
             .output()
             .map_err(|_err| "an error occurred while running \"pacmd\"")?;
-        if !output.status.success() {
-            let pacmd_stderr = str::from_utf8(&output.stderr)?;
-            return Err(Error::new(format!("\"pacmd\" error: {}", pacmd_stderr)));
-        } else {
+        if output.status.success() {
             let out_volume = search(
                 &output,
                 &r_volume_out,
