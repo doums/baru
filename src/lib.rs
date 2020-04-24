@@ -2,15 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+mod cpu;
 mod error;
 mod pulse;
 use chrono::prelude::*;
+use cpu::Cpu;
 use error::Error;
 use pulse::{OutputData, Pulse};
 use std::convert::TryFrom;
-use std::fs::{self, File};
-use std::io::prelude::*;
-use std::io::BufReader;
+use std::fs;
+use std::time::Duration;
 
 const PROC_STAT: &'static str = "/proc/stat";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
@@ -24,6 +25,8 @@ const ICON_FONT: &'static str = "+@fn=1;";
 const DEFAULT_COLOR: &'static str = "+@fg=0;";
 const RED: &'static str = "+@fg=1;";
 const GREEN: &'static str = "+@fg=2;";
+const CPU_RATE: Duration = Duration::from_millis(500);
+const PULSE_RATE: Duration = Duration::from_millis(16);
 
 pub struct Bar<'a> {
     default_font: &'a str,
@@ -33,8 +36,10 @@ pub struct Bar<'a> {
     green: &'a str,
     prev_idle: i32,
     prev_total: i32,
+    prev_usage: Option<i32>,
     coretemp_path: String,
     pulse: Pulse,
+    cpu: Cpu,
     prev_pa: Option<OutputData>,
 }
 
@@ -50,8 +55,10 @@ impl<'a> Bar<'a> {
             prev_idle: 0,
             prev_total: 0,
             coretemp_path: path,
-            pulse: Pulse::new(),
+            pulse: Pulse::new(PULSE_RATE),
             prev_pa: None,
+            prev_usage: None,
+            cpu: Cpu::new(CPU_RATE, PROC_STAT),
         })
     }
 
@@ -117,33 +124,28 @@ impl<'a> Bar<'a> {
     }
 
     fn cpu(&mut self) -> Result<String, Error> {
-        let proc_stat = File::open(PROC_STAT)?;
-        let mut reader = BufReader::new(proc_stat);
-        let mut buf = String::new();
-        reader.read_line(&mut buf)?;
-        let mut data = buf.split_whitespace();
-        data.next();
-        let times: Vec<i32> = data
-            .map(|n| {
-                n.parse::<i32>()
-                    .expect(&format!("error while parsing the file \"{}\"", PROC_STAT))
-            })
-            .collect();
-        let idle = times[3] + times[4];
-        let total = times.iter().fold(0, |acc, i| acc + i);
-        let diff_idle = idle - self.prev_idle;
-        let diff_total = total - self.prev_total;
-        let usage = ((1000_f32 * (diff_total - diff_idle) as f32 / diff_total as f32) / 10_f32)
-            .round() as i32;
-        self.prev_idle = idle;
-        self.prev_total = total;
+        let mut current_usg = 0;
+        if let Some(data) = self.cpu.data() {
+            let diff_total = data.0 - self.prev_total;
+            let diff_idle = data.1 - self.prev_idle;
+            let usage = ((1000_f32 * (diff_total - diff_idle) as f32 / diff_total as f32) / 10_f32)
+                .round() as i32;
+            self.prev_total = data.0;
+            self.prev_idle = data.1;
+            self.prev_usage = Some(usage);
+            current_usg = usage;
+        } else {
+            if let Some(usage) = self.prev_usage {
+                current_usg = usage;
+            }
+        }
         let mut color = self.default_color;
-        if usage >= 90 {
+        if current_usg >= 90 {
             color = self.red;
         }
         Ok(format!(
             "{:3}% {}{}{}{}{}",
-            usage, color, self.icon, "󰻠", self.default_font, self.default_color
+            current_usg, color, self.icon, "󰻠", self.default_font, self.default_color
         ))
     }
 

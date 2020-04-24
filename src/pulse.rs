@@ -18,18 +18,16 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-const TICK_RATE: Duration = Duration::from_millis(16);
-
 #[derive(Copy, Clone, Debug)]
 pub struct OutputData(pub i32, pub bool);
 
 pub struct Pulse(JoinHandle<Result<(), Error>>, Receiver<OutputData>);
 
 impl Pulse {
-    pub fn new() -> Self {
+    pub fn new(tick: Duration) -> Self {
         let (tx, rx) = mpsc::channel();
         let handle = thread::spawn(move || -> Result<(), Error> {
-            run(tx)?;
+            run(tick, tx)?;
             Ok(())
         });
         Pulse(handle, rx)
@@ -40,7 +38,7 @@ impl Pulse {
     }
 }
 
-pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
+pub fn run(tick: Duration, tx: Sender<OutputData>) -> Result<(), Error> {
     let mut proplist = Proplist::new().unwrap();
     proplist
         .set_str(pulse::proplist::properties::APPLICATION_NAME, "Bar")
@@ -57,7 +55,6 @@ pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
         .connect(None, flags::NOFAIL, None)
         .unwrap();
     loop {
-        thread::sleep(TICK_RATE);
         match mainloop.borrow_mut().iterate(false) {
             IterateResult::Quit(_) | IterateResult::Err(_) => {
                 eprintln!("in pulse module, a mainloop iteration failed");
@@ -79,6 +76,7 @@ pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
             }
             _ => {}
         }
+        thread::sleep(tick);
     }
     // initial introspection
     let introspector = &context.borrow().introspect();
@@ -118,7 +116,6 @@ pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
         })));
     // mainloop
     loop {
-        thread::sleep(TICK_RATE);
         match mainloop.borrow_mut().iterate(false) {
             IterateResult::Quit(_) | IterateResult::Err(_) => {
                 eprintln!("in pulse module, a mainloop iteration failed");
@@ -128,6 +125,7 @@ pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
             }
             _ => {}
         }
+        thread::sleep(tick);
     }
 }
 

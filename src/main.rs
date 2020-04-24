@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+mod cpu;
 mod error;
 mod pulse;
 use bar::Bar;
@@ -10,7 +11,7 @@ use std::process;
 use std::thread;
 use std::time::Duration;
 
-const TICK_RATE: Duration = Duration::from_millis(100);
+const TICK_RATE: Duration = Duration::from_millis(50);
 
 fn main() -> Result<(), Error> {
     let mut bar = Bar::new().unwrap_or_else(|err| {
