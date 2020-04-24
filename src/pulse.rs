@@ -5,26 +5,23 @@
 use crate::error::Error;
 use libpulse_binding as pulse;
 use pulse::callbacks::ListResult;
+use pulse::context::introspect::SinkInfo;
 use pulse::context::subscribe::subscription_masks;
 use pulse::context::{flags, Context, State};
-use pulse::def::Retval;
 use pulse::mainloop::standard::IterateResult;
 use pulse::mainloop::standard::Mainloop;
 use pulse::proplist::Proplist;
-use regex::Regex;
 use std::cell::RefCell;
 use std::ops::Deref;
-use std::process::{Command, Output};
 use std::rc::Rc;
-use std::str;
-use std::sync::mpsc::{self, Receiver, Sender, TryRecvError::Empty};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-const TICK_RATE: Duration = Duration::from_millis(50);
+const TICK_RATE: Duration = Duration::from_millis(16);
 
 #[derive(Copy, Clone, Debug)]
-pub struct OutputData(i32, bool);
+pub struct OutputData(pub i32, pub bool);
 
 pub struct Pulse(JoinHandle<Result<(), Error>>, Receiver<OutputData>);
 
@@ -38,17 +35,8 @@ impl Pulse {
         Pulse(handle, rx)
     }
 
-    pub fn data(&self) -> Result<Option<OutputData>, Error> {
-        self.1.try_recv().map_or_else(
-            |e| {
-                if let Empty = e {
-                    return Ok(None);
-                } else {
-                    return Err(Error::new(format!("error in module volume: {}", e)));
-                }
-            },
-            |v| Ok(Some(v)),
-        )
+    pub fn data(&self) -> Option<OutputData> {
+        self.1.try_iter().last()
     }
 }
 
@@ -92,15 +80,43 @@ pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
             _ => {}
         }
     }
-
-    // let interest = subscription_masks::SINK;
-    // let mut subscription = context.borrow_mut().subscribe(interest, |_| {});
-    // context.borrow_mut().set_subscribe_callback(Some(Box::new(
-    // |facility_opt, operation_opt, index| {
-    // println!("{:#?}\n{:#?}\n{:#?}\n", facility_opt, operation_opt, index);
-    // },
-    // )));
-
+    // initial introspection
+    let introspector = &context.borrow().introspect();
+    let tx1 = Sender::clone(&tx);
+    introspector.get_sink_info_by_index(0, move |l| match parse_sink_info(l) {
+        Ok(opt) => {
+            if let Some(data) = opt {
+                tx1.send(data)
+                    .expect("in pulse module, failed to send data");
+            }
+        }
+        Err(err) => {
+            eprintln!("in pulse module, {}", err);
+            return;
+        }
+    });
+    // subscribed instrospection
+    let interest = subscription_masks::SINK;
+    let introspector = context.borrow().introspect();
+    context.borrow_mut().subscribe(interest, |_| {});
+    context
+        .borrow_mut()
+        .set_subscribe_callback(Some(Box::new(move |_, _, _| {
+            let tx1 = Sender::clone(&tx);
+            introspector.get_sink_info_by_index(0, move |l| match parse_sink_info(l) {
+                Ok(opt) => {
+                    if let Some(data) = opt {
+                        tx1.send(data)
+                            .expect("in pulse module, failed to send data");
+                    }
+                }
+                Err(err) => {
+                    eprintln!("in pulse module, {}", err);
+                    return;
+                }
+            });
+        })));
+    // mainloop
     loop {
         thread::sleep(TICK_RATE);
         match mainloop.borrow_mut().iterate(false) {
@@ -112,29 +128,28 @@ pub fn run(tx: Sender<OutputData>) -> Result<(), Error> {
             }
             _ => {}
         }
-        let introspector = &context.borrow().introspect();
-        let tx1 = Sender::clone(&tx);
-        introspector.get_sink_info_by_index(0, move |l| match l {
-            ListResult::Item(item) => {
-                let error = "in pulse module, failed to parse volume";
-                let mut average_str = item.volume.avg().print();
-                let average_opt = average_str.pop();
-                if let Some(char) = average_opt {
-                    if char != '%' {
-                        eprintln!("{}", error);
-                        return;
-                    }
-                } else {
-                    eprintln!("{}", error);
-                    return;
+    }
+}
+
+fn parse_sink_info(list: ListResult<&SinkInfo>) -> Result<Option<OutputData>, Error> {
+    match list {
+        ListResult::Item(item) => {
+            let error = "failed to parse volume";
+            let mut average_str = item.volume.avg().print();
+            let average_opt = average_str.pop();
+            if let Some(char) = average_opt {
+                if char != '%' {
+                    return Err(Error::new(error.to_string()));
                 }
-                let average = average_str.trim().parse::<i32>().expect(error);
-                println!("{}-{}", item.mute, average);
-                tx1.send(OutputData(average, item.mute))
-                    .expect("in pulse module, failed to send data");
+            } else {
+                return Err(Error::new(error.to_string()));
             }
-            ListResult::Error => eprintln!("in pulse module, failed to get sink 0"),
-            _ => {}
-        });
+            let average = average_str.trim().parse::<i32>().expect(error);
+            Ok(Some(OutputData(average, item.mute)))
+        }
+        ListResult::Error => {
+            return Err(Error::new("failed to get sink 0".to_string()));
+        }
+        _ => Ok(None),
     }
 }
