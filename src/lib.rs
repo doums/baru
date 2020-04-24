@@ -73,7 +73,7 @@ impl<'a> Bar<'a> {
         let mut color = self.default_color;
         if let Some(info) = self.prev_sink {
             if info.1 {
-                icon = "󰸈"
+                icon = "󰸈";
             } else {
                 icon = match info.0 {
                     0..=9 => "󰕿",
@@ -103,9 +103,9 @@ impl<'a> Bar<'a> {
         let mut color = self.default_color;
         if let Some(info) = self.prev_source {
             if info.1 {
-                icon = "󰍭"
+                icon = "󰍭";
             } else {
-                icon = "󰍬"
+                icon = "󰍬";
             }
             if info.0 > 150 {
                 color = self.red;
@@ -172,8 +172,8 @@ impl<'a> Bar<'a> {
             color = self.red;
         }
         Ok(format!(
-            "{:3}% {}{}{}{}{}",
-            current_usg, color, self.icon, "󰻠", self.default_font, self.default_color
+            "{:3}% {}{}󰻠{}{}",
+            current_usg, color, self.icon, self.default_font, self.default_color
         ))
     }
 
