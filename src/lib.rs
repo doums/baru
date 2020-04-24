@@ -8,7 +8,7 @@ mod pulse;
 use chrono::prelude::*;
 use cpu::Cpu;
 use error::Error;
-use pulse::{OutputData, Pulse};
+use pulse::{Pulse, PulseData};
 use std::convert::TryFrom;
 use std::fs;
 use std::time::Duration;
@@ -40,7 +40,8 @@ pub struct Bar<'a> {
     coretemp_path: String,
     pulse: Pulse,
     cpu: Cpu,
-    prev_pa: Option<OutputData>,
+    prev_sink: Option<PulseData>,
+    prev_source: Option<PulseData>,
 }
 
 impl<'a> Bar<'a> {
@@ -56,20 +57,21 @@ impl<'a> Bar<'a> {
             prev_total: 0,
             coretemp_path: path,
             pulse: Pulse::new(PULSE_RATE),
-            prev_pa: None,
+            prev_sink: None,
+            prev_source: None,
             prev_usage: None,
             cpu: Cpu::new(CPU_RATE, PROC_STAT),
         })
     }
 
     fn sound(&mut self) -> Result<String, Error> {
-        let data = self.pulse.data();
+        let data = self.pulse.output_data();
         if data.is_some() {
-            self.prev_pa = data;
+            self.prev_sink = data;
         }
         let icon;
         let mut color = self.default_color;
-        if let Some(info) = self.prev_pa {
+        if let Some(info) = self.prev_sink {
             if info.1 {
                 icon = "󰸈"
             } else {
@@ -88,6 +90,32 @@ impl<'a> Bar<'a> {
             ))
         } else {
             icon = "󰖁";
+            Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
+        }
+    }
+
+    fn mic(&mut self) -> Result<String, Error> {
+        let data = self.pulse.input_data();
+        if data.is_some() {
+            self.prev_source = data;
+        }
+        let icon;
+        let mut color = self.default_color;
+        if let Some(info) = self.prev_source {
+            if info.1 {
+                icon = "󰍭"
+            } else {
+                icon = "󰍬"
+            }
+            if info.0 > 150 {
+                color = self.red;
+            }
+            Ok(format!(
+                "{:3}% {}{}{}{}{}",
+                info.0, color, self.icon, icon, self.default_font, self.default_color
+            ))
+        } else {
+            icon = "󰍮";
             Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
         }
     }
@@ -189,9 +217,10 @@ impl<'a> Bar<'a> {
         let cpu = self.cpu()?;
         let temperature = self.core_temperature()?;
         let sound = self.sound()?;
+        let mic = self.mic()?;
         println!(
-            "{}  {}  {}  {}  {}   {}",
-            cpu, temperature, brightness, sound, battery, date_time
+            "{}  {}  {}  {}  {}  {}   {}",
+            cpu, temperature, brightness, mic, sound, battery, date_time
         );
         Ok(())
     }

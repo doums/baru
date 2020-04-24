@@ -30,7 +30,7 @@ impl Cpu {
     }
 }
 
-pub fn run(tick: Duration, file: String, tx: Sender<CpuData>) -> Result<(), Error> {
+fn run(tick: Duration, file: String, tx: Sender<CpuData>) -> Result<(), Error> {
     loop {
         let proc_stat = File::open(&file)?;
         let mut reader = BufReader::new(proc_stat);
