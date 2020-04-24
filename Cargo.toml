@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 chrono= "0.4"
 regex = "1"
+libpulse-binding = "2.16.0"

@@ -2,11 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-mod sound;
-use chrono::prelude::*;
 mod error;
+mod pulse;
+use chrono::prelude::*;
 use error::Error;
-use sound::{PulseAudio, Sound};
+use pulse::{OutputData, Pulse};
 use std::convert::TryFrom;
 use std::fs::{self, File};
 use std::io::prelude::*;
@@ -34,8 +34,8 @@ pub struct Bar<'a> {
     prev_idle: i32,
     prev_total: i32,
     coretemp_path: String,
-    sound: Sound,
-    prev_pa: Option<PulseAudio>,
+    sound: Pulse,
+    prev_pa: Option<OutputData>,
 }
 
 impl<'a> Bar<'a> {
@@ -50,39 +50,41 @@ impl<'a> Bar<'a> {
             prev_idle: 0,
             prev_total: 0,
             coretemp_path: path,
-            sound: Sound::new(),
+            sound: Pulse::new(),
             prev_pa: None,
         })
     }
 
     fn sound(&mut self) -> Result<String, Error> {
         let data = self.sound.data()?;
-        if data.is_some() {
-            self.prev_pa = data;
-        }
-        let icon;
-        let mut color = self.default_color;
-        if let Some(info) = self.prev_pa {
-            if info.out_muted {
-                icon = "󰸈"
-            } else {
-                icon = match info.out_volume {
-                    0..=9 => "󰕿",
-                    10..=40 => "󰖀",
-                    _ => "󰕾",
-                }
-            }
-            if info.out_volume > 150 {
-                color = self.red;
-            }
-            Ok(format!(
-                "{:3}% {}{}{}{}{}",
-                info.out_volume, color, self.icon, icon, self.default_font, self.default_color
-            ))
-        } else {
-            icon = "󰖁";
-            Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
-        }
+        println!("{:#?}", data);
+        Ok("eheh".to_string())
+        // if data.is_some() {
+        // self.prev_pa = data;
+        // }
+        // let icon;
+        // let mut color = self.default_color;
+        // if let Some(info) = self.prev_pa {
+        // if info.out_muted {
+        // icon = "󰸈"
+        // } else {
+        // icon = match info.out_volume {
+        // 0..=9 => "󰕿",
+        // 10..=40 => "󰖀",
+        // _ => "󰕾",
+        // }
+        // }
+        // if info.out_volume > 150 {
+        // color = self.red;
+        // }
+        // Ok(format!(
+        // "{:3}% {}{}{}{}{}",
+        // info.out_volume, color, self.icon, icon, self.default_font, self.default_color
+        // ))
+        // } else {
+        // icon = "󰖁";
+        // Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
+        // }
     }
 
     fn battery(&self) -> Result<String, Error> {
@@ -181,16 +183,16 @@ impl<'a> Bar<'a> {
     }
 
     pub fn update(&mut self) -> Result<(), Error> {
-        let date_time = date_time();
-        let battery = self.battery()?;
-        let brightness = self.brightness()?;
-        let cpu = self.cpu()?;
-        let temperature = self.core_temperature()?;
+        // let date_time = date_time();
+        // let battery = self.battery()?;
+        // let brightness = self.brightness()?;
+        // let cpu = self.cpu()?;
+        // let temperature = self.core_temperature()?;
         let sound = self.sound()?;
-        println!(
-            "{}  {}  {}  {}  {}   {}",
-            cpu, temperature, brightness, sound, battery, date_time
-        );
+        // println!(
+        // "{}  {}  {}  {}  {}   {}",
+        // cpu, temperature, brightness, sound, battery, date_time
+        // );
         Ok(())
     }
 }

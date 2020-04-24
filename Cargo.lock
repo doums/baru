@@ -20,6 +20,7 @@ name = "bar"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "libpulse-binding",
  "regex",
 ]
 
@@ -47,6 +48,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
 
 [[package]]
+name = "libpulse-binding"
+version = "2.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35b35c3c377b537d044107ff0830b4e5ae32a5c106289977a04b3387a143e994"
+dependencies = [
+ "libc",
+ "libpulse-sys",
+ "winapi",
+]
+
+[[package]]
+name = "libpulse-sys"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4c5aecc8dd651c60c212267ef9599a6be8765e63509816695f96a91b1e06151"
+dependencies = [
+ "libc",
+ "pkg-config",
+ "winapi",
+]
+
+[[package]]
 name = "memchr"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -70,6 +93,12 @@ checksum = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "pkg-config"
+version = "0.3.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
 
 [[package]]
 name = "redox_syscall"
