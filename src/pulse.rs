@@ -51,11 +51,11 @@ pub struct Pulse(
 );
 
 impl Pulse {
-    pub fn new(tick: Duration) -> Self {
+    pub fn new(tick: Duration, sink: u32, source: u32) -> Self {
         let (out_tx, out_rx) = mpsc::channel();
         let (in_tx, in_rx) = mpsc::channel();
         let handle = thread::spawn(move || -> Result<(), Error> {
-            run(tick, out_tx, in_tx)?;
+            run(tick, sink, source, out_tx, in_tx)?;
             Ok(())
         });
         Pulse(handle, out_rx, in_rx)
@@ -70,7 +70,13 @@ impl Pulse {
     }
 }
 
-fn run(tick: Duration, out_tx: Sender<PulseData>, in_tx: Sender<PulseData>) -> Result<(), Error> {
+fn run(
+    tick: Duration,
+    sink: u32,
+    source: u32,
+    out_tx: Sender<PulseData>,
+    in_tx: Sender<PulseData>,
+) -> Result<(), Error> {
     let mut proplist = Proplist::new().unwrap();
     proplist
         .set_str(pulse::proplist::properties::APPLICATION_NAME, "Bar")
@@ -109,7 +115,7 @@ fn run(tick: Duration, out_tx: Sender<PulseData>, in_tx: Sender<PulseData>) -> R
     let introspector = &context.borrow().introspect();
     // initial introspections
     let out_tx1 = Sender::clone(&out_tx);
-    introspector.get_sink_info_by_index(0, move |l| {
+    introspector.get_sink_info_by_index(sink, move |l| {
         if let Some(info) = parse_sink_info(l) {
             out_tx1
                 .send(info)
@@ -117,7 +123,7 @@ fn run(tick: Duration, out_tx: Sender<PulseData>, in_tx: Sender<PulseData>) -> R
         }
     });
     let in_tx1 = Sender::clone(&in_tx);
-    introspector.get_source_info_by_index(1, move |l| {
+    introspector.get_source_info_by_index(source, move |l| {
         if let Some(info) = parse_source_info(l) {
             in_tx1
                 .send(info)
@@ -135,7 +141,7 @@ fn run(tick: Duration, out_tx: Sender<PulseData>, in_tx: Sender<PulseData>) -> R
                 match facility {
                     Facility::Sink => {
                         let tx1 = Sender::clone(&out_tx);
-                        introspector.get_sink_info_by_index(0, move |l| {
+                        introspector.get_sink_info_by_index(sink, move |l| {
                             if let Some(info) = parse_sink_info(l) {
                                 tx1.send(info)
                                     .expect("in pulse module, failed to send sink data");
@@ -144,7 +150,7 @@ fn run(tick: Duration, out_tx: Sender<PulseData>, in_tx: Sender<PulseData>) -> R
                     }
                     Facility::Source => {
                         let tx1 = Sender::clone(&in_tx);
-                        introspector.get_source_info_by_index(1, move |l| {
+                        introspector.get_source_info_by_index(source, move |l| {
                             if let Some(info) = parse_source_info(l) {
                                 tx1.send(info)
                                     .expect("in pulse module, failed to send source data");

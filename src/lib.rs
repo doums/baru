@@ -27,6 +27,8 @@ const RED: &'static str = "+@fg=1;";
 const GREEN: &'static str = "+@fg=2;";
 const CPU_RATE: Duration = Duration::from_millis(500);
 const PULSE_RATE: Duration = Duration::from_millis(16);
+const SINK_INDEX: u32 = 0;
+const SOURCE_INDEX: u32 = 1;
 
 pub struct Bar<'a> {
     default_font: &'a str,
@@ -56,7 +58,7 @@ impl<'a> Bar<'a> {
             prev_idle: 0,
             prev_total: 0,
             coretemp_path: path,
-            pulse: Pulse::new(PULSE_RATE),
+            pulse: Pulse::new(PULSE_RATE, SINK_INDEX, SOURCE_INDEX),
             prev_sink: None,
             prev_source: None,
             prev_usage: None,
