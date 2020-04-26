@@ -5,6 +5,7 @@
 mod cpu;
 mod error;
 mod pulse;
+mod wireless;
 use chrono::prelude::*;
 use cpu::Cpu;
 use error::Error;
@@ -12,6 +13,7 @@ use pulse::{Pulse, PulseData};
 use std::convert::TryFrom;
 use std::fs;
 use std::time::Duration;
+use wireless::data;
 
 const PROC_STAT: &'static str = "/proc/stat";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
@@ -220,10 +222,12 @@ impl<'a> Bar<'a> {
         let temperature = self.core_temperature()?;
         let sound = self.sound()?;
         let mic = self.mic()?;
-        println!(
-            "{}  {}  {}  {}  {}  {}   {}",
-            cpu, temperature, brightness, mic, sound, battery, date_time
-        );
+        let signal = data();
+        println!("{:#?}", signal);
+        // println!(
+        // "{}  {}  {}  {}  {}  {}   {}",
+        // cpu, temperature, brightness, mic, sound, battery, date_time
+        // );
         Ok(())
     }
 }

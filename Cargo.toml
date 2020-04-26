@@ -3,7 +3,12 @@ name = "bar"
 version = "0.1.0"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2018"
+links = "nl_data"
+build = "build.rs"
 
 [dependencies]
 chrono= "0.4"
 libpulse-binding = "2.16.0"
+
+[build-dependencies]
+cmake = "0.1"
