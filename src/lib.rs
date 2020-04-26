@@ -4,6 +4,7 @@
 
 mod cpu;
 mod error;
+mod nl_data;
 mod pulse;
 mod wireless;
 use chrono::prelude::*;
@@ -13,7 +14,7 @@ use pulse::{Pulse, PulseData};
 use std::convert::TryFrom;
 use std::fs;
 use std::time::Duration;
-use wireless::data;
+use wireless::Wireless;
 
 const PROC_STAT: &'static str = "/proc/stat";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
@@ -28,6 +29,7 @@ const DEFAULT_COLOR: &'static str = "+@fg=0;";
 const RED: &'static str = "+@fg=1;";
 const GREEN: &'static str = "+@fg=2;";
 const CPU_RATE: Duration = Duration::from_millis(500);
+const WIRELESS_RATE: Duration = Duration::from_millis(500);
 const PULSE_RATE: Duration = Duration::from_millis(16);
 const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 1;
@@ -46,6 +48,7 @@ pub struct Bar<'a> {
     cpu: Cpu,
     prev_sink: Option<PulseData>,
     prev_source: Option<PulseData>,
+    wireless: Wireless,
 }
 
 impl<'a> Bar<'a> {
@@ -65,6 +68,7 @@ impl<'a> Bar<'a> {
             prev_source: None,
             prev_usage: None,
             cpu: Cpu::new(CPU_RATE, PROC_STAT),
+            wireless: Wireless::new(WIRELESS_RATE),
         })
     }
 
@@ -204,6 +208,12 @@ impl<'a> Bar<'a> {
         ))
     }
 
+    fn wireless(&self) -> String {
+        let data = self.wireless.data();
+        println!("{:#?}", data);
+        "eheh".to_string()
+    }
+
     fn brightness(&self) -> Result<String, Error> {
         let brightness = read_and_parse(&format!("{}/actual_brightness", BACKLIGHT_PATH))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", BACKLIGHT_PATH))?;
@@ -222,8 +232,7 @@ impl<'a> Bar<'a> {
         let temperature = self.core_temperature()?;
         let sound = self.sound()?;
         let mic = self.mic()?;
-        let signal = data();
-        println!("{:#?}", signal);
+        let wireless = self.wireless();
         // println!(
         // "{}  {}  {}  {}  {}  {}   {}",
         // cpu, temperature, brightness, mic, sound, battery, date_time
