@@ -12,10 +12,15 @@ pub struct NlData {
     signal: c_int,
 }
 
+pub enum State {
+    Disconnected,
+    Connected(Data),
+}
+
 #[derive(Debug)]
 pub struct Data {
-    essid: Option<String>,
-    signal: Option<i32>,
+    pub essid: Option<String>,
+    pub signal: Option<i32>,
 }
 
 #[link(name = "nl_data", kind = "static")]
@@ -23,7 +28,7 @@ extern "C" {
     pub fn get_data() -> *const NlData;
 }
 
-pub fn data() -> Option<Data> {
+pub fn data() -> State {
     unsafe {
         let nl_data = get_data();
         let signal_ptr = (*nl_data).signal;
@@ -39,9 +44,9 @@ pub fn data() -> Option<Data> {
             Some(CStr::from_ptr(essid_ptr).to_string_lossy().into_owned())
         };
         return if signal.is_none() && essid.is_none() {
-            None
+            State::Disconnected
         } else {
-            Some(Data { signal, essid })
+            State::Connected(Data { signal, essid })
         };
     }
 }

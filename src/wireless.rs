@@ -3,12 +3,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::nl_data::{self, Data};
+use crate::nl_data::{self, State};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-pub struct Wireless(JoinHandle<Result<(), Error>>, Receiver<Option<Data>>);
+pub struct Wireless(JoinHandle<Result<(), Error>>, Receiver<State>);
 
 impl Wireless {
     pub fn new(tick: Duration) -> Self {
@@ -20,12 +20,12 @@ impl Wireless {
         Wireless(handle, rx)
     }
 
-    pub fn data(&self) -> Option<Option<Data>> {
+    pub fn data(&self) -> Option<State> {
         self.1.try_iter().last()
     }
 }
 
-fn run(tick: Duration, tx: Sender<Option<Data>>) -> Result<(), Error> {
+fn run(tick: Duration, tx: Sender<State>) -> Result<(), Error> {
     loop {
         tx.send(nl_data::data())?;
         thread::sleep(tick);

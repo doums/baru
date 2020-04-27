@@ -10,6 +10,7 @@ mod wireless;
 use chrono::prelude::*;
 use cpu::Cpu;
 use error::Error;
+use nl_data::State as WlState;
 use pulse::{Pulse, PulseData};
 use std::convert::TryFrom;
 use std::fs;
@@ -49,6 +50,7 @@ pub struct Bar<'a> {
     prev_sink: Option<PulseData>,
     prev_source: Option<PulseData>,
     wireless: Wireless,
+    prev_wireless: Option<WlState>,
 }
 
 impl<'a> Bar<'a> {
@@ -69,6 +71,7 @@ impl<'a> Bar<'a> {
             prev_usage: None,
             cpu: Cpu::new(CPU_RATE, PROC_STAT),
             wireless: Wireless::new(WIRELESS_RATE),
+            prev_wireless: None,
         })
     }
 
@@ -208,10 +211,30 @@ impl<'a> Bar<'a> {
         ))
     }
 
-    fn wireless(&self) -> String {
-        let data = self.wireless.data();
-        println!("{:#?}", data);
-        "eheh".to_string()
+    fn wireless(&mut self) -> String {
+        if let Some(state) = self.wireless.data() {
+            self.prev_wireless = Some(state);
+        }
+        let icon = if let Some(state) = &self.prev_wireless {
+            if let WlState::Connected(data) = state {
+                if let Some(strength) = data.signal {
+                    match strength {
+                        0 => "󰤯",
+                        1..=25 => "󰤟",
+                        26..=50 => "󰤢",
+                        51..=75 => "󰤥",
+                        _ => "󰤨",
+                    }
+                } else {
+                    "󰤫"
+                }
+            } else {
+                "󰤮"
+            }
+        } else {
+            "󰤫"
+        };
+        format!("{}{}{}", self.icon, icon, self.default_font)
     }
 
     fn brightness(&self) -> Result<String, Error> {
@@ -233,10 +256,10 @@ impl<'a> Bar<'a> {
         let sound = self.sound()?;
         let mic = self.mic()?;
         let wireless = self.wireless();
-        // println!(
-        // "{}  {}  {}  {}  {}  {}   {}",
-        // cpu, temperature, brightness, mic, sound, battery, date_time
-        // );
+        println!(
+            "{}  {}  {}  {}  {}  {}  {}   {}",
+            cpu, temperature, brightness, mic, sound, wireless, battery, date_time
+        );
         Ok(())
     }
 }
