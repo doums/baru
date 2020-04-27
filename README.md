@@ -13,6 +13,7 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 * brightness
 * cpu temperature
 * cpu usage
+* colors
 
 Some modules run in their own thread.\
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server to retrieve its data.\
