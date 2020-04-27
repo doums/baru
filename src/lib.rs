@@ -167,8 +167,8 @@ impl<'a> Bar<'a> {
         if let Some(data) = self.cpu.data() {
             let diff_total = data.0 - self.prev_total;
             let diff_idle = data.1 - self.prev_idle;
-            let usage = ((1000_f32 * (diff_total - diff_idle) as f32 / diff_total as f32) / 10_f32)
-                .round() as i32;
+            let usage =
+                (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;
             self.prev_total = data.0;
             self.prev_idle = data.1;
             self.prev_usage = Some(usage);
