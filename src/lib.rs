@@ -12,12 +12,14 @@ use cpu::Cpu;
 use error::Error;
 use nl_data::State as WlState;
 use pulse::{Pulse, PulseData};
+use regex::Regex;
 use std::convert::TryFrom;
 use std::fs;
 use std::time::Duration;
 use wireless::Wireless;
 
 const PROC_STAT: &'static str = "/proc/stat";
+const PROC_MEMINFO: &'static str = "/proc/meminfo";
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
 const POWER_STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
 const ENERGY_FULL_DESIGN: &'static str = "/sys/class/power_supply/BAT0/energy_full_design";
@@ -35,6 +37,26 @@ const PULSE_RATE: Duration = Duration::from_millis(16);
 const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 1;
 
+struct MemRegex {
+    total: Regex,
+    free: Regex,
+    buffers: Regex,
+    cached: Regex,
+    slab: Regex,
+}
+
+impl MemRegex {
+    fn new() -> Self {
+        MemRegex {
+            total: Regex::new(r"(?m)^MemTotal:\s*(\d+)\s*kB$").unwrap(),
+            free: Regex::new(r"(?m)^MemFree:\s*(\d+)\s*kB$").unwrap(),
+            buffers: Regex::new(r"(?m)^Buffers:\s*(\d+)\s*kB$").unwrap(),
+            cached: Regex::new(r"(?m)^Cached:\s*(\d+)\s*kB$").unwrap(),
+            slab: Regex::new(r"(?m)^Slab:\s*(\d+)\s*kB$").unwrap(),
+        }
+    }
+}
+
 pub struct Bar<'a> {
     default_font: &'a str,
     icon: &'a str,
@@ -51,6 +73,7 @@ pub struct Bar<'a> {
     prev_source: Option<PulseData>,
     wireless: Wireless,
     prev_wireless: Option<WlState>,
+    mem_regex: MemRegex,
 }
 
 impl<'a> Bar<'a> {
@@ -72,6 +95,7 @@ impl<'a> Bar<'a> {
             cpu: Cpu::new(CPU_RATE, PROC_STAT),
             wireless: Wireless::new(WIRELESS_RATE),
             prev_wireless: None,
+            mem_regex: MemRegex::new(),
         })
     }
 
@@ -211,6 +235,41 @@ impl<'a> Bar<'a> {
         ))
     }
 
+    fn ram(&self) -> Result<String, Error> {
+        let meminfo = read_and_trim(PROC_MEMINFO)?;
+        let total = find_meminfo(
+            &self.mem_regex.total,
+            &meminfo,
+            &format!("MemTotal not found in \"{}\"", PROC_MEMINFO),
+        )?;
+        let free = find_meminfo(
+            &self.mem_regex.free,
+            &meminfo,
+            &format!("MemFree not found in \"{}\"", PROC_MEMINFO),
+        )?;
+
+        let buffers = find_meminfo(
+            &self.mem_regex.buffers,
+            &meminfo,
+            &format!("Buffers not found in \"{}\"", PROC_MEMINFO),
+        )?;
+        let cached = find_meminfo(
+            &self.mem_regex.cached,
+            &meminfo,
+            &format!("Cached not found in \"{}\"", PROC_MEMINFO),
+        )?;
+        let slab = find_meminfo(
+            &self.mem_regex.slab,
+            &meminfo,
+            &format!("Slab not found in \"{}\"", PROC_MEMINFO),
+        )?;
+        let used = total - free - buffers - cached - slab;
+        let total = (total as f32) / 1_000_000_f32;
+        let used = (used as f32) / 1_000_000_f32;
+        // println!("total {0:.1}Go, used {1:.4}Go", total, used);
+        Ok("eheh".to_string())
+    }
+
     fn wireless(&mut self) -> String {
         if let Some(state) = self.wireless.data() {
             self.prev_wireless = Some(state);
@@ -256,6 +315,7 @@ impl<'a> Bar<'a> {
         let sound = self.sound()?;
         let mic = self.mic()?;
         let wireless = self.wireless();
+        let ram = self.ram()?;
         println!(
             "{}  {}  {}  {}  {}  {}  {}   {}",
             cpu, temperature, brightness, mic, sound, wireless, battery, date_time
@@ -298,6 +358,18 @@ fn find_temp_dir<'a>(str_path: &'a str) -> Result<String, Error> {
         "error while resolving coretemp path: no directory found under \"{}\"",
         str_path
     )))
+}
+
+fn find_meminfo<'a>(regex: &Regex, meminfo: &'a str, error: &'a str) -> Result<i32, String> {
+    let matched = regex
+        .captures(&meminfo)
+        .ok_or_else(|| error.to_string())?
+        .get(1)
+        .ok_or_else(|| error.to_string())?
+        .as_str();
+    Ok(matched
+        .parse::<i32>()
+        .map_err(|err| format!("error while parsing meminfo: {}", err))?)
 }
 
 fn date_time() -> String {

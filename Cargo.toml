@@ -9,6 +9,7 @@ build = "build.rs"
 [dependencies]
 chrono= "0.4"
 libpulse-binding = "2.16.0"
+regex = "1"
 
 [build-dependencies]
 cmake = "0.1"
