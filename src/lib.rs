@@ -235,7 +235,7 @@ impl<'a> Bar<'a> {
         ))
     }
 
-    fn ram(&self) -> Result<String, Error> {
+    fn memory(&self) -> Result<String, Error> {
         let meminfo = read_and_trim(PROC_MEMINFO)?;
         let total = find_meminfo(
             &self.mem_regex.total,
@@ -315,7 +315,7 @@ impl<'a> Bar<'a> {
         let sound = self.sound()?;
         let mic = self.mic()?;
         let wireless = self.wireless();
-        let ram = self.ram()?;
+        let memory = self.memory()?;
         println!(
             "{}  {}  {}  {}  {}  {}  {}   {}",
             cpu, temperature, brightness, mic, sound, wireless, battery, date_time
