@@ -13,7 +13,7 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 * brightness
 * cpu usage and temperature
 * memory total, used
-* icons, colors
+* dynamic icons, colors
 
 All the info is read direclty from the kernel files (`/sys`, `/proc`). Except for the audio and wireless modules.\
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
