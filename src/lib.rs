@@ -42,7 +42,7 @@ struct MemRegex {
     free: Regex,
     buffers: Regex,
     cached: Regex,
-    slab: Regex,
+    s_reclaimable: Regex,
 }
 
 impl MemRegex {
@@ -52,7 +52,7 @@ impl MemRegex {
             free: Regex::new(r"(?m)^MemFree:\s*(\d+)\s*kB$").unwrap(),
             buffers: Regex::new(r"(?m)^Buffers:\s*(\d+)\s*kB$").unwrap(),
             cached: Regex::new(r"(?m)^Cached:\s*(\d+)\s*kB$").unwrap(),
-            slab: Regex::new(r"(?m)^Slab:\s*(\d+)\s*kB$").unwrap(),
+            s_reclaimable: Regex::new(r"(?m)^SReclaimable:\s*(\d+)\s*kB$").unwrap(),
         }
     }
 }
@@ -258,16 +258,23 @@ impl<'a> Bar<'a> {
             &meminfo,
             &format!("Cached not found in \"{}\"", PROC_MEMINFO),
         )?;
-        let slab = find_meminfo(
-            &self.mem_regex.slab,
+        let s_reclaimable = find_meminfo(
+            &self.mem_regex.s_reclaimable,
             &meminfo,
-            &format!("Slab not found in \"{}\"", PROC_MEMINFO),
+            &format!("SReclaimable not found in \"{}\"", PROC_MEMINFO),
         )?;
-        let used = total - free - buffers - cached - slab;
-        let total = (total as f32) / 1_000_000_f32;
-        let used = (used as f32) / 1_000_000_f32;
-        // println!("total {0:.1}Go, used {1:.4}Go", total, used);
-        Ok("eheh".to_string())
+        let used = total - free - buffers - cached - s_reclaimable;
+        let percentage = (used as f64 * 100_f64 / total as f64).round() as i32;
+        let total_go = (1024_f64 * (total as f64)) / 1_000_000_000_f64;
+        let used_go = 1024_f64 * (used as f64) / 1_000_000_000_f64;
+        let mut color = self.default_color;
+        if percentage > 90 {
+            color = self.red;
+        }
+        Ok(format!(
+            "{}{:.1}{}/{:.1}Go󰍛",
+            color, used_go, self.default_color, total_go
+        ))
     }
 
     fn wireless(&mut self) -> String {
@@ -317,8 +324,8 @@ impl<'a> Bar<'a> {
         let wireless = self.wireless();
         let memory = self.memory()?;
         println!(
-            "{}  {}  {}  {}  {}  {}  {}   {}",
-            cpu, temperature, brightness, mic, sound, wireless, battery, date_time
+            "{}  {}  {}  {}  {}  {}  {}  {}   {}",
+            memory, cpu, temperature, brightness, mic, sound, wireless, battery, date_time
         );
         Ok(())
     }
