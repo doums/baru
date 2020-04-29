@@ -272,8 +272,8 @@ impl<'a> Bar<'a> {
             color = self.red;
         }
         Ok(format!(
-            "{}{:.1}{}/{:.1}Go󰍛",
-            color, used_go, self.default_color, total_go
+            "{}{:.1}{}/{:.1}Go{}󰍛{}",
+            color, used_go, self.default_color, total_go, self.icon, self.default_font
         ))
     }
 
