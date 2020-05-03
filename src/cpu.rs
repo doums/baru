@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
+use crate::{Config, Refresh};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -10,23 +11,79 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
+const PROC_STAT: &'static str = "/proc/stat";
+const TICK_RATE: Duration = Duration::from_millis(500);
+
 pub struct CpuData(pub i32, pub i32);
 
-pub struct Cpu(JoinHandle<Result<(), Error>>, Receiver<CpuData>);
+pub struct Cpu<'a> {
+    handle: JoinHandle<Result<(), Error>>,
+    receiver: Receiver<CpuData>,
+    prev_idle: i32,
+    prev_total: i32,
+    prev_usage: Option<i32>,
+    config: &'a Config,
+}
 
-impl Cpu {
-    pub fn new(tick: Duration, file: &str) -> Self {
+impl<'a> Cpu<'a> {
+    pub fn with_config(config: &'a Config) -> Self {
         let (tx, rx) = mpsc::channel();
-        let file = file.to_string();
+        let file = match &config.proc_stat {
+            Some(val) => val.clone(),
+            None => PROC_STAT.to_string(),
+        };
+        let tick = match &config.cpu_tick {
+            Some(ms) => Duration::from_millis(*ms as u64),
+            None => TICK_RATE,
+        };
         let handle = thread::spawn(move || -> Result<(), Error> {
             run(tick, file, tx)?;
             Ok(())
         });
-        Cpu(handle, rx)
+        Cpu {
+            config,
+            handle,
+            receiver: rx,
+            prev_idle: 0,
+            prev_total: 0,
+            prev_usage: None,
+        }
     }
 
     pub fn data(&self) -> Option<CpuData> {
-        self.1.try_iter().last()
+        self.receiver.try_iter().last()
+    }
+}
+
+impl<'a> Refresh for Cpu<'a> {
+    fn refresh(&mut self) -> Result<String, Error> {
+        let mut current_usg = 0;
+        if let Some(data) = self.data() {
+            let diff_total = data.0 - self.prev_total;
+            let diff_idle = data.1 - self.prev_idle;
+            let usage =
+                (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;
+            self.prev_total = data.0;
+            self.prev_idle = data.1;
+            self.prev_usage = Some(usage);
+            current_usg = usage;
+        } else {
+            if let Some(usage) = self.prev_usage {
+                current_usg = usage;
+            }
+        }
+        let mut color = &self.config.default_color;
+        if current_usg >= 90 {
+            color = &self.config.red;
+        }
+        Ok(format!(
+            "{:3}% {}{}󰻠{}{}",
+            current_usg,
+            color,
+            self.config.icon_font,
+            self.config.default_font,
+            self.config.default_color
+        ))
     }
 }
 
