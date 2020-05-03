@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
+use crate::Config;
 use libpulse_binding as pulse;
 use pulse::callbacks::ListResult;
 use pulse::context::introspect::{SinkInfo, SourceInfo};
@@ -17,6 +18,10 @@ use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
+
+const PULSE_RATE: Duration = Duration::from_millis(16);
+const SINK_INDEX: u32 = 0;
+const SOURCE_INDEX: u32 = 0;
 
 #[derive(Copy, Clone, Debug)]
 pub struct PulseData(pub i32, pub bool);
@@ -51,11 +56,23 @@ pub struct Pulse(
 );
 
 impl Pulse {
-    pub fn new(tick: Duration, sink: u32, source: u32) -> Self {
+    pub fn new<'a>(config: &'a Config) -> Self {
         let (out_tx, out_rx) = mpsc::channel();
         let (in_tx, in_rx) = mpsc::channel();
+        let tick = match &config.pulse_tick {
+            Some(val) => Duration::from_millis(*val as u64),
+            None => PULSE_RATE,
+        };
+        let sink_index = match &config.sink {
+            Some(val) => *val,
+            None => SINK_INDEX,
+        };
+        let source_index = match &config.source {
+            Some(val) => *val,
+            None => SOURCE_INDEX,
+        };
         let handle = thread::spawn(move || -> Result<(), Error> {
-            run(tick, sink, source, out_tx, in_tx)?;
+            run(tick, sink_index, source_index, out_tx, in_tx)?;
             Ok(())
         });
         Pulse(handle, out_rx, in_rx)
