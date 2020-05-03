@@ -2,30 +2,33 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+mod battery;
+mod brightness;
 mod cpu;
+mod date_time;
 mod error;
+mod memory;
+mod module;
 mod nl_data;
 mod pulse;
+mod temperature;
 mod wireless;
-use chrono::prelude::*;
+use battery::Battery;
+use brightness::Brightness;
 use cpu::Cpu;
+use date_time::DateTime as MDateTime;
 use error::Error;
+use memory::Memory;
+use module::Module;
 use nl_data::State as WlState;
 use pulse::{Pulse, PulseData};
-use regex::Regex;
-use std::convert::TryFrom;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::time::Duration;
+use temperature::Temperature;
 use wireless::Wireless;
 
 const PROC_STAT: &'static str = "/proc/stat";
-const PROC_MEMINFO: &'static str = "/proc/meminfo";
-const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
-const POWER_STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
-const ENERGY_FULL_DESIGN: &'static str = "/sys/class/power_supply/BAT0/energy_full_design";
-const CORETEMP_PATH: &'static str = "/sys/devices/platform/coretemp.0/hwmon";
-const BACKLIGHT_PATH: &'static str =
-    "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const DEFAULT_FONT: &'static str = "+@fn=0;";
 const ICON_FONT: &'static str = "+@fn=1;";
 const DEFAULT_COLOR: &'static str = "+@fg=0;";
@@ -37,57 +40,92 @@ const PULSE_RATE: Duration = Duration::from_millis(16);
 const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 1;
 
-struct MemRegex {
-    total: Regex,
-    free: Regex,
-    buffers: Regex,
-    cached: Regex,
-    s_reclaimable: Regex,
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub enum ModuleConfig {
+    DateTime,
+    Battery,
+    Brightness,
+    Cpu,
+    Temperature,
+    Sound,
+    Mic,
+    Wireless,
+    Memory,
 }
 
-impl MemRegex {
-    fn new() -> Self {
-        MemRegex {
-            total: Regex::new(r"(?m)^MemTotal:\s*(\d+)\s*kB$").unwrap(),
-            free: Regex::new(r"(?m)^MemFree:\s*(\d+)\s*kB$").unwrap(),
-            buffers: Regex::new(r"(?m)^Buffers:\s*(\d+)\s*kB$").unwrap(),
-            cached: Regex::new(r"(?m)^Cached:\s*(\d+)\s*kB$").unwrap(),
-            s_reclaimable: Regex::new(r"(?m)^SReclaimable:\s*(\d+)\s*kB$").unwrap(),
-        }
-    }
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Config {
+    pub tick: Option<u32>,
+    default_font: String,
+    icon_font: String,
+    default_color: String,
+    red: String,
+    green: String,
+    sink: u32,
+    source: u32,
+    modules: Vec<ModuleConfig>,
+    cpu_tick: Option<u32>,
+    wireless_tick: Option<u32>,
+    pulse_tick: Option<u32>,
+    proc_stat: Option<String>,
+    proc_meminfo: Option<String>,
+    energy_now: Option<String>,
+    power_status: Option<String>,
+    energy_full_design: Option<String>,
+    coretemp: Option<String>,
+    backlight: Option<String>,
+}
+
+trait Refresh {
+    fn refresh(&mut self) -> Result<String, Error>;
 }
 
 pub struct Bar<'a> {
     default_font: &'a str,
-    icon: &'a str,
+    icon_font: &'a str,
     default_color: &'a str,
     red: &'a str,
     green: &'a str,
     prev_idle: i32,
     prev_total: i32,
     prev_usage: Option<i32>,
-    coretemp_path: String,
     pulse: Pulse,
     cpu: Cpu,
     prev_sink: Option<PulseData>,
     prev_source: Option<PulseData>,
     wireless: Wireless,
     prev_wireless: Option<WlState>,
-    mem_regex: MemRegex,
+    modules: Vec<Module<'a>>,
 }
 
 impl<'a> Bar<'a> {
-    pub fn new() -> Result<Self, Error> {
-        let path = find_temp_dir(CORETEMP_PATH)?;
+    pub fn with_config(config: &'a Config) -> Result<Self, Error> {
+        let mut modules = vec![];
+        for module in &config.modules {
+            match module {
+                ModuleConfig::DateTime => modules.push(Module::DateTime(MDateTime::new())),
+                ModuleConfig::Battery => {
+                    modules.push(Module::Battery(Battery::with_config(&config)))
+                }
+                ModuleConfig::Memory => modules.push(Module::Memory(Memory::with_config(&config))),
+                ModuleConfig::Brightness => {
+                    modules.push(Module::Brightness(Brightness::with_config(&config)))
+                }
+                ModuleConfig::Temperature => {
+                    modules.push(Module::Temperature(Temperature::with_config(&config)?))
+                }
+                _ => return Err(Error::new("unknown module")),
+            }
+        }
+        println!("{:#?}", modules);
         Ok(Bar {
             default_font: DEFAULT_FONT,
-            icon: ICON_FONT,
+            icon_font: ICON_FONT,
             default_color: DEFAULT_COLOR,
             red: RED,
             green: GREEN,
             prev_idle: 0,
             prev_total: 0,
-            coretemp_path: path,
             pulse: Pulse::new(PULSE_RATE, SINK_INDEX, SOURCE_INDEX),
             prev_sink: None,
             prev_source: None,
@@ -95,7 +133,7 @@ impl<'a> Bar<'a> {
             cpu: Cpu::new(CPU_RATE, PROC_STAT),
             wireless: Wireless::new(WIRELESS_RATE),
             prev_wireless: None,
-            mem_regex: MemRegex::new(),
+            modules,
         })
     }
 
@@ -121,11 +159,14 @@ impl<'a> Bar<'a> {
             }
             Ok(format!(
                 "{:3}% {}{}{}{}{}",
-                info.0, color, self.icon, icon, self.default_font, self.default_color
+                info.0, color, self.icon_font, icon, self.default_font, self.default_color
             ))
         } else {
             icon = "󰖁";
-            Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
+            Ok(format!(
+                "     {}{}{}",
+                self.icon_font, icon, self.default_font
+            ))
         }
     }
 
@@ -147,43 +188,15 @@ impl<'a> Bar<'a> {
             }
             Ok(format!(
                 "{:3}% {}{}{}{}{}",
-                info.0, color, self.icon, icon, self.default_font, self.default_color
+                info.0, color, self.icon_font, icon, self.default_font, self.default_color
             ))
         } else {
             icon = "󰍮";
-            Ok(format!("     {}{}{}", self.icon, icon, self.default_font))
+            Ok(format!(
+                "     {}{}{}",
+                self.icon_font, icon, self.default_font
+            ))
         }
-    }
-
-    fn battery(&self) -> Result<String, Error> {
-        let energy_full_design = read_and_parse(ENERGY_FULL_DESIGN)?;
-        let energy_now = read_and_parse(ENERGY_NOW)?;
-        let status = read_and_trim(POWER_STATUS)?;
-        let capacity = energy_full_design as u64;
-        let energy = energy_now as u64;
-        let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        let mut color = match battery_level {
-            0..=10 => {
-                if status == "Discharging" {
-                    self.red
-                } else {
-                    self.default_color
-                }
-            }
-            _ => self.default_color,
-        };
-        if status == "Full" {
-            color = self.green
-        }
-        Ok(format!(
-            "{:3}% {}{}{}{}{}",
-            battery_level,
-            color,
-            self.icon,
-            get_battery_icon(&status, battery_level),
-            self.default_font,
-            self.default_color
-        ))
     }
 
     fn cpu(&mut self) -> Result<String, Error> {
@@ -208,72 +221,7 @@ impl<'a> Bar<'a> {
         }
         Ok(format!(
             "{:3}% {}{}󰻠{}{}",
-            current_usg, color, self.icon, self.default_font, self.default_color
-        ))
-    }
-
-    fn core_temperature(&self) -> Result<String, Error> {
-        let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp_path))?;
-        let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp_path))?;
-        let core_3 = read_and_parse(&format!("{}/temp4_input", self.coretemp_path))?;
-        let core_4 = read_and_parse(&format!("{}/temp5_input", self.coretemp_path))?;
-        let average =
-            (((core_1 + core_2 + core_3 + core_4) as f32 / 4_f32) / 1000_f32).round() as i32;
-        let mut color = self.default_color;
-        let icon = match average {
-            0..=49 => "󱃃",
-            50..=69 => "󰔏",
-            70..=100 => "󱃂",
-            _ => "󰸁",
-        };
-        if average > 75 {
-            color = self.red;
-        }
-        Ok(format!(
-            "{:3}° {}{}{}{}{}",
-            average, color, self.icon, icon, self.default_font, self.default_color
-        ))
-    }
-
-    fn memory(&self) -> Result<String, Error> {
-        let meminfo = read_and_trim(PROC_MEMINFO)?;
-        let total = find_meminfo(
-            &self.mem_regex.total,
-            &meminfo,
-            &format!("MemTotal not found in \"{}\"", PROC_MEMINFO),
-        )?;
-        let free = find_meminfo(
-            &self.mem_regex.free,
-            &meminfo,
-            &format!("MemFree not found in \"{}\"", PROC_MEMINFO),
-        )?;
-
-        let buffers = find_meminfo(
-            &self.mem_regex.buffers,
-            &meminfo,
-            &format!("Buffers not found in \"{}\"", PROC_MEMINFO),
-        )?;
-        let cached = find_meminfo(
-            &self.mem_regex.cached,
-            &meminfo,
-            &format!("Cached not found in \"{}\"", PROC_MEMINFO),
-        )?;
-        let s_reclaimable = find_meminfo(
-            &self.mem_regex.s_reclaimable,
-            &meminfo,
-            &format!("SReclaimable not found in \"{}\"", PROC_MEMINFO),
-        )?;
-        let used = total - free - buffers - cached - s_reclaimable;
-        let percentage = (used as f64 * 100_f64 / total as f64).round() as i32;
-        let total_go = (1024_f64 * (total as f64)) / 1_000_000_000_f64;
-        let used_go = 1024_f64 * (used as f64) / 1_000_000_000_f64;
-        let mut color = self.default_color;
-        if percentage > 90 {
-            color = self.red;
-        }
-        Ok(format!(
-            "{}{:.1}{}/{:.1}Go{}󰍛{}",
-            color, used_go, self.default_color, total_go, self.icon, self.default_font
+            current_usg, color, self.icon_font, self.default_font, self.default_color
         ))
     }
 
@@ -300,33 +248,18 @@ impl<'a> Bar<'a> {
         } else {
             "󰤫"
         };
-        format!("{}{}{}", self.icon, icon, self.default_font)
-    }
-
-    fn brightness(&self) -> Result<String, Error> {
-        let brightness = read_and_parse(&format!("{}/actual_brightness", BACKLIGHT_PATH))?;
-        let max_brightness = read_and_parse(&format!("{}/max_brightness", BACKLIGHT_PATH))?;
-        let percentage = 100 * brightness / max_brightness;
-        Ok(format!(
-            "{:3}% {}󰃟{}",
-            percentage, self.icon, self.default_font
-        ))
+        format!("{}{}{}", self.icon_font, icon, self.default_font)
     }
 
     pub fn update(&mut self) -> Result<(), Error> {
-        let date_time = date_time();
-        let battery = self.battery()?;
-        let brightness = self.brightness()?;
-        let cpu = self.cpu()?;
-        let temperature = self.core_temperature()?;
-        let sound = self.sound()?;
-        let mic = self.mic()?;
-        let wireless = self.wireless();
-        let memory = self.memory()?;
-        println!(
-            "{}  {}  {}  {}  {}  {}  {}  {}   {}",
-            memory, cpu, temperature, brightness, mic, sound, wireless, battery, date_time
-        );
+        // println!(
+        // "{}  {}  {}  {}  {}  {}  {}  {}   {}",
+        // memory, cpu, temperature, brightness, mic, sound, wireless, battery, date_time
+        // );
+        for module in &mut self.modules {
+            println!("{}", module.refresh()?);
+        }
+        println!("");
         Ok(())
     }
 }
@@ -343,78 +276,4 @@ fn read_and_parse<'a>(file: &'a str) -> Result<i32, Error> {
         .parse::<i32>()
         .map_err(|err| format!("error while parsing the file \"{}\": {}", file, err))?;
     Ok(data)
-}
-
-fn find_temp_dir<'a>(str_path: &'a str) -> Result<String, Error> {
-    let entries = fs::read_dir(str_path).map_err(|err| {
-        format!(
-            "error while reading the directory \"{}\": {}",
-            str_path, err
-        )
-    })?;
-    for entry in entries {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            if let Some(p) = path.to_str() {
-                return Ok(p.to_string());
-            }
-        }
-    }
-    Err(Error::new(format!(
-        "error while resolving coretemp path: no directory found under \"{}\"",
-        str_path
-    )))
-}
-
-fn find_meminfo<'a>(regex: &Regex, meminfo: &'a str, error: &'a str) -> Result<i32, String> {
-    let matched = regex
-        .captures(&meminfo)
-        .ok_or_else(|| error.to_string())?
-        .get(1)
-        .ok_or_else(|| error.to_string())?
-        .as_str();
-    Ok(matched
-        .parse::<i32>()
-        .map_err(|err| format!("error while parsing meminfo: {}", err))?)
-}
-
-fn date_time() -> String {
-    let now = Local::now();
-    now.format("%a. %-e %B %Y, %-kh%M").to_string()
-}
-
-fn get_battery_icon<'a>(state: &'a str, level: u32) -> &'static str {
-    match state {
-        "Full" => "󰁹",
-        "Discharging" => match level {
-            0..=9 => "󰂎",
-            10..=19 => "󰁺",
-            20..=29 => "󰁻",
-            30..=39 => "󰁼",
-            40..=49 => "󰁽",
-            50..=59 => "󰁾",
-            60..=69 => "󰁿",
-            70..=79 => "󰂀",
-            80..=89 => "󰂁",
-            90..=99 => "󰂂",
-            100 => "󰁹",
-            _ => "󱃍",
-        },
-        "Charging" => match level {
-            0..=9 => "󰢟",
-            10..=19 => "󰢜",
-            20..=29 => "󰂆",
-            30..=39 => "󰂇",
-            40..=49 => "󰂈",
-            50..=59 => "󰢝",
-            60..=69 => "󰂉",
-            70..=79 => "󰢞",
-            80..=89 => "󰂊",
-            90..=99 => "󰂋",
-            100 => "󰂅",
-            _ => "󱃍",
-        },
-        _ => "󱃍",
-    }
 }

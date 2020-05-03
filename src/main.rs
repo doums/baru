@@ -2,26 +2,53 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use bar::Bar;
+use bar::{Bar, Config};
+use std::env;
+use std::fs;
 use std::io::Error;
 use std::process;
 use std::thread;
 use std::time::Duration;
 
-const TICK_RATE: Duration = Duration::from_millis(50);
+const TICK_RATE: Duration = Duration::from_millis(250);
+
+fn print_out_err(message: &str) {
+    println!("{}", message);
+    eprintln!("{}", message);
+}
 
 fn main() -> Result<(), Error> {
-    let mut bar = Bar::new().unwrap_or_else(|err| {
-        println!("bar error: {}", err);
-        eprintln!("bar error: {}", err);
+    let home = env::var("HOME").unwrap_or_else(|err| {
+        print_out_err(&format!("bar: environment variable HOME, {}", err));
+        process::exit(1);
+    });
+    let content = fs::read_to_string(home + "/.config/bar/bar.yaml").unwrap_or_else(|err| {
+        print_out_err(&format!(
+            "bar: error while reading the config file, {}",
+            err
+        ));
+        process::exit(1);
+    });
+    let config: Config = serde_yaml::from_str(&content).unwrap_or_else(|err| {
+        print_out_err(&format!(
+            "bar: error while deserializing the config file, {}",
+            err
+        ));
+        process::exit(1);
+    });
+    let tick = match config.tick {
+        Some(ms) => Duration::from_millis(ms as u64),
+        None => TICK_RATE,
+    };
+    let mut bar = Bar::with_config(&config).unwrap_or_else(|err| {
+        print_out_err(&format!("bar: {}", err));
         process::exit(1);
     });
     loop {
         bar.update().unwrap_or_else(|err| {
-            println!("bar error: {}", err);
-            eprintln!("bar error: {}", err);
+            print_out_err(&format!("bar: {}", err));
             process::exit(1);
         });
-        thread::sleep(TICK_RATE);
+        thread::sleep(tick);
     }
 }
