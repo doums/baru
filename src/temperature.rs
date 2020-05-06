@@ -3,36 +3,52 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{read_and_parse, BarModule, Config};
+use crate::{read_and_parse, BarModule, Config as MainConfig};
+use serde::{Deserialize, Serialize};
 use std::fs;
 
-const CORETEMP_PATH: &'static str = "/sys/devices/platform/coretemp.0/hwmon";
+const CORETEMP: &'static str = "/sys/devices/platform/coretemp.0/hwmon";
+const HIGH_LEVEL: u32 = 75;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    coretemp: Option<String>,
+    high_level: Option<u32>,
+}
 
 #[derive(Debug)]
 pub struct Temperature<'a> {
-    coretemp_path: String,
-    config: &'a Config,
+    coretemp: String,
+    config: &'a MainConfig,
+    high_level: u32,
 }
 
 impl<'a> Temperature<'a> {
-    pub fn with_config(config: &'a Config) -> Result<Self, Error> {
-        let path = match &config.backlight {
-            Some(val) => &val,
-            None => CORETEMP_PATH,
-        };
+    pub fn with_config(config: &'a MainConfig) -> Result<Self, Error> {
+        let mut path = CORETEMP;
+        let mut high_level = HIGH_LEVEL;
+        if let Some(c) = &config.temperature {
+            if let Some(v) = &c.coretemp {
+                path = &v;
+            }
+            if let Some(v) = c.high_level {
+                high_level = v;
+            }
+        }
         Ok(Temperature {
-            coretemp_path: find_temp_dir(path)?,
+            coretemp: find_temp_dir(path)?,
             config,
+            high_level,
         })
     }
 }
 
 impl<'a> BarModule for Temperature<'a> {
     fn refresh(&mut self) -> Result<String, Error> {
-        let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp_path))?;
-        let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp_path))?;
-        let core_3 = read_and_parse(&format!("{}/temp4_input", self.coretemp_path))?;
-        let core_4 = read_and_parse(&format!("{}/temp5_input", self.coretemp_path))?;
+        let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp))?;
+        let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp))?;
+        let core_3 = read_and_parse(&format!("{}/temp4_input", self.coretemp))?;
+        let core_4 = read_and_parse(&format!("{}/temp5_input", self.coretemp))?;
         let average =
             (((core_1 + core_2 + core_3 + core_4) as f32 / 4_f32) / 1000_f32).round() as i32;
         let mut color = &self.config.default_color;
@@ -42,7 +58,7 @@ impl<'a> BarModule for Temperature<'a> {
             70..=100 => "󱃂",
             _ => "󰸁",
         };
-        if average > 75 {
+        if average >= self.high_level as i32 {
             color = &self.config.red;
         }
         Ok(format!(

@@ -4,20 +4,37 @@
 
 use crate::error::Error;
 use crate::pulse::{Pulse, PulseData};
-use crate::{BarModule, Config};
+use crate::{BarModule, Config as MainConfig};
+use serde::{Deserialize, Serialize};
+
+const HIGH_LEVEL: u32 = 101;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub index: Option<u32>,
+    high_level: Option<u32>,
+}
 
 pub struct Mic<'a> {
-    config: &'a Config,
+    config: &'a MainConfig,
     pulse: &'a Pulse,
     prev_data: Option<PulseData>,
+    high_level: u32,
 }
 
 impl<'a> Mic<'a> {
-    pub fn with_config(config: &'a Config, pulse: &'a Pulse) -> Self {
+    pub fn with_config(config: &'a MainConfig, pulse: &'a Pulse) -> Self {
+        let mut high_level = HIGH_LEVEL;
+        if let Some(c) = &config.mic {
+            if let Some(v) = c.high_level {
+                high_level = v;
+            }
+        }
         Mic {
             config,
             pulse,
             prev_data: None,
+            high_level,
         }
     }
 }
@@ -36,7 +53,7 @@ impl<'a> BarModule for Mic<'a> {
             } else {
                 icon = "󰍬";
             }
-            if info.0 > 150 {
+            if info.0 >= self.high_level as i32 {
                 color = &self.config.red;
             }
             Ok(format!(

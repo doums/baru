@@ -3,7 +3,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{BarModule, Config};
+use crate::{BarModule, Config as MainConfig};
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -13,8 +14,16 @@ use std::time::Duration;
 
 const PROC_STAT: &'static str = "/proc/stat";
 const TICK_RATE: Duration = Duration::from_millis(500);
+const HIGH_LEVEL: u32 = 90;
 
 pub struct CpuData(pub i32, pub i32);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    tick: Option<u32>,
+    proc_stat: Option<String>,
+    high_level: Option<u32>,
+}
 
 #[derive(Debug)]
 pub struct Cpu<'a> {
@@ -23,19 +32,26 @@ pub struct Cpu<'a> {
     prev_idle: i32,
     prev_total: i32,
     prev_usage: Option<i32>,
-    config: &'a Config,
+    config: &'a MainConfig,
+    high_level: u32,
 }
 
 impl<'a> Cpu<'a> {
-    pub fn with_config(config: &'a Config) -> Self {
+    pub fn with_config(config: &'a MainConfig) -> Self {
         let (tx, rx) = mpsc::channel();
-        let file = match &config.proc_stat {
-            Some(val) => val.clone(),
-            None => PROC_STAT.to_string(),
-        };
-        let tick = match &config.cpu_tick {
-            Some(ms) => Duration::from_millis(*ms as u64),
-            None => TICK_RATE,
+        let mut tick = TICK_RATE;
+        let mut file = PROC_STAT.to_string();
+        let mut high_level = HIGH_LEVEL;
+        if let Some(c) = &config.cpu {
+            if let Some(f) = &c.proc_stat {
+                file = f.clone();
+            }
+            if let Some(t) = &c.tick {
+                tick = Duration::from_millis(*t as u64)
+            }
+            if let Some(c) = &c.high_level {
+                high_level = *c;
+            }
         };
         let handle = thread::spawn(move || -> Result<(), Error> {
             run(tick, file, tx)?;
@@ -48,6 +64,7 @@ impl<'a> Cpu<'a> {
             prev_idle: 0,
             prev_total: 0,
             prev_usage: None,
+            high_level,
         }
     }
 
@@ -74,7 +91,7 @@ impl<'a> BarModule for Cpu<'a> {
             }
         }
         let mut color = &self.config.default_color;
-        if current_usg >= 90 {
+        if current_usg >= self.high_level as i32 {
             color = &self.config.red;
         }
         Ok(format!(

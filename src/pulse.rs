@@ -63,14 +63,18 @@ impl Pulse {
             Some(val) => Duration::from_millis(*val as u64),
             None => PULSE_RATE,
         };
-        let sink_index = match &config.sink {
-            Some(val) => *val,
-            None => SINK_INDEX,
-        };
-        let source_index = match &config.source {
-            Some(val) => *val,
-            None => SOURCE_INDEX,
-        };
+        let mut sink_index = SINK_INDEX;
+        let mut source_index = SOURCE_INDEX;
+        if let Some(c) = &config.sound {
+            if let Some(v) = c.index {
+                sink_index = v;
+            }
+        }
+        if let Some(c) = &config.mic {
+            if let Some(v) = c.index {
+                source_index = v;
+            }
+        }
         let handle = thread::spawn(move || -> Result<(), Error> {
             run(tick, sink_index, source_index, out_tx, in_tx)?;
             Ok(())

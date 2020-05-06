@@ -4,17 +4,17 @@
 
 use crate::battery::Battery;
 use crate::brightness::Brightness;
+use crate::cpu::Cpu;
 use crate::date_time::DateTime;
 use crate::error::Error;
 use crate::memory::Memory;
+use crate::mic::Mic;
+use crate::sound::Sound;
 use crate::temperature::Temperature;
+use crate::wireless::Wireless;
 use crate::BarModule;
 use crate::Config;
-use crate::Cpu;
-use crate::Mic;
 use crate::Pulse;
-use crate::Sound;
-use crate::Wireless;
 
 pub enum Module<'a> {
     DateTime(DateTime),

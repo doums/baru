@@ -4,26 +4,55 @@
 
 use crate::error::Error;
 use crate::nl_data::{self, State};
-use crate::{BarModule, Config};
+use crate::{BarModule, Config as MainConfig};
+use serde::{Deserialize, Serialize};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 const TICK_RATE: Duration = Duration::from_millis(500);
+const DISPLAY: Display = Display::Signal;
+const MAX_ESSID_LEN: usize = 10;
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+enum Display {
+    Essid,
+    Signal,
+    IconOnly,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    tick: Option<u32>,
+    display: Option<Display>,
+    max_essid_len: Option<usize>,
+}
 
 pub struct Wireless<'a> {
-    config: &'a Config,
+    config: &'a MainConfig,
     handle: JoinHandle<Result<(), Error>>,
     receiver: Receiver<State>,
     prev_data: Option<State>,
+    display: Display,
+    max_essid_len: usize,
 }
 
 impl<'a> Wireless<'a> {
-    pub fn with_config(config: &'a Config) -> Self {
+    pub fn with_config(config: &'a MainConfig) -> Self {
         let (tx, rx) = mpsc::channel();
-        let tick = match &config.wireless_tick {
-            Some(ms) => Duration::from_millis(*ms as u64),
-            None => TICK_RATE,
+        let mut tick = TICK_RATE;
+        let mut display = DISPLAY;
+        let mut max_essid_len = MAX_ESSID_LEN;
+        if let Some(c) = &config.wireless {
+            if let Some(t) = c.tick {
+                tick = Duration::from_millis(t as u64)
+            }
+            if let Some(d) = &c.display {
+                display = *d
+            }
+            if let Some(m) = c.max_essid_len {
+                max_essid_len = m
+            }
         };
         let handle = thread::spawn(move || -> Result<(), Error> {
             run(tick, tx)?;
@@ -34,6 +63,8 @@ impl<'a> Wireless<'a> {
             receiver: rx,
             config,
             prev_data: None,
+            display,
+            max_essid_len,
         }
     }
 
@@ -47,10 +78,14 @@ impl<'a> BarModule for Wireless<'a> {
         if let Some(state) = self.data() {
             self.prev_data = Some(state);
         }
-        let icon = if let Some(state) = &self.prev_data {
+        let icon;
+        let mut essid = "";
+        let mut signal = None;
+        if let Some(state) = &self.prev_data {
             if let State::Connected(data) = state {
                 if let Some(strength) = data.signal {
-                    match strength {
+                    signal = Some(strength);
+                    icon = match strength {
                         0 => "󰤯",
                         1..=25 => "󰤟",
                         26..=50 => "󰤢",
@@ -58,18 +93,36 @@ impl<'a> BarModule for Wireless<'a> {
                         _ => "󰤨",
                     }
                 } else {
-                    "󰤫"
+                    icon = "󰤫"
+                };
+                if let Some(val) = &data.essid {
+                    essid = if val.chars().count() > self.max_essid_len {
+                        &val[..self.max_essid_len]
+                    } else {
+                        val
+                    }
                 }
             } else {
-                "󰤮"
+                icon = "󰤮";
             }
         } else {
-            "󰤫"
+            icon = "󰤫";
         };
-        Ok(format!(
+        let icon_format = format!(
             "{}{}{}",
             self.config.icon_font, icon, self.config.default_font
-        ))
+        );
+        match self.display {
+            Display::IconOnly => Ok(icon_format),
+            Display::Essid => Ok(format!("{} {}", essid, icon_format)),
+            Display::Signal => {
+                if let Some(s) = signal {
+                    Ok(format!("{:3}% {}", s, icon_format))
+                } else {
+                    Ok(format!("   % {}", icon_format))
+                }
+            }
+        }
     }
 }
 

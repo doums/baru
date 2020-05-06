@@ -15,30 +15,20 @@ pub mod pulse;
 mod sound;
 mod temperature;
 mod wireless;
-use cpu::Cpu;
+use battery::Config as BatteryConfig;
+use cpu::Config as CpuConfig;
 use error::Error;
-use mic::Mic;
+use memory::Config as MemoryConfig;
+use mic::Config as MicConfig;
 use module::Module;
 use pulse::Pulse;
 use serde::{Deserialize, Serialize};
-use sound::Sound;
+use sound::Config as SoundConfig;
 use std::fs;
-use wireless::Wireless;
+use temperature::Config as TemperatureConfig;
+use wireless::Config as WirelessConfig;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub enum ModuleConfig {
-    DateTime,
-    Battery,
-    Brightness,
-    Cpu,
-    Temperature,
-    Sound,
-    Mic,
-    Wireless,
-    Memory,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     bar: String,
     pub tick: Option<u32>,
@@ -47,18 +37,15 @@ pub struct Config {
     default_color: String,
     red: String,
     green: String,
-    sink: Option<u32>,
-    source: Option<u32>,
-    cpu_tick: Option<u32>,
-    wireless_tick: Option<u32>,
     pulse_tick: Option<u32>,
-    proc_stat: Option<String>,
-    proc_meminfo: Option<String>,
-    energy_now: Option<String>,
-    power_status: Option<String>,
-    energy_full_design: Option<String>,
-    coretemp: Option<String>,
     backlight: Option<String>,
+    battery: Option<BatteryConfig>,
+    cpu: Option<CpuConfig>,
+    memory: Option<MemoryConfig>,
+    mic: Option<MicConfig>,
+    sound: Option<SoundConfig>,
+    temperature: Option<TemperatureConfig>,
+    wireless: Option<WirelessConfig>,
 }
 
 trait BarModule {

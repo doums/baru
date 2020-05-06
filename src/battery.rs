@@ -3,59 +3,74 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{read_and_parse, read_and_trim, BarModule, Config};
+use crate::{read_and_parse, read_and_trim, BarModule, Config as MainConfig};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
-const POWER_STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
+const STATUS: &'static str = "/sys/class/power_supply/BAT0/status";
 const ENERGY_FULL_DESIGN: &'static str = "/sys/class/power_supply/BAT0/energy_full_design";
+const LOW_LEVEL: u32 = 10;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    energy_full_design: Option<String>,
+    energy_now: Option<String>,
+    status: Option<String>,
+    low_level: Option<u32>,
+}
 
 #[derive(Debug)]
 pub struct Battery<'a> {
     energy_full_design: &'a str,
     energy_now: &'a str,
     status: &'a str,
-    config: &'a Config,
+    config: &'a MainConfig,
+    low_level: u32,
 }
 
 impl<'a> Battery<'a> {
-    pub fn with_config(config: &'a Config) -> Self {
+    pub fn with_config(config: &'a MainConfig) -> Self {
+        let mut energy_full_design = ENERGY_FULL_DESIGN;
+        let mut energy_now = ENERGY_NOW;
+        let mut status = STATUS;
+        let mut low_level = LOW_LEVEL;
+        if let Some(c) = &config.battery {
+            if let Some(v) = &c.energy_full_design {
+                energy_full_design = &v;
+            }
+            if let Some(v) = &c.energy_now {
+                energy_now = &v;
+            }
+            if let Some(v) = &c.status {
+                status = &v;
+            }
+            if let Some(v) = &c.low_level {
+                low_level = *v;
+            }
+        }
         Battery {
-            energy_full_design: match &config.energy_full_design {
-                Some(val) => &val,
-                None => ENERGY_FULL_DESIGN,
-            },
-            energy_now: match &config.energy_now {
-                Some(val) => &val,
-                None => ENERGY_NOW,
-            },
-            status: match &config.power_status {
-                Some(val) => &val,
-                None => POWER_STATUS,
-            },
+            energy_full_design,
+            energy_now,
+            status,
             config,
+            low_level,
         }
     }
 }
 
 impl<'a> BarModule for Battery<'a> {
     fn refresh(&mut self) -> Result<String, Error> {
-        let energy_full_design = read_and_parse(ENERGY_FULL_DESIGN)?;
-        let energy_now = read_and_parse(ENERGY_NOW)?;
-        let status = read_and_trim(POWER_STATUS)?;
+        let energy_full_design = read_and_parse(self.energy_full_design)?;
+        let energy_now = read_and_parse(self.energy_now)?;
+        let status = read_and_trim(self.status)?;
         let capacity = energy_full_design as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        let mut color = match battery_level {
-            0..=10 => {
-                if status == "Discharging" {
-                    &self.config.red
-                } else {
-                    &self.config.default_color
-                }
-            }
-            _ => &self.config.default_color,
-        };
+        let mut color = &self.config.default_color;
+        if status != "Charging" && battery_level <= self.low_level {
+            color = &self.config.red;
+        }
         if status == "Full" {
             color = &self.config.green
         }
