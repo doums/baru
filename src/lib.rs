@@ -15,20 +15,14 @@ pub mod pulse;
 mod sound;
 mod temperature;
 mod wireless;
-use battery::Battery;
-use brightness::Brightness;
 use cpu::Cpu;
-use date_time::DateTime as MDateTime;
 use error::Error;
-use memory::Memory;
 use mic::Mic;
 use module::Module;
 use pulse::Pulse;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sound::Sound;
 use std::fs;
-use temperature::Temperature;
 use wireless::Wireless;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

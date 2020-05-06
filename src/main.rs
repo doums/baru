@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use bar::pulse::Pulse;
-use bar::{Bar, Config, ModuleConfig};
+use bar::{Bar, Config};
 use std::env;
 use std::fs;
 use std::io::Error;
