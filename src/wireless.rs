@@ -4,7 +4,7 @@
 
 use crate::error::Error;
 use crate::nl_data::{self, State};
-use crate::{Config, Refresh};
+use crate::{BarModule, Config};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
@@ -42,7 +42,11 @@ impl<'a> Wireless<'a> {
     }
 }
 
-impl<'a> Refresh for Wireless<'a> {
+impl<'a> BarModule for Wireless<'a> {
+    fn markup(&self) -> char {
+        'w'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         if let Some(state) = self.data() {
             self.prev_data = Some(state);

@@ -8,9 +8,9 @@ use crate::date_time::DateTime;
 use crate::error::Error;
 use crate::memory::Memory;
 use crate::temperature::Temperature;
+use crate::BarModule;
 use crate::Cpu;
 use crate::Mic;
-use crate::Refresh;
 use crate::Sound;
 use crate::Wireless;
 
@@ -26,7 +26,7 @@ pub enum Module<'a> {
     Memory(Memory<'a>),
 }
 
-impl<'a> Refresh for Module<'a> {
+impl<'a> BarModule for Module<'a> {
     fn refresh(&mut self) -> Result<String, Error> {
         return match self {
             Module::DateTime(m) => m.refresh(),
@@ -38,6 +38,20 @@ impl<'a> Refresh for Module<'a> {
             Module::Wireless(m) => m.refresh(),
             Module::Sound(m) => m.refresh(),
             Module::Mic(m) => m.refresh(),
+        };
+    }
+
+    fn markup(&self) -> char {
+        return match self {
+            Module::DateTime(m) => m.markup(),
+            Module::Battery(m) => m.markup(),
+            Module::Memory(m) => m.markup(),
+            Module::Brightness(m) => m.markup(),
+            Module::Temperature(m) => m.markup(),
+            Module::Cpu(m) => m.markup(),
+            Module::Wireless(m) => m.markup(),
+            Module::Sound(m) => m.markup(),
+            Module::Mic(m) => m.markup(),
         };
     }
 }

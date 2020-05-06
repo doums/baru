@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{Config, Refresh};
+use crate::{BarModule, Config};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -55,7 +55,11 @@ impl<'a> Cpu<'a> {
     }
 }
 
-impl<'a> Refresh for Cpu<'a> {
+impl<'a> BarModule for Cpu<'a> {
+    fn markup(&self) -> char {
+        'c'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let mut current_usg = 0;
         if let Some(data) = self.data() {

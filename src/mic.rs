@@ -1,6 +1,6 @@
 use crate::error::Error;
 use crate::pulse::{Pulse, PulseData};
-use crate::{Config, Refresh};
+use crate::{BarModule, Config};
 
 pub struct Mic<'a> {
     config: &'a Config,
@@ -18,7 +18,11 @@ impl<'a> Mic<'a> {
     }
 }
 
-impl<'a> Refresh for Mic<'a> {
+impl<'a> BarModule for Mic<'a> {
+    fn markup(&self) -> char {
+        'i'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let data = self.pulse.input_data();
         if data.is_some() {

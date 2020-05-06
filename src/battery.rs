@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::{read_and_parse, read_and_trim, Config, Refresh};
+use crate::{read_and_parse, read_and_trim, BarModule, Config};
 use std::convert::TryFrom;
 
 const ENERGY_NOW: &'static str = "/sys/class/power_supply/BAT0/energy_now";
@@ -34,7 +34,11 @@ impl<'a> Battery<'a> {
     }
 }
 
-impl<'a> Refresh for Battery<'a> {
+impl<'a> BarModule for Battery<'a> {
+    fn markup(&self) -> char {
+        'a'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let energy_full_design = read_and_parse(ENERGY_FULL_DESIGN)?;
         let energy_now = read_and_parse(ENERGY_NOW)?;

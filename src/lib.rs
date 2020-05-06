@@ -24,6 +24,7 @@ use memory::Memory;
 use mic::Mic;
 use module::Module;
 use pulse::Pulse;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sound::Sound;
 use std::fs;
@@ -45,6 +46,7 @@ pub enum ModuleConfig {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
+    bar: String,
     pub tick: Option<u32>,
     default_font: String,
     icon_font: String,
@@ -66,16 +68,23 @@ pub struct Config {
     backlight: Option<String>,
 }
 
-trait Refresh {
+trait BarModule {
     fn refresh(&mut self) -> Result<String, Error>;
+    fn markup(&self) -> char;
 }
 
 pub struct Bar<'a> {
     modules: Vec<Module<'a>>,
+    format: String,
 }
 
 impl<'a> Bar<'a> {
     pub fn with_config(config: &'a Config, pulse: &'a Option<Pulse>) -> Result<Self, Error> {
+        let re = Regex::new(r"(?:[^\\]|^)%([abcdmistw])").unwrap();
+        let caps = re.captures_iter(&config.bar);
+        for cap in caps {
+            println!("{:#?}", cap);
+        }
         let mut modules = vec![];
         for module in &config.modules {
             match module {
@@ -108,7 +117,10 @@ impl<'a> Bar<'a> {
                 }
             }
         }
-        Ok(Bar { modules })
+        Ok(Bar {
+            modules,
+            format: config.bar.to_string(),
+        })
     }
 
     pub fn update(&mut self) -> Result<(), Error> {

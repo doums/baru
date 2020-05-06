@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::{read_and_parse, Config, Refresh};
+use crate::{read_and_parse, BarModule, Config};
 use std::fs;
 
 const CORETEMP_PATH: &'static str = "/sys/devices/platform/coretemp.0/hwmon";
@@ -23,7 +23,11 @@ impl<'a> Temperature<'a> {
     }
 }
 
-impl<'a> Refresh for Temperature<'a> {
+impl<'a> BarModule for Temperature<'a> {
+    fn markup(&self) -> char {
+        't'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp_path))?;
         let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp_path))?;

@@ -1,6 +1,6 @@
 use crate::error::Error;
 use crate::pulse::{Pulse, PulseData};
-use crate::{Config, Refresh};
+use crate::{BarModule, Config};
 
 pub struct Sound<'a> {
     config: &'a Config,
@@ -18,7 +18,11 @@ impl<'a> Sound<'a> {
     }
 }
 
-impl<'a> Refresh for Sound<'a> {
+impl<'a> BarModule for Sound<'a> {
+    fn markup(&self) -> char {
+        's'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let data = self.pulse.output_data();
         if data.is_some() {

@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::{read_and_trim, Config, Refresh};
+use crate::{read_and_trim, BarModule, Config};
 use regex::Regex;
 
 const PROC_MEMINFO: &'static str = "/proc/meminfo";
@@ -45,7 +45,11 @@ impl<'a> Memory<'a> {
     }
 }
 
-impl<'a> Refresh for Memory<'a> {
+impl<'a> BarModule for Memory<'a> {
+    fn markup(&self) -> char {
+        'm'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let meminfo = read_and_trim(self.proc_meminfo)?;
         let total = find_meminfo(

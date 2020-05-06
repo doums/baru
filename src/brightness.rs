@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::{read_and_parse, Config, Refresh};
+use crate::{read_and_parse, BarModule, Config};
 
 const BACKLIGHT_PATH: &'static str =
     "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
@@ -22,7 +22,11 @@ impl<'a> Brightness<'a> {
     }
 }
 
-impl<'a> Refresh for Brightness<'a> {
+impl<'a> BarModule for Brightness<'a> {
+    fn markup(&self) -> char {
+        'b'
+    }
+
     fn refresh(&mut self) -> Result<String, Error> {
         let brightness = read_and_parse(&format!("{}/actual_brightness", self.backlight))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", self.backlight))?;
