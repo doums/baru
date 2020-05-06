@@ -16,6 +16,7 @@ const TICK_RATE: Duration = Duration::from_millis(500);
 
 pub struct CpuData(pub i32, pub i32);
 
+#[derive(Debug)]
 pub struct Cpu<'a> {
     handle: JoinHandle<Result<(), Error>>,
     receiver: Receiver<CpuData>,
@@ -56,10 +57,6 @@ impl<'a> Cpu<'a> {
 }
 
 impl<'a> BarModule for Cpu<'a> {
-    fn markup(&self) -> char {
-        'c'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         let mut current_usg = 0;
         if let Some(data) = self.data() {

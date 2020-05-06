@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use crate::error::Error;
 use crate::{read_and_parse, read_and_trim, BarModule, Config};
 use std::convert::TryFrom;
@@ -35,10 +39,6 @@ impl<'a> Battery<'a> {
 }
 
 impl<'a> BarModule for Battery<'a> {
-    fn markup(&self) -> char {
-        'a'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         let energy_full_design = read_and_parse(ENERGY_FULL_DESIGN)?;
         let energy_now = read_and_parse(ENERGY_NOW)?;

@@ -43,10 +43,6 @@ impl<'a> Wireless<'a> {
 }
 
 impl<'a> BarModule for Wireless<'a> {
-    fn markup(&self) -> char {
-        'w'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         if let Some(state) = self.data() {
             self.prev_data = Some(state);

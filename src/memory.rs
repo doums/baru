@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use crate::error::Error;
 use crate::{read_and_trim, BarModule, Config};
 use regex::Regex;
@@ -46,10 +50,6 @@ impl<'a> Memory<'a> {
 }
 
 impl<'a> BarModule for Memory<'a> {
-    fn markup(&self) -> char {
-        'm'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         let meminfo = read_and_trim(self.proc_meminfo)?;
         let total = find_meminfo(

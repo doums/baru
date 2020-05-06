@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use crate::error::Error;
 use crate::{read_and_parse, BarModule, Config};
 
@@ -23,10 +27,6 @@ impl<'a> Brightness<'a> {
 }
 
 impl<'a> BarModule for Brightness<'a> {
-    fn markup(&self) -> char {
-        'b'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         let brightness = read_and_parse(&format!("{}/actual_brightness", self.backlight))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", self.backlight))?;

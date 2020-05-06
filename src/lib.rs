@@ -31,8 +31,6 @@ use std::fs;
 use temperature::Temperature;
 use wireless::Wireless;
 
-const MARKUP: [char; 9] = ['a', 'b', 'c', 'd', 'm', 'i', 's', 't', 'w'];
-
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum ModuleConfig {
     DateTime,
@@ -57,7 +55,6 @@ pub struct Config {
     green: String,
     sink: Option<u32>,
     source: Option<u32>,
-    pub modules: Vec<ModuleConfig>,
     cpu_tick: Option<u32>,
     wireless_tick: Option<u32>,
     pulse_tick: Option<u32>,
@@ -72,87 +69,54 @@ pub struct Config {
 
 trait BarModule {
     fn refresh(&mut self) -> Result<String, Error>;
-    fn markup(&self) -> char;
 }
 
 pub struct Bar<'a> {
     modules: Vec<Module<'a>>,
-    format: String,
+    format: &'a str,
+    markup_matches: Vec<MarkupMatch>,
 }
 
 #[derive(Debug)]
-struct FormatModule(char, usize);
+struct MarkupMatch(char, usize);
 
 impl<'a> Bar<'a> {
-    pub fn with_config(config: &'a Config, pulse: &'a Option<Pulse>) -> Result<Self, Error> {
-        let format_modules = parse_format(&config.bar);
-        println!("{:#?}", format_modules);
+    pub fn with_config(config: &'a Config, pulse: &'a Pulse) -> Result<Self, Error> {
+        let markup_matches = parse_format(&config.bar);
+        println!("{:#?}", markup_matches);
         let mut modules = vec![];
-        for module in format_modules {
-            match module.0 {
-                'a' => modules.push(Module::DateTime(MDateTime::new())),
-                ModuleConfig::Battery => {
-                    modules.push(Module::Battery(Battery::with_config(config)))
-                }
-                ModuleConfig::Memory => modules.push(Module::Memory(Memory::with_config(config))),
-                ModuleConfig::Brightness => {
-                    modules.push(Module::Brightness(Brightness::with_config(config)))
-                }
-                ModuleConfig::Temperature => {
-                    modules.push(Module::Temperature(Temperature::with_config(config)?))
-                }
-                ModuleConfig::Cpu => modules.push(Module::Cpu(Cpu::with_config(config))),
-                ModuleConfig::Sound => modules.push(Module::Sound(Sound::with_config(
-                    config,
-                    pulse
-                        .as_ref()
-                        .expect("no Pulse module while creating Sound module"),
-                ))),
-                ModuleConfig::Mic => modules.push(Module::Mic(Mic::with_config(
-                    config,
-                    pulse
-                        .as_ref()
-                        .expect("no Pulse module while creating Sound module"),
-                ))),
-                ModuleConfig::Wireless => {
-                    modules.push(Module::Wireless(Wireless::with_config(config)))
-                }
-            }
+        for module in &markup_matches {
+            modules.push(Module::new(module.0, config, pulse)?);
         }
         Ok(Bar {
             modules,
-            format: config.bar.to_string(),
+            format: &config.bar,
+            markup_matches,
         })
     }
 
     pub fn update(&mut self) -> Result<(), Error> {
-        // println!(
-        // "{}  {}  {}  {}  {}  {}  {}  {}   {}",
-        // memory, cpu, temperature, brightness, mic, sound, wireless, battery, date_time
-        // );
-        let test = r"{}  {}  {}   {}";
-        // println!("{}", test, "mic", "");
-        // for module in &mut self.modules {
-        // println!("{}", module.refresh()?);
-        // }
-        // println!("");
+        let mut output = self.format.to_string();
+        for (i, v) in self.markup_matches.iter().enumerate().rev() {
+            output.replace_range(v.1 - 1..v.1 + 1, &self.modules[i].refresh()?);
+        }
+        output = output.replace("\\%", "%");
+        println!("{}", output);
         Ok(())
     }
 }
 
-fn parse_format(format: &str) -> Vec<FormatModule> {
-    let mut format_modules = vec![];
+fn parse_format(format: &str) -> Vec<MarkupMatch> {
+    let mut matches = vec![];
     let mut iter = format.char_indices().peekable();
     while let Some((i, c)) = iter.next() {
         if c == '%' && (i == 0 || &format[i - 1..i] != "\\") {
             if let Some(val) = iter.peek() {
-                if MARKUP.iter().any(|&c| c == val.1) {
-                    format_modules.push(FormatModule(val.1, val.0));
-                }
+                matches.push(MarkupMatch(val.1, val.0));
             }
         }
     }
-    format_modules
+    matches
 }
 
 fn read_and_trim<'a>(file: &'a str) -> Result<String, Error> {

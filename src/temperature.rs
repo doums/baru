@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use crate::error::Error;
 use crate::{read_and_parse, BarModule, Config};
 use std::fs;
@@ -24,10 +28,6 @@ impl<'a> Temperature<'a> {
 }
 
 impl<'a> BarModule for Temperature<'a> {
-    fn markup(&self) -> char {
-        't'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         let core_1 = read_and_parse(&format!("{}/temp2_input", self.coretemp_path))?;
         let core_2 = read_and_parse(&format!("{}/temp3_input", self.coretemp_path))?;

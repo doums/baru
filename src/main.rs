@@ -41,15 +41,7 @@ fn main() -> Result<(), Error> {
         Some(ms) => Duration::from_millis(ms as u64),
         None => TICK_RATE,
     };
-    let pulse = if config
-        .modules
-        .iter()
-        .any(|m| *m == ModuleConfig::Sound || *m == ModuleConfig::Mic)
-    {
-        Some(Pulse::new(&config))
-    } else {
-        None
-    };
+    let pulse = Pulse::new(&config);
     let mut bar = Bar::with_config(&config, &pulse).unwrap_or_else(|err| {
         print_out_err(&format!("bar: {}", err));
         process::exit(1);

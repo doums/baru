@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use crate::error::Error;
 use crate::pulse::{Pulse, PulseData};
 use crate::{BarModule, Config};
@@ -19,10 +23,6 @@ impl<'a> Sound<'a> {
 }
 
 impl<'a> BarModule for Sound<'a> {
-    fn markup(&self) -> char {
-        's'
-    }
-
     fn refresh(&mut self) -> Result<String, Error> {
         let data = self.pulse.output_data();
         if data.is_some() {
