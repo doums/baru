@@ -31,6 +31,8 @@ use std::fs;
 use temperature::Temperature;
 use wireless::Wireless;
 
+const MARKUP: [char; 9] = ['a', 'b', 'c', 'd', 'm', 'i', 's', 't', 'w'];
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum ModuleConfig {
     DateTime,
@@ -78,17 +80,17 @@ pub struct Bar<'a> {
     format: String,
 }
 
+#[derive(Debug)]
+struct FormatModule(char, usize);
+
 impl<'a> Bar<'a> {
     pub fn with_config(config: &'a Config, pulse: &'a Option<Pulse>) -> Result<Self, Error> {
-        let re = Regex::new(r"(?:[^\\]|^)%([abcdmistw])").unwrap();
-        let caps = re.captures_iter(&config.bar);
-        for cap in caps {
-            println!("{:#?}", cap);
-        }
+        let format_modules = parse_format(&config.bar);
+        println!("{:#?}", format_modules);
         let mut modules = vec![];
-        for module in &config.modules {
-            match module {
-                ModuleConfig::DateTime => modules.push(Module::DateTime(MDateTime::new())),
+        for module in format_modules {
+            match module.0 {
+                'a' => modules.push(Module::DateTime(MDateTime::new())),
                 ModuleConfig::Battery => {
                     modules.push(Module::Battery(Battery::with_config(config)))
                 }
@@ -136,6 +138,21 @@ impl<'a> Bar<'a> {
         // println!("");
         Ok(())
     }
+}
+
+fn parse_format(format: &str) -> Vec<FormatModule> {
+    let mut format_modules = vec![];
+    let mut iter = format.char_indices().peekable();
+    while let Some((i, c)) = iter.next() {
+        if c == '%' && (i == 0 || &format[i - 1..i] != "\\") {
+            if let Some(val) = iter.peek() {
+                if MARKUP.iter().any(|&c| c == val.1) {
+                    format_modules.push(FormatModule(val.1, val.0));
+                }
+            }
+        }
+    }
+    format_modules
 }
 
 fn read_and_trim<'a>(file: &'a str) -> Result<String, Error> {
