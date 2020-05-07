@@ -46,11 +46,11 @@ impl<'a> Cpu<'a> {
             if let Some(f) = &c.proc_stat {
                 file = f.clone();
             }
-            if let Some(t) = &c.tick {
-                tick = Duration::from_millis(*t as u64)
+            if let Some(t) = c.tick {
+                tick = Duration::from_millis(t as u64)
             }
-            if let Some(c) = &c.high_level {
-                high_level = *c;
+            if let Some(c) = c.high_level {
+                high_level = c;
             }
         };
         let builder = thread::Builder::new().name("cpu_mod".into());
