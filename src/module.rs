@@ -33,13 +33,13 @@ impl<'a> Module<'a> {
         match markup {
             'a' => Ok(Module::Battery(Battery::with_config(config))),
             'b' => Ok(Module::Brightness(Brightness::with_config(config))),
-            'c' => Ok(Module::Cpu(Cpu::with_config(config))),
+            'c' => Ok(Module::Cpu(Cpu::with_config(config)?)),
             'd' => Ok(Module::DateTime(DateTime::new())),
             'm' => Ok(Module::Memory(Memory::with_config(config))),
             'i' => Ok(Module::Mic(Mic::with_config(config, pulse))),
             's' => Ok(Module::Sound(Sound::with_config(config, pulse))),
             't' => Ok(Module::Temperature(Temperature::with_config(config)?)),
-            'w' => Ok(Module::Wireless(Wireless::with_config(config))),
+            'w' => Ok(Module::Wireless(Wireless::with_config(config)?)),
             _ => Err(Error::new(format!("unknown markup \"{}\"", markup))),
         }
     }

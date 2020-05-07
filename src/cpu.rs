@@ -37,7 +37,7 @@ pub struct Cpu<'a> {
 }
 
 impl<'a> Cpu<'a> {
-    pub fn with_config(config: &'a MainConfig) -> Self {
+    pub fn with_config(config: &'a MainConfig) -> Result<Self, Error> {
         let (tx, rx) = mpsc::channel();
         let mut tick = TICK_RATE;
         let mut file = PROC_STAT.to_string();
@@ -53,11 +53,12 @@ impl<'a> Cpu<'a> {
                 high_level = *c;
             }
         };
-        let handle = thread::spawn(move || -> Result<(), Error> {
+        let builder = thread::Builder::new().name("cpu_mod".into());
+        let handle = builder.spawn(move || -> Result<(), Error> {
             run(tick, file, tx)?;
             Ok(())
-        });
-        Cpu {
+        })?;
+        Ok(Cpu {
             config,
             handle,
             receiver: rx,
@@ -65,7 +66,7 @@ impl<'a> Cpu<'a> {
             prev_total: 0,
             prev_usage: None,
             high_level,
-        }
+        })
     }
 
     pub fn data(&self) -> Option<CpuData> {

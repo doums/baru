@@ -38,7 +38,7 @@ pub struct Wireless<'a> {
 }
 
 impl<'a> Wireless<'a> {
-    pub fn with_config(config: &'a MainConfig) -> Self {
+    pub fn with_config(config: &'a MainConfig) -> Result<Self, Error> {
         let (tx, rx) = mpsc::channel();
         let mut tick = TICK_RATE;
         let mut display = DISPLAY;
@@ -54,18 +54,19 @@ impl<'a> Wireless<'a> {
                 max_essid_len = m
             }
         };
-        let handle = thread::spawn(move || -> Result<(), Error> {
+        let builder = thread::Builder::new().name("wireless_mod".into());
+        let handle = builder.spawn(move || -> Result<(), Error> {
             run(tick, tx)?;
             Ok(())
-        });
-        Wireless {
+        })?;
+        Ok(Wireless {
             handle,
             receiver: rx,
             config,
             prev_data: None,
             display,
             max_essid_len,
-        }
+        })
     }
 
     pub fn data(&self) -> Option<State> {

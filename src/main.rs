@@ -41,7 +41,10 @@ fn main() -> Result<(), Error> {
         Some(ms) => Duration::from_millis(ms as u64),
         None => TICK_RATE,
     };
-    let pulse = Pulse::new(&config);
+    let pulse = Pulse::new(&config).unwrap_or_else(|err| {
+        print_out_err(&format!("bar: error while creating pulse module, {}", err));
+        process::exit(1);
+    });
     let mut bar = Bar::with_config(&config, &pulse).unwrap_or_else(|err| {
         print_out_err(&format!("bar: {}", err));
         process::exit(1);

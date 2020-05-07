@@ -56,7 +56,7 @@ pub struct Pulse(
 );
 
 impl Pulse {
-    pub fn new<'a>(config: &'a Config) -> Self {
+    pub fn new<'a>(config: &'a Config) -> Result<Self, Error> {
         let (out_tx, out_rx) = mpsc::channel();
         let (in_tx, in_rx) = mpsc::channel();
         let tick = match &config.pulse_tick {
@@ -75,11 +75,12 @@ impl Pulse {
                 source_index = v;
             }
         }
-        let handle = thread::spawn(move || -> Result<(), Error> {
+        let builder = thread::Builder::new().name("pulse_mod".into());
+        let handle = builder.spawn(move || -> Result<(), Error> {
             run(tick, sink_index, source_index, out_tx, in_tx)?;
             Ok(())
-        });
-        Pulse(handle, out_rx, in_rx)
+        })?;
+        Ok(Pulse(handle, out_rx, in_rx))
     }
 
     pub fn output_data(&self) -> Option<PulseData> {
