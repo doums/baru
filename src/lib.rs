@@ -18,6 +18,7 @@ mod wireless;
 use battery::Config as BatteryConfig;
 use brightness::Config as BrightnessConfig;
 use cpu::Config as CpuConfig;
+use date_time::Config as DateTimeConfig;
 use error::Error;
 use memory::Config as MemoryConfig;
 use mic::Config as MicConfig;
@@ -47,6 +48,7 @@ pub struct Config {
     sound: Option<SoundConfig>,
     temperature: Option<TemperatureConfig>,
     wireless: Option<WirelessConfig>,
+    date_time: Option<DateTimeConfig>,
 }
 
 trait BarModule {

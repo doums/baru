@@ -17,7 +17,7 @@ use crate::Config;
 use crate::Pulse;
 
 pub enum Module<'a> {
-    DateTime(DateTime),
+    DateTime(DateTime<'a>),
     Battery(Battery<'a>),
     Brightness(Brightness<'a>),
     Cpu(Cpu<'a>),
@@ -34,7 +34,7 @@ impl<'a> Module<'a> {
             'a' => Ok(Module::Battery(Battery::with_config(config))),
             'b' => Ok(Module::Brightness(Brightness::with_config(config))),
             'c' => Ok(Module::Cpu(Cpu::with_config(config)?)),
-            'd' => Ok(Module::DateTime(DateTime::new())),
+            'd' => Ok(Module::DateTime(DateTime::new(config))),
             'm' => Ok(Module::Memory(Memory::with_config(config))),
             'i' => Ok(Module::Mic(Mic::with_config(config, pulse))),
             's' => Ok(Module::Sound(Sound::with_config(config, pulse))),
