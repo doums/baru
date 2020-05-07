@@ -1,5 +1,12 @@
 # List of all options
 
+# If the word "required" is not mentioned, the corresponding option is optional.
+
+
+# # # # #
+# Root  #
+# # # # #
+
 # bar: String, required
 #
 # The format of the output.
@@ -65,10 +72,11 @@ green: +@fg=2;
 #
 pulse_tick: 50
 
-# battery:
-#
-# Battery module
-#
+
+# # # # # # # # # #
+# Battery module  #
+# # # # # # # # # #
+
 battery:
 # Takes the following options:
 
@@ -84,10 +92,11 @@ battery:
   #
   low_level: 20
 
-# brightness:
-#
-# Brightness module
-#
+
+# # # # # # # # # # #
+# Brightness module #
+# # # # # # # # # # #
+
 brightness:
 # Takes the following option:
 
@@ -97,10 +106,11 @@ brightness:
   #
   sys_path: /sys/devices/something/intel_backlight
 
-# cpu:
-#
-# Cpu module
-#
+
+# # # # # # # #
+# Cpu module  #
+# # # # # # # #
+
 cpu:
 # Takes the following options:
 
@@ -122,10 +132,11 @@ cpu:
   #
   high_level: 95
 
-# date_time:
-#
-# DateTime module
-#
+
+# # # # # # # # # #
+# DateTime module #
+# # # # # # # # # #
+
 date_time:
 # Takes the following option:
 
@@ -135,10 +146,11 @@ date_time:
   #
   format: '%-kh%M'
 
-# memory:
-#
-# Memory module
-#
+
+# # # # # # # # #
+# Memory module #
+# # # # # # # # #
+
 memory:
 # Takes the following options:
 
@@ -162,10 +174,11 @@ memory:
   #
   high_level: 95
 
-# mic:
-#
-# Mic module
-#
+
+# # # # # # # #
+# Mic module  #
+# # # # # # # #
+
 mic:
 # Takes the following options:
 
@@ -181,10 +194,11 @@ mic:
   #
   high_level: 80
 
-# sound:
-#
-# Sound module
-#
+
+# # # # # # # # #
+# Sound module  #
+# # # # # # # # #
+
 sound:
 # Takes the following options:
 
@@ -200,10 +214,11 @@ sound:
   #
   high_level: 80
 
-# temperature:
-#
-# Temperature module
-#
+
+# # # # # # # # # # # #
+# Temperature module  #
+# # # # # # # # # # # #
+
 temperature:
 # Takes the following options:
 
@@ -238,10 +253,11 @@ temperature:
   #
   high_level: 80
 
-# wireless:
-#
-# Wireless module
-#
+
+# # # # # # # # # #
+# Wireless module #
+# # # # # # # # # #
+
 wireless:
 # Takes the following options:
 
