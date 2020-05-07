@@ -11,7 +11,7 @@ use std::process;
 use std::thread;
 use std::time::Duration;
 
-const TICK_RATE: Duration = Duration::from_millis(250);
+const TICK_RATE: Duration = Duration::from_millis(50);
 
 fn print_out_err(message: &str) {
     println!("{}", message);

@@ -1,0 +1,272 @@
+# List of all options
+
+# bar: String, required
+#
+# The format of the output.
+#
+# A module can be enabled by markup of this form: "%x",
+# where x is the corresponding letter for that module.
+# These markups will be replaced by the output of the corresponding module.
+# Here are the letters:
+#
+# a => battery
+# b => brightness
+# c => cpu
+# d => datetime
+# m => memory
+# i => mic
+# s => sound
+# t => temperature
+# w => wireless
+#
+# The character "%" can be escaped by prepending a backslash: \%
+#
+bar: '%c  %t  %b  %s   %w %a   %d'
+
+# tick: u32, default: 50
+#
+# The main refresh rate in millisecond.
+#
+tick: 100
+
+# default_font: String, required
+#
+# Spectrwm markup for the default font.
+#
+default_font: +@fn=0;
+
+# icon_font: String, required
+#
+# Spectrwm markup for the icon font.
+#
+icon_font: +@fn=1;
+
+# default_color: String, required
+#
+# Spectrwm markup for the default color.
+#
+default_color: +@fg=0;
+
+# red: String, required
+#
+# Spectrwm markup for the red color.
+#
+red: +@fg=1;
+
+# green: String, required
+#
+# Spectrwm markup for the green color.
+#
+green: +@fg=2;
+
+# pulse_tick: u32, default: 16
+#
+# The refresh rate in millisecond of the PulseAudio thread.
+#
+pulse_tick: 50
+
+# battery:
+#
+# Battery module
+#
+battery:
+# Takes the following options:
+
+  # name: String, default: BAT0
+  #
+  # The directory name under /sys/class/power_supply/
+  #
+  name: BAT1
+
+  # low_level: u32, default: 10
+  #
+  # The level below which the color is red.
+  #
+  low_level: 20
+
+# brightness:
+#
+# Brightness module
+#
+brightness:
+# Takes the following option:
+
+  # sys_path: String, default: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight
+  #
+  # /sys/devices path
+  #
+  sys_path: /sys/devices/something/intel_backlight
+
+# cpu:
+#
+# Cpu module
+#
+cpu:
+# Takes the following options:
+
+  # tick: u32, default: 500
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 1000
+
+  # proc_stat: String, default: /proc/stat
+  #
+  # /proc/stat path
+  #
+  proc_stat: /necessarily/proc/stat
+
+  # high_level: u32, default: 90
+  #
+  # The percentage above which the color is red.
+  #
+  high_level: 95
+
+# date_time:
+#
+# DateTime module
+#
+date_time:
+# Takes the following option:
+
+  # format: String, default: %a. %-e %B %Y, %-kh%M
+  #
+  # The format. For the syntax see https://docs.rs/chrono/0.4.11/chrono/format/strftime/index.html
+  #
+  format: '%-kh%M'
+
+# memory:
+#
+# Memory module
+#
+memory:
+# Takes the following options:
+
+  # meminfo: String, default: /proc/meminfo
+  #
+  # /proc/meminfo path
+  #
+  meminfo: /necessarily/proc/meminfo
+
+  # display: Display, default: Percentage
+  #
+  # enum Display { Go, Percentage }
+  #
+  # Display as a percentage or used/total in gigaoctet.
+  #
+  display: Go
+
+  # high_level: u32, default: 90
+  #
+  # The percentage above which the color is red.
+  #
+  high_level: 95
+
+# mic:
+#
+# Mic module
+#
+mic:
+# Takes the following options:
+
+  # index: u32, default: 0
+  #
+  # The source index.
+  #
+  index: 1
+
+  # high_level: u32, default: 100
+  #
+  # The percentage above which the color is red.
+  #
+  high_level: 80
+
+# sound:
+#
+# Sound module
+#
+sound:
+# Takes the following options:
+
+  # index: u32, default: 0
+  #
+  # The sink index.
+  #
+  index: 1
+
+  # high_level: u32, default: 100
+  #
+  # The percentage above which the color is red.
+  #
+  high_level: 80
+
+# temperature:
+#
+# Temperature module
+#
+temperature:
+# Takes the following options:
+
+  # coretemp: String, default: /sys/devices/platform/coretemp.0/hwmon
+  #
+  # The path without the last directory level (because it varies on each kernel boot).
+  # Under this variant directory should be located the tempx_input files.
+  # For example on my machine it can be /sys/devices/platform/coretemp.0/hwmon/hwmon7 or hwmon6 etc.
+  # This last directory is resolved dynamically.
+  #
+  coretemp: /sys/devices/platform/coretemp.1/hwmon
+
+  # core_inputs: String, default: 1
+  #
+  # The average temperature is calculated with one or several tempx_input files.
+  # tempx_input files can contain the temperature of a cpu core.
+  # Based on his cpu (and number of cores), the user must find the correct file(s).
+  #
+  # Can be a number to select one file. eg. 1 for temp1_input.
+  # Can be a inclusive range to select several files, for example:
+  # 1..4
+  # temp1_input
+  # temp2_input
+  # temp3_input
+  # temp4_input
+  #
+  core_inputs: 2..5
+
+  # high_level: u32, default: 75
+  #
+  # The percentage above which the color is red.
+  #
+  high_level: 80
+
+# wireless:
+#
+# Wireless module
+#
+wireless:
+# Takes the following options:
+
+  # tick: u32, default: 500
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 250
+
+  # display: Display, default: Signal
+  #
+  # enum Display { Essid, Signal, IconOnly }
+  #
+  # Display the essid name, the signal strength in percentage or just the icon.
+  #
+  display: Essid
+
+  # max_essid_len: usize, default: 10
+  #
+  # Limit the length of the essid name.
+  #
+  max_essid_len: 5
+
+  # interface: String, default: wlp2s0
+  #
+  # The name of the wireless interface.
+  #
+  interface: wlan0

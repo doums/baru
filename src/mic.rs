@@ -7,7 +7,7 @@ use crate::pulse::{Pulse, PulseData};
 use crate::{BarModule, Config as MainConfig};
 use serde::{Deserialize, Serialize};
 
-const HIGH_LEVEL: u32 = 101;
+const HIGH_LEVEL: u32 = 100;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -53,7 +53,7 @@ impl<'a> BarModule for Mic<'a> {
             } else {
                 icon = "󰍬";
             }
-            if info.0 >= self.high_level as i32 {
+            if info.0 > self.high_level as i32 {
                 color = &self.config.red;
             }
             Ok(format!(
