@@ -64,10 +64,9 @@ struct MarkupMatch(char, usize);
 
 impl<'a> Bar<'a> {
     pub fn with_config(config: &'a Config, pulse: &'a Pulse) -> Result<Self, Error> {
-        let markup_matches = parse_format(&config.bar);
-        println!("{:#?}", markup_matches);
         let mut modules = vec![];
-        for module in &markup_matches {
+        let markup_matches = parse_format(&config.bar);
+        for module in &parse_format(&config.bar) {
             modules.push(Module::new(module.0, config, pulse)?);
         }
         Ok(Bar {
