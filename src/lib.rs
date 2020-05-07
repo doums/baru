@@ -16,6 +16,7 @@ mod sound;
 mod temperature;
 mod wireless;
 use battery::Config as BatteryConfig;
+use brightness::Config as BrightnessConfig;
 use cpu::Config as CpuConfig;
 use error::Error;
 use memory::Config as MemoryConfig;
@@ -38,7 +39,7 @@ pub struct Config {
     red: String,
     green: String,
     pulse_tick: Option<u32>,
-    backlight: Option<String>,
+    brightness: Option<BrightnessConfig>,
     battery: Option<BatteryConfig>,
     cpu: Option<CpuConfig>,
     memory: Option<MemoryConfig>,
