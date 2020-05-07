@@ -26,7 +26,7 @@ Some modules run in their own thread.
 
 The binary looks for the config file `bar.yaml` located in `$HOME/.config/bar/`.\
 If the config file is not found, the bar prints an error and exits.\
-Options are either required or optional.
+All options are detailed [here](https://github.com/doums/bar/blob/master/bar.yaml).
 
 ### license
 Mozilla Public License 2.0
