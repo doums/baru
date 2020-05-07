@@ -24,7 +24,6 @@
 #include <linux/nl80211.h>
 #include <linux/if_ether.h>
 
-#define WIRELESS_INTERFACE "wlp2s0"
 #define NL80211 "nl80211"
 #define WLAN_EID_SSID 0
 #define WIRELESS_INFO_FLAG_HAS_ESSID (1 << 0)
@@ -32,12 +31,13 @@
 #define WIRELESS_ESSID_MAX_SIZE 16
 #define NOISE_FLOOR_DBM (-90)
 #define SIGNAL_MAX_DBM (-20)
-#define WIRELESS_PREFIX_ERROR "Wireless module error"
+#define WIRELESS_PREFIX_ERROR "wireless module error"
 
 typedef struct      s_wireless {
     unsigned int    flags;
     int             nl80211_id;
     unsigned int    if_index;
+    char            *if_name;
     uint8_t         bssid[ETH_ALEN];
     char            *essid;
     int             quality;
@@ -49,7 +49,7 @@ typedef struct  s_nl_data {
 }               t_nl_data;
 
 /* API */
-t_nl_data       *get_data();
+t_nl_data       *get_data(char *interface);
 
 /* FUNCTIONS */
 char    *v_strncpy(char *dest, const char *src, size_t n);

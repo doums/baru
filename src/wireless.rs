@@ -13,6 +13,7 @@ use std::time::Duration;
 const TICK_RATE: Duration = Duration::from_millis(500);
 const DISPLAY: Display = Display::Signal;
 const MAX_ESSID_LEN: usize = 10;
+const INTERFACE: &str = "wlp2s0";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
@@ -26,6 +27,7 @@ pub struct Config {
     tick: Option<u32>,
     display: Option<Display>,
     max_essid_len: Option<usize>,
+    interface: Option<String>,
 }
 
 pub struct Wireless<'a> {
@@ -43,6 +45,7 @@ impl<'a> Wireless<'a> {
         let mut tick = TICK_RATE;
         let mut display = DISPLAY;
         let mut max_essid_len = MAX_ESSID_LEN;
+        let mut interface = INTERFACE.to_string();
         if let Some(c) = &config.wireless {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -53,10 +56,13 @@ impl<'a> Wireless<'a> {
             if let Some(m) = c.max_essid_len {
                 max_essid_len = m
             }
+            if let Some(i) = &c.interface {
+                interface = i.clone()
+            }
         };
         let builder = thread::Builder::new().name("wireless_mod".into());
         let handle = builder.spawn(move || -> Result<(), Error> {
-            run(tick, tx)?;
+            run(tick, tx, interface)?;
             Ok(())
         })?;
         Ok(Wireless {
@@ -127,9 +133,9 @@ impl<'a> BarModule for Wireless<'a> {
     }
 }
 
-fn run(tick: Duration, tx: Sender<State>) -> Result<(), Error> {
+fn run(tick: Duration, tx: Sender<State>, interface: String) -> Result<(), Error> {
     loop {
-        tx.send(nl_data::data())?;
+        tx.send(nl_data::data(&interface))?;
         thread::sleep(tick);
     }
 }

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
 
 #[derive(Debug)]
@@ -25,12 +25,13 @@ pub struct Data {
 
 #[link(name = "nl_data", kind = "static")]
 extern "C" {
-    pub fn get_data() -> *const NlData;
+    pub fn get_data(interface: *const c_char) -> *const NlData;
 }
 
-pub fn data() -> State {
+pub fn data(interface: &str) -> State {
+    let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
-        let nl_data = get_data();
+        let nl_data = get_data(c_interface.as_ptr());
         let signal_ptr = (*nl_data).signal;
         let essid_ptr = (*nl_data).essid;
         let signal = if signal_ptr == -1 {
