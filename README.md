@@ -22,11 +22,36 @@ Wireless module use the [802.11 netlink interface](https://www.infradead.org/~tg
 
 Some modules run in their own thread.
 
+### prerequisite
+
+- libnl (for the wireless module)
+- pulseaudio (for sound and mic module)
+- an icon font installed (I use [this](https://github.com/Templarian/MaterialDesign-Font))
+
 ### configuration
 
 The binary looks for the config file `bar.yaml` located in `$HOME/.config/bar/`.\
 If the config file is not found, the bar prints an error and exits.\
 All options are detailed [here](https://github.com/doums/bar/blob/master/bar.yaml).
+
+Example:
+```yaml
+bar: '%c  %t  %b  %s   %w %a   %d'
+tick: 50
+default_font: +@fn=0;
+icon_font: +@fn=1;
+default_color: +@fg=0;
+red: +@fg=1;
+green: +@fg=2;
+mic:
+  index: 1
+wireless:
+  interface: wlp2s0
+  display: Essid
+  max_essid_len: 4
+temperature:
+  core_inputs: 2..5
+```
 
 ### license
 Mozilla Public License 2.0
