@@ -1,4 +1,4 @@
-## bar
+## baru
 
 My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust (and a little bit of C).
 
@@ -30,9 +30,9 @@ Some modules run in their own thread.
 
 ### configuration
 
-The binary looks for the config file `bar.yaml` located in `$HOME/.config/bar/`.\
+The binary looks for the config file `baru.yaml` located in `$HOME/.config/baru/`.\
 If the config file is not found, the bar prints an error and exits.\
-All options are detailed [here](https://github.com/doums/bar/blob/master/bar.yaml).
+All options are detailed [here](https://github.com/doums/baru/blob/master/baru.yaml).
 
 Example:
 ```yaml
