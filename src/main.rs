@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use bar::pulse::Pulse;
-use bar::{Bar, Config};
+use baru::pulse::Pulse;
+use baru::{Baru, Config};
 use std::env;
 use std::fs;
 use std::io::Error;
@@ -20,19 +20,19 @@ fn print_out_err(message: &str) {
 
 fn main() -> Result<(), Error> {
     let home = env::var("HOME").unwrap_or_else(|err| {
-        print_out_err(&format!("bar: environment variable HOME, {}", err));
+        print_out_err(&format!("baru: environment variable HOME, {}", err));
         process::exit(1);
     });
-    let content = fs::read_to_string(home + "/.config/bar/bar.yaml").unwrap_or_else(|err| {
+    let content = fs::read_to_string(home + "/.config/baru/baru.yaml").unwrap_or_else(|err| {
         print_out_err(&format!(
-            "bar: error while reading the config file, {}",
+            "baru: error while reading the config file, {}",
             err
         ));
         process::exit(1);
     });
     let config: Config = serde_yaml::from_str(&content).unwrap_or_else(|err| {
         print_out_err(&format!(
-            "bar: error while deserializing the config file, {}",
+            "baru: error while deserializing the config file, {}",
             err
         ));
         process::exit(1);
@@ -42,16 +42,16 @@ fn main() -> Result<(), Error> {
         None => TICK_RATE,
     };
     let pulse = Pulse::new(&config).unwrap_or_else(|err| {
-        print_out_err(&format!("bar: error while creating pulse module, {}", err));
+        print_out_err(&format!("baru: error while creating pulse module, {}", err));
         process::exit(1);
     });
-    let mut bar = Bar::with_config(&config, &pulse).unwrap_or_else(|err| {
-        print_out_err(&format!("bar: {}", err));
+    let mut baru = Baru::with_config(&config, &pulse).unwrap_or_else(|err| {
+        print_out_err(&format!("baru: {}", err));
         process::exit(1);
     });
     loop {
-        bar.update().unwrap_or_else(|err| {
-            print_out_err(&format!("bar: {}", err));
+        baru.update().unwrap_or_else(|err| {
+            print_out_err(&format!("baru: {}", err));
             process::exit(1);
         });
         thread::sleep(tick);

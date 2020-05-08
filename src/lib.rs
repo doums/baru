@@ -55,7 +55,7 @@ trait BarModule {
     fn refresh(&mut self) -> Result<String, Error>;
 }
 
-pub struct Bar<'a> {
+pub struct Baru<'a> {
     modules: Vec<Module<'a>>,
     format: &'a str,
     markup_matches: Vec<MarkupMatch>,
@@ -64,14 +64,14 @@ pub struct Bar<'a> {
 #[derive(Debug)]
 struct MarkupMatch(char, usize);
 
-impl<'a> Bar<'a> {
+impl<'a> Baru<'a> {
     pub fn with_config(config: &'a Config, pulse: &'a Pulse) -> Result<Self, Error> {
         let mut modules = vec![];
         let markup_matches = parse_format(&config.bar);
         for module in &parse_format(&config.bar) {
             modules.push(Module::new(module.0, config, pulse)?);
         }
-        Ok(Bar {
+        Ok(Baru {
             modules,
             format: &config.bar,
             markup_matches,
