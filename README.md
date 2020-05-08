@@ -24,8 +24,8 @@ Some modules run in their own thread.
 
 ### prerequisite
 
-- libnl (for the wireless module)
-- pulseaudio (for sound and mic module)
+- libnl (for wireless module)
+- pulseaudio (for sound and mic modules)
 - an icon font installed (I use [this](https://github.com/Templarian/MaterialDesign-Font))
 
 ### configuration
