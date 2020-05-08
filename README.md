@@ -8,7 +8,7 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 
 * date and time
 * battery (level, status, design level based)
-* wireless (state, essid, signal strength, speed)
+* wireless (state, essid, signal strength)
 * audio sink and source (level, muted)
 * brightness
 * cpu usage and temperature
@@ -52,6 +52,10 @@ wireless:
 temperature:
   core_inputs: 2..5
 ```
+
+### credits
+
+Clément Dommerc for providing me with the C code for the lib `nl_data`.
 
 ### license
 Mozilla Public License 2.0
