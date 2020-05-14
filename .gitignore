@@ -1,2 +1,4 @@
 /target
 .idea
+.clangd
+compile_commands.json

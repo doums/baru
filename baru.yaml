@@ -92,6 +92,11 @@ battery:
   #
   low_level: 20
 
+  # full_design: bool, default: false
+  #
+  # Whether or not the current level is calculated based on the full design value.
+  #
+  full_design: true
 
 # # # # # # # # # # #
 # Brightness module #

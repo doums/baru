@@ -15,6 +15,7 @@ const LOW_LEVEL: u32 = 10;
 pub struct Config {
     name: Option<String>,
     low_level: Option<u32>,
+    full_design: Option<bool>,
 }
 
 #[derive(Debug)]
@@ -22,12 +23,14 @@ pub struct Battery<'a> {
     name: &'a str,
     config: &'a MainConfig,
     low_level: u32,
+    full_design: bool,
 }
 
 impl<'a> Battery<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut low_level = LOW_LEVEL;
         let mut name = NAME;
+        let mut full_design = false;
         if let Some(c) = &config.battery {
             if let Some(n) = &c.name {
                 name = n;
@@ -35,22 +38,30 @@ impl<'a> Battery<'a> {
             if let Some(v) = &c.low_level {
                 low_level = *v;
             }
+            if let Some(b) = c.full_design {
+                if b {
+                    full_design = true;
+                }
+            }
         }
         Battery {
             name,
             config,
             low_level,
+            full_design,
         }
     }
 }
 
 impl<'a> BarModule for Battery<'a> {
     fn refresh(&mut self) -> Result<String, Error> {
-        let energy_full_design =
-            read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.name))?;
+        let energy_full = match self.full_design {
+            true => read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.name))?,
+            false => read_and_parse(&format!("{}{}/energy_full", SYS_PATH, self.name))?,
+        };
         let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.name))?;
         let status = read_and_trim(&format!("{}{}/status", SYS_PATH, self.name))?;
-        let capacity = energy_full_design as u64;
+        let capacity = energy_full as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
         let mut color = &self.config.default_color;
