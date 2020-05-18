@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-// By Clément Dommerc
+// Wireless code written by Clément Dommerc
 
 #ifndef NL_DATA_H_
 #define NL_DATA_H_
@@ -23,10 +23,15 @@
 #include <errno.h>
 #include <net/if.h>
 #include <netlink/netlink.h>
+#include <sys/socket.h>
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
 #include <linux/nl80211.h>
 #include <linux/if_ether.h>
+#include <netlink/socket.h>
+#include <netlink/cache.h>
+#include <netlink/route/link.h>
+#include <netlink/route/addr.h>
 
 #define NL80211 "nl80211"
 #define WLAN_EID_SSID 0
@@ -35,7 +40,8 @@
 #define WIRELESS_ESSID_MAX_SIZE 16
 #define NOISE_FLOOR_DBM (-90)
 #define SIGNAL_MAX_DBM (-20)
-#define WIRELESS_PREFIX_ERROR "wireless module error"
+#define PREFIX_ERROR "nl_data error"
+#define BUF_SIZE 1024
 
 typedef struct      s_wireless {
     unsigned int    flags;
@@ -47,18 +53,23 @@ typedef struct      s_wireless {
     int             quality;
 }                   t_wireless;
 
-typedef struct  s_nl_data {
+/* API */
+typedef struct  s_wireless_data {
     char        *essid;
     int32_t     signal;
-}               t_nl_data;
+}               t_wireless_data;
 
-/* API */
-t_nl_data       *get_data(char *interface);
+typedef struct  s_wired_data {
+    bool        is_carrying;
+    bool        is_operational;
+    bool        has_ip;
+}               t_wired_data;
 
-/* FUNCTIONS */
-char    *v_strncpy(char *dest, const char *src, size_t n);
-void    v_memset(void *ptr, uint8_t c, size_t size);
+t_wireless_data *get_wireless_data(char *interface);
+t_wired_data    get_wired_data(char *interface);
+
+/* HELPERS */
 char    *alloc_buffer(size_t size);
 void    *alloc_ptr(size_t size);
 
-#endif /* !NL_DATA_H_ */
+#endif // NL_DATA_H_

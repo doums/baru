@@ -25,13 +25,13 @@ pub struct Data {
 
 #[link(name = "nl_data", kind = "static")]
 extern "C" {
-    pub fn get_data(interface: *const c_char) -> *const NlData;
+    pub fn get_wireless_data(interface: *const c_char) -> *const NlData;
 }
 
 pub fn data(interface: &str) -> State {
     let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
-        let nl_data = get_data(c_interface.as_ptr());
+        let nl_data = get_wireless_data(c_interface.as_ptr());
         let signal_ptr = (*nl_data).signal;
         let essid_ptr = (*nl_data).essid;
         let signal = if signal_ptr == -1 {

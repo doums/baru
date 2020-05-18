@@ -110,11 +110,11 @@ static int      scan_callback(struct nl_msg *msg, void *data) {
             wireless->flags |= WIRELESS_INFO_FLAG_HAS_ESSID;
             if (ssid_len > WIRELESS_ESSID_MAX_SIZE) {
                 wireless->essid = alloc_buffer(WIRELESS_ESSID_MAX_SIZE + 1);
-                v_strncpy(wireless->essid, (char *)ssid, WIRELESS_ESSID_MAX_SIZE);
+                strncpy(wireless->essid, (char *)ssid, WIRELESS_ESSID_MAX_SIZE);
                 wireless->essid[WIRELESS_ESSID_MAX_SIZE - 1] = '.';
             } else {
                 wireless->essid = alloc_buffer(ssid_len + 1);
-                v_strncpy(wireless->essid, (char *)ssid, ssid_len);
+                strncpy(wireless->essid, (char *)ssid, ssid_len);
             }
         }
     }
@@ -125,27 +125,27 @@ static int      send_for_station(t_wireless *wireless, struct nl_sock *socket) {
     struct nl_msg       *msg;
 
     if (nl_socket_modify_cb(socket, NL_CB_VALID, NL_CB_CUSTOM, station_callback, wireless) < 0) {
-        printf("%s: unable to modify station callback\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to modify station callback\n", PREFIX_ERROR);
         return -NLE_RANGE;
     }
     if ((msg = nlmsg_alloc()) == NULL) {
-        printf("%s: unable to alloc memory for Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to alloc memory for Netlink message\n", PREFIX_ERROR);
         return -1;
     }
     if (!genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ, wireless->nl80211_id, 0, NLM_F_DUMP, NL80211_CMD_GET_STATION, 0)) {
-        printf("%s: unable to add header to Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to add header to Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     if (nla_put_u32(msg, NL80211_ATTR_IFINDEX, wireless->if_index) < 0) {
-        printf("%s: unable to add attribute to Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to add attribute to Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     if (nla_put(msg, NL80211_ATTR_MAC, 6, wireless->bssid) < 0) {
-        printf("%s: unable to add attribute to Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to add attribute to Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     if (nl_send_sync(socket, msg) < 0) {
-        printf("%s: unable to send Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to send Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     return 0;
@@ -159,33 +159,33 @@ static int      send_for_scan(t_wireless *wireless, struct nl_sock *socket) {
     struct nl_msg       *msg;
 
     if (nl_socket_modify_cb(socket, NL_CB_VALID, NL_CB_CUSTOM, scan_callback, wireless) < 0) {
-        printf("%s: unable to modify scan callback\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to modify scan callback\n", PREFIX_ERROR);
         return -NLE_RANGE;
     }
     wireless->nl80211_id = genl_ctrl_resolve(socket, NL80211);
     if (wireless->nl80211_id < 0) {
-        printf("%s: unable to resolve Netlink family\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to resolve Netlink family\n", PREFIX_ERROR);
         return -NLE_OBJ_NOTFOUND;
     }
     wireless->if_index = if_nametoindex(wireless->if_name);
     if (wireless->if_index == 0) {
-        printf("%s: %s\n", WIRELESS_PREFIX_ERROR, strerror(errno));
+        printf("%s: %s\n", PREFIX_ERROR, strerror(errno));
         return -1;
     }
     if ((msg = nlmsg_alloc()) == NULL) {
-        printf("%s: unable to alloc memory for Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to alloc memory for Netlink message\n", PREFIX_ERROR);
         return -1;
     }
     if (!genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ, wireless->nl80211_id, 0, NLM_F_DUMP, NL80211_CMD_GET_SCAN, 0)) {
-        printf("%s: unable to add header to Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to add header to Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     if (nla_put_u32(msg, NL80211_ATTR_IFINDEX, wireless->if_index) < 0) {
-        printf("%s: unable to add attribute to Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to add attribute to Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     if (nl_send_sync(socket, msg) < 0) {
-        printf("%s: unable to send Netlink message\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to send Netlink message\n", PREFIX_ERROR);
         goto error;
     }
     return 0;
@@ -195,20 +195,20 @@ static int      send_for_scan(t_wireless *wireless, struct nl_sock *socket) {
     return -1;
 }
 
-t_nl_data        *get_data(char *interface) {
+t_wireless_data        *get_wireless_data(char *interface) {
     t_wireless          wireless;
-    t_nl_data           *nl_data;
+    t_wireless_data           *nl_data;
     struct nl_sock      *socket;
 
-    nl_data = alloc_ptr(sizeof(t_nl_data));
+    nl_data = alloc_ptr(sizeof(t_wireless_data));
     nl_data->essid = NULL;
     nl_data->signal = -1;
     socket = nl_socket_alloc();
     if (genl_connect(socket) != 0) {
-        printf("%s: unable to alloc memory for Netlink socket\n", WIRELESS_PREFIX_ERROR);
+        printf("%s: unable to alloc memory for Netlink socket\n", PREFIX_ERROR);
         exit(EXIT_FAILURE);
     }
-    v_memset(&wireless, 0, sizeof(t_wireless));
+    memset(&wireless, 0, sizeof(t_wireless));
     wireless.if_name = interface;
     if (send_for_scan(&wireless, socket) < 0 || send_for_station(&wireless, socket) < 0) {
         nl_socket_free(socket);
@@ -218,7 +218,7 @@ t_nl_data        *get_data(char *interface) {
         nl_data->signal = wireless.quality;
     }
     if (wireless.flags & WIRELESS_INFO_FLAG_HAS_ESSID) {
-       nl_data->essid = wireless.essid;
+        nl_data->essid = wireless.essid;
     }
 
     nl_socket_free(socket);
