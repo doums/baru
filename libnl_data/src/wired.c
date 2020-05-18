@@ -20,10 +20,10 @@ bool is_operational(struct rtnl_link *link) {
     return r;
 }
 
-bool has_ip(struct nl_cache *cache, int if_name) {
+bool has_ip(struct nl_cache *cache, int if_index) {
     struct nl_object    *obj;
     struct rtnl_addr    *addr;
-    int                 current_if;
+    int                 index;
     int                 family;
 
     if (nl_cache_is_empty(cache)) {
@@ -31,9 +31,9 @@ bool has_ip(struct nl_cache *cache, int if_name) {
     }
     for(obj = nl_cache_get_first(cache); obj != NULL; obj = nl_cache_get_next(obj)) {
         addr = (struct rtnl_addr *)obj;
-        current_if = rtnl_addr_get_ifindex(addr);
+        index = rtnl_addr_get_ifindex(addr);
         family = rtnl_addr_get_family(addr);
-        if (current_if == if_name
+        if (index == if_index
             && (family == AF_INET || family == AF_INET6)
             && rtnl_addr_get_local(addr) != NULL) {
             return true;
