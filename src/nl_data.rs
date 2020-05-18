@@ -7,28 +7,43 @@ use std::os::raw::{c_char, c_int};
 
 #[derive(Debug)]
 #[repr(C)]
-pub struct NlData {
+pub struct NlWirelessData {
     essid: *const c_char,
     signal: c_int,
 }
 
-pub enum State {
+#[derive(Debug)]
+#[repr(C)]
+pub struct NlWiredData {
+    is_carrying: bool,
+    is_operational: bool,
+    has_ip: bool,
+}
+
+pub enum WirelessState {
     Disconnected,
-    Connected(Data),
+    Connected(WirelessData),
+}
+
+pub enum WiredState {
+    Disconnected,
+    NotPlugged,
+    Connected,
 }
 
 #[derive(Debug)]
-pub struct Data {
+pub struct WirelessData {
     pub essid: Option<String>,
     pub signal: Option<i32>,
 }
 
 #[link(name = "nl_data", kind = "static")]
 extern "C" {
-    pub fn get_wireless_data(interface: *const c_char) -> *const NlData;
+    pub fn get_wireless_data(interface: *const c_char) -> *const NlWirelessData;
+    pub fn get_wired_data(interface: *const c_char) -> NlWiredData;
 }
 
-pub fn data(interface: &str) -> State {
+pub fn wireless_data(interface: &str) -> WirelessState {
     let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
         let nl_data = get_wireless_data(c_interface.as_ptr());
@@ -45,9 +60,26 @@ pub fn data(interface: &str) -> State {
             Some(CStr::from_ptr(essid_ptr).to_string_lossy().into_owned())
         };
         return if signal.is_none() && essid.is_none() {
-            State::Disconnected
+            WirelessState::Disconnected
         } else {
-            State::Connected(Data { signal, essid })
+            WirelessState::Connected(WirelessData { signal, essid })
+        };
+    }
+}
+
+pub fn wired_data(interface: &str) -> WiredState {
+    let c_interface = CString::new(interface).expect("CString::new failed");
+    unsafe {
+        let data = get_wired_data(c_interface.as_ptr());
+        let is_op = data.is_operational;
+        let is_carrying = data.is_carrying;
+        let has_ip = data.has_ip;
+        return if is_carrying && is_op && has_ip {
+            WiredState::Connected
+        } else if is_carrying {
+            WiredState::Disconnected
+        } else {
+            WiredState::NotPlugged
         };
     }
 }

@@ -20,6 +20,7 @@
 # b => brightness
 # c => cpu
 # d => datetime
+# e => wired
 # m => memory
 # i => mic
 # s => sound
@@ -257,6 +258,26 @@ temperature:
   # The percentage above which the color is red.
   #
   high_level: 80
+
+
+# # # # # # # # #
+# Wired module  #
+# # # # # # # # #
+
+wired:
+# Takes the following options:
+
+  # tick: u32, default: 1000
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 2000
+
+  # interface: String, default: enp0s31f6
+  #
+  # The name of the wired interface.
+  #
+  interface: eth0
 
 
 # # # # # # # # # #

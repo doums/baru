@@ -11,6 +11,7 @@ use crate::memory::Memory;
 use crate::mic::Mic;
 use crate::sound::Sound;
 use crate::temperature::Temperature;
+use crate::wired::Wired;
 use crate::wireless::Wireless;
 use crate::BarModule;
 use crate::Config;
@@ -26,6 +27,7 @@ pub enum Module<'a> {
     Mic(Mic<'a>),
     Wireless(Wireless<'a>),
     Memory(Memory<'a>),
+    Wired(Wired<'a>),
 }
 
 impl<'a> Module<'a> {
@@ -35,6 +37,7 @@ impl<'a> Module<'a> {
             'b' => Ok(Module::Brightness(Brightness::with_config(config))),
             'c' => Ok(Module::Cpu(Cpu::with_config(config)?)),
             'd' => Ok(Module::DateTime(DateTime::new(config))),
+            'e' => Ok(Module::Wired(Wired::with_config(config)?)),
             'm' => Ok(Module::Memory(Memory::with_config(config))),
             'i' => Ok(Module::Mic(Mic::with_config(config, pulse))),
             's' => Ok(Module::Sound(Sound::with_config(config, pulse))),
@@ -55,6 +58,7 @@ impl<'a> BarModule for Module<'a> {
             Module::Temperature(m) => m.refresh(),
             Module::Cpu(m) => m.refresh(),
             Module::Wireless(m) => m.refresh(),
+            Module::Wired(m) => m.refresh(),
             Module::Sound(m) => m.refresh(),
             Module::Mic(m) => m.refresh(),
         };

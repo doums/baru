@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::nl_data::{self, State};
+use crate::nl_data::{self, WirelessState};
 use crate::{BarModule, Config as MainConfig};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -33,8 +33,8 @@ pub struct Config {
 pub struct Wireless<'a> {
     config: &'a MainConfig,
     handle: JoinHandle<Result<(), Error>>,
-    receiver: Receiver<State>,
-    prev_data: Option<State>,
+    receiver: Receiver<WirelessState>,
+    prev_data: Option<WirelessState>,
     display: Display,
     max_essid_len: usize,
 }
@@ -75,7 +75,7 @@ impl<'a> Wireless<'a> {
         })
     }
 
-    pub fn data(&self) -> Option<State> {
+    pub fn data(&self) -> Option<WirelessState> {
         self.receiver.try_iter().last()
     }
 }
@@ -89,7 +89,7 @@ impl<'a> BarModule for Wireless<'a> {
         let mut essid = "";
         let mut signal = None;
         if let Some(state) = &self.prev_data {
-            if let State::Connected(data) = state {
+            if let WirelessState::Connected(data) = state {
                 if let Some(strength) = data.signal {
                     signal = Some(strength);
                     icon = match strength {
@@ -133,9 +133,9 @@ impl<'a> BarModule for Wireless<'a> {
     }
 }
 
-fn run(tick: Duration, tx: Sender<State>, interface: String) -> Result<(), Error> {
+fn run(tick: Duration, tx: Sender<WirelessState>, interface: String) -> Result<(), Error> {
     loop {
-        tx.send(nl_data::data(&interface))?;
+        tx.send(nl_data::wireless_data(&interface))?;
         thread::sleep(tick);
     }
 }

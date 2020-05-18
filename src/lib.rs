@@ -14,6 +14,7 @@ mod nl_data;
 pub mod pulse;
 mod sound;
 mod temperature;
+mod wired;
 mod wireless;
 use battery::Config as BatteryConfig;
 use brightness::Config as BrightnessConfig;
@@ -28,6 +29,7 @@ use serde::{Deserialize, Serialize};
 use sound::Config as SoundConfig;
 use std::fs;
 use temperature::Config as TemperatureConfig;
+use wired::Config as WiredConfig;
 use wireless::Config as WirelessConfig;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,6 +50,7 @@ pub struct Config {
     sound: Option<SoundConfig>,
     temperature: Option<TemperatureConfig>,
     wireless: Option<WirelessConfig>,
+    wired: Option<WiredConfig>,
     date_time: Option<DateTimeConfig>,
 }
 
