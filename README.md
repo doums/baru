@@ -9,6 +9,7 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 * date and time
 * battery (level, status, design level based)
 * wireless (state, essid, signal strength)
+* wired (state)
 * audio sink and source (level, muted)
 * brightness
 * cpu usage and temperature
@@ -18,7 +19,8 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 
 All the info is read direclty from the kernel files (`/sys`, `/proc`). Except for the audio and wireless modules.\
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
-Wireless module use the [802.11 netlink interface](https://www.infradead.org/~tgr/libnl/) to retrieve its data.
+Wireless and wired modules use the netlink interface with the help of [libnl](https://www.infradead.org/~tgr/libnl/) to talk directly to kernel and retrieve their data.\
+In addition, wireless module uses the [802.11](https://github.com/torvalds/linux/blob/master/include/uapi/linux/nl80211.h) API.
 
 Some modules run in their own thread.
 
@@ -55,7 +57,7 @@ temperature:
 
 ### credits
 
-Clément Dommerc for providing me with the C code for the lib `nl_data`.
+Clément Dommerc for providing me with the C code for the lib `nl_data`, wireless part.
 
 ### license
 Mozilla Public License 2.0
