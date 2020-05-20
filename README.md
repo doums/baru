@@ -32,8 +32,8 @@ Some modules run in their own thread.
 
 ### configuration
 
-The binary looks for the config file `baru.yaml` located in `$HOME/.config/baru/`.\
-If the config file is not found, the bar prints an error and exits.\
+The binary looks for the config file `baru.yaml` located in `$XDG_CONFIG_HOME/baru/` (default to `$HOME/.config/baru/`).\
+If the config file is not found, baru prints an error and exits.\
 All options are detailed [here](https://github.com/doums/baru/blob/master/baru.yaml).
 
 Example:

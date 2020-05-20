@@ -23,13 +23,15 @@ fn main() -> Result<(), Error> {
         print_out_err(&format!("baru: environment variable HOME, {}", err));
         process::exit(1);
     });
-    let content = fs::read_to_string(home + "/.config/baru/baru.yaml").unwrap_or_else(|err| {
-        print_out_err(&format!(
-            "baru: error while reading the config file, {}",
-            err
-        ));
-        process::exit(1);
-    });
+    let config_path = env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| format!("{}/.config", home));
+    let content =
+        fs::read_to_string(format!("{}/baru/baru.yaml", config_path)).unwrap_or_else(|err| {
+            print_out_err(&format!(
+                "baru: error while reading the config file, {}",
+                err
+            ));
+            process::exit(1);
+        });
     let config: Config = serde_yaml::from_str(&content).unwrap_or_else(|err| {
         print_out_err(&format!(
             "baru: error while deserializing the config file, {}",
