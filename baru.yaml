@@ -274,6 +274,12 @@ wired:
   #
   tick: 2000
 
+  # discrete: bool, default: false
+  #
+  # If true and the status is not connected, show nothing.
+  #
+  discrete: true
+
   # interface: String, default: enp0s31f6
   #
   # The name of the wired interface.

@@ -17,6 +17,7 @@ const INTERFACE: &str = "enp0s31f6";
 pub struct Config {
     tick: Option<u32>,
     interface: Option<String>,
+    discrete: Option<bool>,
 }
 
 pub struct Wired<'a> {
@@ -24,6 +25,7 @@ pub struct Wired<'a> {
     handle: JoinHandle<Result<(), Error>>,
     receiver: Receiver<WiredState>,
     prev_data: Option<WiredState>,
+    discrete: bool,
 }
 
 impl<'a> Wired<'a> {
@@ -31,12 +33,16 @@ impl<'a> Wired<'a> {
         let (tx, rx) = mpsc::channel();
         let mut tick = TICK_RATE;
         let mut interface = INTERFACE.to_string();
+        let mut discrete = false;
         if let Some(c) = &config.wired {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
             if let Some(i) = &c.interface {
                 interface = i.clone()
+            }
+            if let Some(b) = c.discrete {
+                discrete = b;
             }
         };
         let builder = thread::Builder::new().name("wired_mod".into());
@@ -49,6 +55,7 @@ impl<'a> Wired<'a> {
             receiver: rx,
             config,
             prev_data: None,
+            discrete,
         })
     }
 
@@ -67,6 +74,9 @@ impl<'a> BarModule for Wired<'a> {
             if let WiredState::Connected = state {
                 icon = "󰈁";
             }
+        }
+        if self.discrete && icon == "󰈂" {
+            return Ok("".to_string());
         }
         Ok(format!(
             "{}{}{}",
