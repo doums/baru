@@ -1,6 +1,7 @@
 # List of all options
 
-# If the word "required" is not mentioned, the corresponding option is optional.
+# If the word "required" is mentioned, the corresponding option is required.
+# Otherwise it is optional.
 
 
 # # # # #
