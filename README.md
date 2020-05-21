@@ -17,16 +17,19 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 * dynamic icons, colors
 * configuration in YAML
 
-All the info is read direclty from the kernel files (`/sys`, `/proc`). Except for the audio and wireless modules.\
+All the info is read direclty from the kernel files (`/sys`, `/proc`). Except audio and network modules which use libraries.\
+Some modules run in their own thread.
+Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at a refresh rate of 60 "fps" with a minimal processor footprint.
+
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
 Wireless and wired modules use the netlink interface with the help of [libnl](https://www.infradead.org/~tgr/libnl/) to talk directly to kernel and retrieve their data.\
 In addition, wireless module uses the [802.11](https://github.com/torvalds/linux/blob/master/include/uapi/linux/nl80211.h) API.
 
-Some modules run in their own thread.
+Baru is modular. This means that only the modules you want to see are instantiated and executed.
 
 ### prerequisite
 
-- libnl (for wireless module)
+- libnl (for wired and wireless modules)
 - pulseaudio (for sound and mic modules)
 - an icon font installed (I use [this](https://github.com/Templarian/MaterialDesign-Font))
 
