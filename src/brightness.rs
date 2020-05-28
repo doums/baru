@@ -38,7 +38,7 @@ impl<'a> BarModule for Brightness<'a> {
         let max_brightness = read_and_parse(&format!("{}/max_brightness", self.sys_path))?;
         let percentage = 100 * brightness / max_brightness;
         Ok(format!(
-            "{:3}% {}󰃟{}",
+            "{:3}%{}󰃟{}",
             percentage, self.config.icon_font, self.config.default_font
         ))
     }

@@ -94,7 +94,7 @@ impl<'a> BarModule for Temperature<'a> {
             color = &self.config.red;
         }
         Ok(format!(
-            "{:3}° {}{}{}{}{}",
+            "{:3}°{}{}{}{}{}",
             average,
             color,
             self.config.icon_font,

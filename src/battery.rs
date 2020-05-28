@@ -72,7 +72,7 @@ impl<'a> BarModule for Battery<'a> {
             color = &self.config.green
         }
         Ok(format!(
-            "{:3}% {}{}{}{}{}",
+            "{:3}%{}{}{}{}{}",
             battery_level,
             color,
             self.config.icon_font,

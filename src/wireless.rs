@@ -121,12 +121,12 @@ impl<'a> BarModule for Wireless<'a> {
         );
         match self.display {
             Display::IconOnly => Ok(icon_format),
-            Display::Essid => Ok(format!("{} {}", essid, icon_format)),
+            Display::Essid => Ok(format!("{}{}", essid, icon_format)),
             Display::Signal => {
                 if let Some(s) = signal {
-                    Ok(format!("{:3}% {}", s, icon_format))
+                    Ok(format!("{:3}%{}", s, icon_format))
                 } else {
-                    Ok(format!("   % {}", icon_format))
+                    Ok(format!("    {}", icon_format))
                 }
             }
         }

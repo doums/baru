@@ -129,7 +129,7 @@ impl<'a> BarModule for Memory<'a> {
             ))
         } else {
             Ok(format!(
-                "{:3}% {}{}󰍛{}{}",
+                "{:3}%{}{}󰍛{}{}",
                 percentage,
                 color,
                 self.config.icon_font,

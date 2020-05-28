@@ -61,7 +61,7 @@ impl<'a> BarModule for Sound<'a> {
                 color = &self.config.red;
             }
             Ok(format!(
-                "{:3}% {}{}{}{}{}",
+                "{:3}%{}{}{}{}{}",
                 info.0,
                 color,
                 self.config.icon_font,
@@ -72,7 +72,7 @@ impl<'a> BarModule for Sound<'a> {
         } else {
             icon = "󰖁";
             Ok(format!(
-                "     {}{}{}",
+                "    {}{}{}",
                 self.config.icon_font, icon, self.config.default_font
             ))
         }

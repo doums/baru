@@ -96,7 +96,7 @@ impl<'a> BarModule for Cpu<'a> {
             color = &self.config.red;
         }
         Ok(format!(
-            "{:3}% {}{}󰻠{}{}",
+            "{:3}%{}{}󰻠{}{}",
             current_usg,
             color,
             self.config.icon_font,
