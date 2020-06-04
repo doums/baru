@@ -94,7 +94,6 @@ impl<'a> BarModule for Memory<'a> {
             &meminfo,
             &format!("MemFree not found in \"{}\"", self.meminfo),
         )?;
-
         let buffers = find_meminfo(
             &self.mem_regex.buffers,
             &meminfo,
