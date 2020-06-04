@@ -167,13 +167,13 @@ memory:
   #
   meminfo: /necessarily/proc/meminfo
 
-  # display: Display, default: Percentage
+  # display: Display, default: GiB
   #
-  # enum Display { Go, Percentage }
+  # enum Display { GB, GiB, Percentage }
   #
-  # Display as a percentage or used/total in gigaoctet.
+  # Display as used/total in mega/gigabyte, as used/total in mebi/gibibyte or as a percentage.
   #
-  display: Go
+  display: GB
 
   # high_level: u32, default: 90
   #

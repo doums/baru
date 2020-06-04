@@ -8,12 +8,13 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 const MEMINFO: &'static str = "/proc/meminfo";
-const DISPLAY: Display = Display::Percentage;
+const DISPLAY: Display = Display::GiB;
 const HIGH_LEVEL: u32 = 90;
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
-    Go,
+    GB,
+    GiB,
     Percentage,
 }
 
@@ -66,8 +67,8 @@ impl<'a> Memory<'a> {
             if let Some(v) = &c.high_level {
                 high_level = *v;
             }
-            if let Some(v) = &c.display {
-                display = *v;
+            if let Some(v) = c.display {
+                display = v;
             }
         };
         Memory {
@@ -83,7 +84,7 @@ impl<'a> Memory<'a> {
 impl<'a> BarModule for Memory<'a> {
     fn refresh(&mut self) -> Result<String, Error> {
         let meminfo = read_and_trim(self.meminfo)?;
-        let total = find_meminfo(
+        let total_kib = find_meminfo(
             &self.mem_regex.total,
             &meminfo,
             &format!("MemTotal not found in \"{}\"", self.meminfo),
@@ -109,34 +110,64 @@ impl<'a> BarModule for Memory<'a> {
             &meminfo,
             &format!("SReclaimable not found in \"{}\"", self.meminfo),
         )?;
-        let used = total - free - buffers - cached - s_reclaimable;
-        let percentage = (used as f64 * 100_f64 / total as f64).round() as i32;
-        let total_go = (1024_f64 * (total as f64)) / 1_000_000_000_f64;
-        let used_go = 1024_f64 * (used as f64) / 1_000_000_000_f64;
+        let used_kib = total_kib - free - buffers - cached - s_reclaimable;
+        let percentage = (used_kib as f64 * 100_f64 / total_kib as f64).round() as i32;
+        let mut total = "".to_string();
+        let mut used = "".to_string();
+        match self.display {
+            Display::GB => {
+                let total_go = (1024_f32 * (total_kib as f32)) / 1_000_000_000_f32;
+                let total_mo = total_go * 10i32.pow(3) as f32;
+                total = humanize(total_go, total_mo, "GB", "MB");
+                let used_go = 1024_f32 * (used_kib as f32) / 1_000_000_000_f32;
+                let used_mo = used_go * 10i32.pow(3) as f32;
+                used = humanize(used_go, used_mo, "GB", "MB");
+            }
+            Display::GiB => {
+                let total_gio = total_kib as f32 / 2i32.pow(20) as f32;
+                let total_mio = total_kib as f32 / 2i32.pow(10) as f32;
+                total = humanize(total_gio, total_mio, "GiB", "MiB");
+                let used_gio = used_kib as f32 / 2i32.pow(20) as f32;
+                let used_mio = used_kib as f32 / 2i32.pow(10) as f32;
+                used = humanize(used_gio, used_mio, "GiB", "MiB");
+            }
+            _ => {}
+        }
         let mut color = &self.config.default_color;
         if percentage > self.high_level as i32 {
             color = &self.config.red;
         }
-        if let Display::Go = self.display {
-            Ok(format!(
-                "{:4.1}/{:4.1}Go{}{}󰍛{}{}",
-                used_go,
-                total_go,
+        match self.display {
+            Display::GB | Display::GiB => Ok(format!(
+                "{}/{}{}{}󰍛{}{}",
+                used,
+                total,
                 color,
                 self.config.icon_font,
                 self.config.default_font,
                 self.config.default_color
-            ))
-        } else {
-            Ok(format!(
+            )),
+            _ => Ok(format!(
                 "{:3}%{}{}󰍛{}{}",
                 percentage,
                 color,
                 self.config.icon_font,
                 self.config.default_font,
                 self.config.default_color
-            ))
+            )),
         }
+    }
+}
+
+fn humanize<'a>(v1: f32, v2: f32, u1: &'a str, u2: &'a str) -> String {
+    if v1 >= 1.0 {
+        return if v1.fract() == 0.0 {
+            format!("{:4.0}{}", v1, u1)
+        } else {
+            format!("{:4.1}{}", v1, u1)
+        };
+    } else {
+        format!("{:4.0}{}", v2, u2)
     }
 }
 
