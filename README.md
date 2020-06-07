@@ -2,7 +2,7 @@
 
 My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust (and a little bit of C).
 
-![baru](https://github.com/doums/baru/tree/master/public/baru.png)
+![baru](https://raw.githubusercontent.com/doums/baru/master/public/baru.png)
 
 ### features
 
@@ -13,12 +13,12 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 * audio sink and source (level, muted)
 * brightness
 * cpu usage and temperature
-* memory (percent or used/total in gigaoctet)
+* memory (percent or used/total in gigabyte/gibibyte)
 * dynamic icons, colors
 * configuration in YAML
 
 All the info is read direclty from the kernel files (`/sys`, `/proc`). Except audio and network modules which use libraries.\
-Some modules run in their own thread.
+All modules are threaded.
 Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at a refresh rate of 60 "fps" with a minimal processor footprint.
 
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
