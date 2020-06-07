@@ -2,7 +2,7 @@
 
 My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust (and a little bit of C).
 
-![baru](https://image.petitmur.beer/bar.png)
+![baru](https://github.com/doums/baru/tree/master/public/baru.png)
 
 ### features
 
