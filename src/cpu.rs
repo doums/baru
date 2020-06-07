@@ -3,48 +3,46 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{BarModule, Config as MainConfig};
+use crate::module::BaruMod;
+use crate::Config as MainConfig;
+use crate::Pulse;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::thread::{self, JoinHandle};
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 
+const PLACEHOLDER: &str = "+@fn=1;󰻠+@fn=0;";
 const PROC_STAT: &'static str = "/proc/stat";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const HIGH_LEVEL: u32 = 90;
 
-pub struct CpuData(pub i32, pub i32);
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
     proc_stat: Option<String>,
     high_level: Option<u32>,
+    placeholder: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct Cpu<'a> {
-    handle: JoinHandle<Result<(), Error>>,
-    receiver: Receiver<CpuData>,
-    prev_idle: i32,
-    prev_total: i32,
-    prev_usage: Option<i32>,
-    config: &'a MainConfig,
+pub struct InternalConfig<'a> {
+    proc_stat: &'a str,
     high_level: u32,
+    tick: Duration,
 }
 
-impl<'a> Cpu<'a> {
-    pub fn with_config(config: &'a MainConfig) -> Result<Self, Error> {
-        let (tx, rx) = mpsc::channel();
+impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
+    fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut file = PROC_STAT.to_string();
+        let mut proc_stat = PROC_STAT;
         let mut high_level = HIGH_LEVEL;
         if let Some(c) = &config.cpu {
             if let Some(f) = &c.proc_stat {
-                file = f.clone();
+                proc_stat = &f;
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -53,62 +51,51 @@ impl<'a> Cpu<'a> {
                 high_level = c;
             }
         };
-        let builder = thread::Builder::new().name("cpu_mod".into());
-        let handle = builder.spawn(move || -> Result<(), Error> {
-            run(tick, file, tx)?;
-            Ok(())
-        })?;
-        Ok(Cpu {
-            config,
-            handle,
-            receiver: rx,
-            prev_idle: 0,
-            prev_total: 0,
-            prev_usage: None,
+        InternalConfig {
             high_level,
-        })
-    }
-
-    pub fn data(&self) -> Option<CpuData> {
-        self.receiver.try_iter().last()
+            proc_stat,
+            tick,
+        }
     }
 }
 
-impl<'a> BarModule for Cpu<'a> {
-    fn refresh(&mut self) -> Result<String, Error> {
-        let mut current_usg = 0;
-        if let Some(data) = self.data() {
-            let diff_total = data.0 - self.prev_total;
-            let diff_idle = data.1 - self.prev_idle;
-            let usage =
-                (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;
-            self.prev_total = data.0;
-            self.prev_idle = data.1;
-            self.prev_usage = Some(usage);
-            current_usg = usage;
-        } else {
-            if let Some(usage) = self.prev_usage {
-                current_usg = usage;
+#[derive(Debug)]
+pub struct Cpu<'a> {
+    placeholder: &'a str,
+    config: &'a MainConfig,
+}
+
+impl<'a> Cpu<'a> {
+    pub fn with_config(config: &'a MainConfig) -> Self {
+        let mut placeholder = PLACEHOLDER;
+        if let Some(c) = &config.cpu {
+            if let Some(p) = &c.placeholder {
+                placeholder = p
             }
         }
-        let mut color = &self.config.default_color;
-        if current_usg >= self.high_level as i32 {
-            color = &self.config.red;
+        Cpu {
+            placeholder,
+            config,
         }
-        Ok(format!(
-            "{:3}%{}{}󰻠{}{}",
-            current_usg,
-            color,
-            self.config.icon_font,
-            self.config.default_font,
-            self.config.default_color
-        ))
     }
 }
 
-fn run(tick: Duration, file: String, tx: Sender<CpuData>) -> Result<(), Error> {
+impl<'a> BaruMod for Cpu<'a> {
+    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+        run
+    }
+
+    fn placeholder(&self) -> &str {
+        self.placeholder
+    }
+}
+
+pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+    let config = InternalConfig::from(&main_config);
+    let mut prev_idle = 0;
+    let mut prev_total = 0;
     loop {
-        let proc_stat = File::open(&file)?;
+        let proc_stat = File::open(&config.proc_stat)?;
         let mut reader = BufReader::new(proc_stat);
         let mut buf = String::new();
         reader.read_line(&mut buf)?;
@@ -116,13 +103,31 @@ fn run(tick: Duration, file: String, tx: Sender<CpuData>) -> Result<(), Error> {
         data.next();
         let times: Vec<i32> = data
             .map(|n| {
-                n.parse::<i32>()
-                    .expect(&format!("error while parsing the file \"{}\"", file))
+                n.parse::<i32>().expect(&format!(
+                    "error while parsing the file \"{}\"",
+                    config.proc_stat
+                ))
             })
             .collect();
         let idle = times[3] + times[4];
         let total = times.iter().fold(0, |acc, i| acc + i);
-        tx.send(CpuData(total, idle))?;
-        thread::sleep(tick);
+        let diff_total = total - prev_total;
+        let diff_idle = idle - prev_idle;
+        let usage = (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;
+        prev_total = total;
+        prev_idle = idle;
+        let mut color = &main_config.default_color;
+        if usage >= config.high_level as i32 {
+            color = &main_config.red;
+        }
+        tx.send(format!(
+            "{:3}%{}{}󰻠{}{}",
+            usage,
+            color,
+            &main_config.icon_font,
+            &main_config.default_font,
+            &main_config.default_color
+        ))?;
+        thread::sleep(config.tick);
     }
 }

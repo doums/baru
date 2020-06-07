@@ -23,16 +23,17 @@ use date_time::Config as DateTimeConfig;
 use error::Error;
 use memory::Config as MemoryConfig;
 use mic::Config as MicConfig;
-use module::Module;
+use module::Wrapper;
 use pulse::Pulse;
 use serde::{Deserialize, Serialize};
 use sound::Config as SoundConfig;
 use std::fs;
+use std::sync::{Arc, Mutex};
 use temperature::Config as TemperatureConfig;
 use wired::Config as WiredConfig;
 use wireless::Config as WirelessConfig;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     bar: String,
     pub tick: Option<u32>,
@@ -54,12 +55,8 @@ pub struct Config {
     date_time: Option<DateTimeConfig>,
 }
 
-trait BarModule {
-    fn refresh(&mut self) -> Result<String, Error>;
-}
-
 pub struct Baru<'a> {
-    modules: Vec<Module<'a>>,
+    modules: Vec<Wrapper<'a>>,
     format: &'a str,
     markup_matches: Vec<MarkupMatch>,
 }
@@ -68,11 +65,14 @@ pub struct Baru<'a> {
 struct MarkupMatch(char, usize);
 
 impl<'a> Baru<'a> {
-    pub fn with_config(config: &'a Config, pulse: &'a Pulse) -> Result<Self, Error> {
+    pub fn with_config(config: &'a Config, pulse: &'a Arc<Mutex<Pulse>>) -> Result<Self, Error> {
         let mut modules = vec![];
         let markup_matches = parse_format(&config.bar);
-        for module in &parse_format(&config.bar) {
-            modules.push(Module::new(module.0, config, pulse)?);
+        for module in &markup_matches {
+            modules.push(Wrapper::new(module.0, config, &pulse)?);
+        }
+        for module in &mut modules {
+            module.start()?;
         }
         Ok(Baru {
             modules,

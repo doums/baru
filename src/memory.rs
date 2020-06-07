@@ -3,13 +3,21 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{read_and_trim, BarModule, Config as MainConfig};
+use crate::module::BaruMod;
+use crate::pulse::Pulse;
+use crate::{read_and_trim, Config as MainConfig};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
+const PLACEHOLDER: &str = "+@fn=1;󰍛+@fn=0;";
 const MEMINFO: &'static str = "/proc/meminfo";
 const DISPLAY: Display = Display::GiB;
 const HIGH_LEVEL: u32 = 90;
+const TICK_RATE: Duration = Duration::from_millis(500);
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
@@ -18,11 +26,81 @@ enum Display {
     Percentage,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     meminfo: Option<String>,
     high_level: Option<u32>,
     display: Option<Display>,
+    tick: Option<u32>,
+    placeholder: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct InternalConfig<'a> {
+    meminfo: &'a str,
+    high_level: u32,
+    display: Display,
+    tick: Duration,
+}
+
+impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
+    fn from(config: &'a MainConfig) -> Self {
+        let mut meminfo = MEMINFO;
+        let mut high_level = HIGH_LEVEL;
+        let mut display = DISPLAY;
+        let mut tick = TICK_RATE;
+        if let Some(c) = &config.memory {
+            if let Some(v) = &c.meminfo {
+                meminfo = v;
+            }
+            if let Some(v) = &c.high_level {
+                high_level = *v;
+            }
+            if let Some(v) = c.display {
+                display = v;
+            }
+            if let Some(t) = c.tick {
+                tick = Duration::from_millis(t as u64)
+            }
+        };
+        InternalConfig {
+            meminfo,
+            high_level,
+            display,
+            tick,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Memory<'a> {
+    placeholder: &'a str,
+    config: &'a MainConfig,
+}
+
+impl<'a> Memory<'a> {
+    pub fn with_config(config: &'a MainConfig) -> Self {
+        let mut placeholder = PLACEHOLDER;
+        if let Some(c) = &config.memory {
+            if let Some(p) = &c.placeholder {
+                placeholder = p
+            }
+        }
+        Memory {
+            placeholder,
+            config,
+        }
+    }
+}
+
+impl<'a> BaruMod for Memory<'a> {
+    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+        run
+    }
+
+    fn placeholder(&self) -> &str {
+        self.placeholder
+    }
 }
 
 #[derive(Debug)]
@@ -46,74 +124,41 @@ impl MemRegex {
     }
 }
 
-#[derive(Debug)]
-pub struct Memory<'a> {
-    meminfo: &'a str,
-    config: &'a MainConfig,
-    mem_regex: MemRegex,
-    display: Display,
-    high_level: u32,
-}
-
-impl<'a> Memory<'a> {
-    pub fn with_config(config: &'a MainConfig) -> Self {
-        let mut meminfo = MEMINFO;
-        let mut high_level = HIGH_LEVEL;
-        let mut display = DISPLAY;
-        if let Some(c) = &config.memory {
-            if let Some(v) = &c.meminfo {
-                meminfo = v;
-            }
-            if let Some(v) = &c.high_level {
-                high_level = *v;
-            }
-            if let Some(v) = c.display {
-                display = v;
-            }
-        };
-        Memory {
-            meminfo,
-            mem_regex: MemRegex::new(),
-            config,
-            high_level,
-            display,
-        }
-    }
-}
-
-impl<'a> BarModule for Memory<'a> {
-    fn refresh(&mut self) -> Result<String, Error> {
-        let meminfo = read_and_trim(self.meminfo)?;
+pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+    let config = InternalConfig::from(&main_config);
+    let mem_regex = MemRegex::new();
+    loop {
+        let meminfo = read_and_trim(config.meminfo)?;
         let total_kib = find_meminfo(
-            &self.mem_regex.total,
+            &mem_regex.total,
             &meminfo,
-            &format!("MemTotal not found in \"{}\"", self.meminfo),
+            &format!("MemTotal not found in \"{}\"", config.meminfo),
         )?;
         let free = find_meminfo(
-            &self.mem_regex.free,
+            &mem_regex.free,
             &meminfo,
-            &format!("MemFree not found in \"{}\"", self.meminfo),
+            &format!("MemFree not found in \"{}\"", config.meminfo),
         )?;
         let buffers = find_meminfo(
-            &self.mem_regex.buffers,
+            &mem_regex.buffers,
             &meminfo,
-            &format!("Buffers not found in \"{}\"", self.meminfo),
+            &format!("Buffers not found in \"{}\"", config.meminfo),
         )?;
         let cached = find_meminfo(
-            &self.mem_regex.cached,
+            &mem_regex.cached,
             &meminfo,
-            &format!("Cached not found in \"{}\"", self.meminfo),
+            &format!("Cached not found in \"{}\"", config.meminfo),
         )?;
         let s_reclaimable = find_meminfo(
-            &self.mem_regex.s_reclaimable,
+            &mem_regex.s_reclaimable,
             &meminfo,
-            &format!("SReclaimable not found in \"{}\"", self.meminfo),
+            &format!("SReclaimable not found in \"{}\"", config.meminfo),
         )?;
         let used_kib = total_kib - free - buffers - cached - s_reclaimable;
         let percentage = (used_kib as f64 * 100_f64 / total_kib as f64).round() as i32;
         let mut total = "".to_string();
         let mut used = "".to_string();
-        match self.display {
+        match config.display {
             Display::GB => {
                 let total_go = (1024_f32 * (total_kib as f32)) / 1_000_000_000_f32;
                 let total_mo = total_go * 10i32.pow(3) as f32;
@@ -132,29 +177,30 @@ impl<'a> BarModule for Memory<'a> {
             }
             _ => {}
         }
-        let mut color = &self.config.default_color;
-        if percentage > self.high_level as i32 {
-            color = &self.config.red;
+        let mut color = &main_config.default_color;
+        if percentage > config.high_level as i32 {
+            color = &main_config.red;
         }
-        match self.display {
-            Display::GB | Display::GiB => Ok(format!(
+        match config.display {
+            Display::GB | Display::GiB => tx.send(format!(
                 "{}/{}{}{}󰍛{}{}",
                 used,
                 total,
                 color,
-                self.config.icon_font,
-                self.config.default_font,
-                self.config.default_color
-            )),
-            _ => Ok(format!(
+                main_config.icon_font,
+                main_config.default_font,
+                main_config.default_color
+            ))?,
+            Display::Percentage => tx.send(format!(
                 "{:3}%{}{}󰍛{}{}",
                 percentage,
                 color,
-                self.config.icon_font,
-                self.config.default_font,
-                self.config.default_color
-            )),
-        }
+                main_config.icon_font,
+                main_config.default_font,
+                main_config.default_color
+            ))?,
+        };
+        thread::sleep(config.tick);
     }
 }
 

@@ -3,78 +3,111 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::pulse::{Pulse, PulseData};
-use crate::{BarModule, Config as MainConfig};
+use crate::module::BaruMod;
+use crate::pulse::Pulse;
+use crate::Config as MainConfig;
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
+const PLACEHOLDER: &str = "+@fn=1;󰸈+@fn=0;";
 const HIGH_LEVEL: u32 = 100;
+const TICK_RATE: Duration = Duration::from_millis(50);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub index: Option<u32>,
     high_level: Option<u32>,
+    tick: Option<u32>,
+    placeholder: Option<String>,
 }
 
-pub struct Sound<'a> {
-    config: &'a MainConfig,
-    pulse: &'a Pulse,
-    prev_data: Option<PulseData>,
+#[derive(Debug)]
+pub struct InternalConfig {
     high_level: u32,
+    tick: Duration,
 }
 
-impl<'a> Sound<'a> {
-    pub fn with_config(config: &'a MainConfig, pulse: &'a Pulse) -> Self {
+impl<'a> From<&'a MainConfig> for InternalConfig {
+    fn from(config: &'a MainConfig) -> Self {
+        let mut tick = TICK_RATE;
         let mut high_level = HIGH_LEVEL;
         if let Some(c) = &config.sound {
             if let Some(v) = c.high_level {
                 high_level = v;
             }
+            if let Some(t) = c.tick {
+                tick = Duration::from_millis(t as u64)
+            }
+        }
+        InternalConfig { high_level, tick }
+    }
+}
+
+#[derive(Debug)]
+pub struct Sound<'a> {
+    placeholder: &'a str,
+    config: &'a MainConfig,
+}
+
+impl<'a> Sound<'a> {
+    pub fn with_config(config: &'a MainConfig) -> Self {
+        let mut placeholder = PLACEHOLDER;
+        if let Some(c) = &config.sound {
+            if let Some(p) = &c.placeholder {
+                placeholder = p
+            }
         }
         Sound {
+            placeholder,
             config,
-            pulse,
-            prev_data: None,
-            high_level,
         }
     }
 }
 
-impl<'a> BarModule for Sound<'a> {
-    fn refresh(&mut self) -> Result<String, Error> {
-        let data = self.pulse.output_data();
-        if data.is_some() {
-            self.prev_data = data;
-        }
-        let icon;
-        let mut color = &self.config.default_color;
-        if let Some(info) = self.prev_data {
-            if info.1 {
-                icon = "󰸈";
+impl<'a> BaruMod for Sound<'a> {
+    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+        run
+    }
+
+    fn placeholder(&self) -> &str {
+        self.placeholder
+    }
+}
+
+pub fn run(
+    main_config: MainConfig,
+    pulse: Arc<Mutex<Pulse>>,
+    tx: Sender<String>,
+) -> Result<(), Error> {
+    let config = InternalConfig::from(&main_config);
+    loop {
+        if let Some(data) = pulse.lock().unwrap().output_data() {
+            let mut color = &main_config.default_color;
+            let icon = if data.1 {
+                "󰸈"
             } else {
-                icon = match info.0 {
+                match data.0 {
                     0..=9 => "󰕿",
                     10..=40 => "󰖀",
                     _ => "󰕾",
                 }
+            };
+            if data.0 > config.high_level as i32 {
+                color = &main_config.red;
             }
-            if info.0 > self.high_level as i32 {
-                color = &self.config.red;
-            }
-            Ok(format!(
+            tx.send(format!(
                 "{:3}%{}{}{}{}{}",
-                info.0,
+                data.0,
                 color,
-                self.config.icon_font,
+                main_config.icon_font,
                 icon,
-                self.config.default_font,
-                self.config.default_color
-            ))
-        } else {
-            icon = "󰖁";
-            Ok(format!(
-                "    {}{}{}",
-                self.config.icon_font, icon, self.config.default_font
-            ))
+                main_config.default_font,
+                main_config.default_color
+            ))?;
         }
+        thread::sleep(config.tick);
     }
 }

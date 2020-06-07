@@ -8,6 +8,7 @@ use std::env;
 use std::fs;
 use std::io::Error;
 use std::process;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -43,10 +44,10 @@ fn main() -> Result<(), Error> {
         Some(ms) => Duration::from_millis(ms as u64),
         None => TICK_RATE,
     };
-    let pulse = Pulse::new(&config).unwrap_or_else(|err| {
+    let pulse = Arc::new(Mutex::new(Pulse::new(&config).unwrap_or_else(|err| {
         print_out_err(&format!("baru: error while creating pulse module, {}", err));
         process::exit(1);
-    });
+    })));
     let mut baru = Baru::with_config(&config, &pulse).unwrap_or_else(|err| {
         print_out_err(&format!("baru: {}", err));
         process::exit(1);

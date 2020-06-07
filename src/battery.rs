@@ -3,34 +3,45 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::{read_and_parse, read_and_trim, BarModule, Config as MainConfig};
+use crate::module::BaruMod;
+use crate::pulse::Pulse;
+use crate::{read_and_parse, read_and_trim, Config as MainConfig};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
+const PLACEHOLDER: &str = "+@fn=1;󱃍+@fn=0;";
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const NAME: &str = "BAT0";
 const LOW_LEVEL: u32 = 10;
+const TICK_RATE: Duration = Duration::from_millis(500);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     name: Option<String>,
     low_level: Option<u32>,
     full_design: Option<bool>,
+    tick: Option<u32>,
+    placeholder: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct Battery<'a> {
+pub struct InternalConfig<'a> {
     name: &'a str,
-    config: &'a MainConfig,
     low_level: u32,
     full_design: bool,
+    tick: Duration,
 }
 
-impl<'a> Battery<'a> {
-    pub fn with_config(config: &'a MainConfig) -> Self {
+impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
+    fn from(config: &'a MainConfig) -> Self {
         let mut low_level = LOW_LEVEL;
         let mut name = NAME;
         let mut full_design = false;
+        let mut tick = TICK_RATE;
         if let Some(c) = &config.battery {
             if let Some(n) = &c.name {
                 name = n;
@@ -43,43 +54,79 @@ impl<'a> Battery<'a> {
                     full_design = true;
                 }
             }
+            if let Some(t) = c.tick {
+                tick = Duration::from_millis(t as u64)
+            }
         }
-        Battery {
+        InternalConfig {
             name,
-            config,
             low_level,
             full_design,
+            tick,
         }
     }
 }
 
-impl<'a> BarModule for Battery<'a> {
-    fn refresh(&mut self) -> Result<String, Error> {
-        let energy_full = match self.full_design {
-            true => read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.name))?,
-            false => read_and_parse(&format!("{}{}/energy_full", SYS_PATH, self.name))?,
+#[derive(Debug)]
+pub struct Battery<'a> {
+    placeholder: &'a str,
+    config: &'a MainConfig,
+}
+
+impl<'a> Battery<'a> {
+    pub fn with_config(config: &'a MainConfig) -> Self {
+        let mut placeholder = PLACEHOLDER;
+        if let Some(c) = &config.battery {
+            if let Some(p) = &c.placeholder {
+                placeholder = p
+            }
+        }
+        Battery {
+            placeholder,
+            config,
+        }
+    }
+}
+
+impl<'a> BaruMod for Battery<'a> {
+    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+        run
+    }
+
+    fn placeholder(&self) -> &str {
+        self.placeholder
+    }
+}
+
+pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+    let config = InternalConfig::from(&main_config);
+    loop {
+        let energy_full = match config.full_design {
+            true => read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, config.name))?,
+            false => read_and_parse(&format!("{}{}/energy_full", SYS_PATH, config.name))?,
         };
-        let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.name))?;
-        let status = read_and_trim(&format!("{}{}/status", SYS_PATH, self.name))?;
+        let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, config.name))?;
+        let status = read_and_trim(&format!("{}{}/status", SYS_PATH, config.name))?;
         let capacity = energy_full as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        let mut color = &self.config.default_color;
-        if status != "Charging" && battery_level <= self.low_level {
-            color = &self.config.red;
+        let mut color = &main_config.default_color;
+        if status != "Charging" && battery_level <= config.low_level {
+            color = &main_config.red;
         }
         if status == "Full" {
-            color = &self.config.green
+            color = &main_config.green
         }
-        Ok(format!(
+        tx.send(format!(
             "{:3}%{}{}{}{}{}",
             battery_level,
             color,
-            self.config.icon_font,
+            main_config.icon_font,
             get_battery_icon(&status, battery_level),
-            self.config.default_font,
-            self.config.default_color
-        ))
+            main_config.default_font,
+            main_config.default_color
+        ))?;
+        thread::sleep(config.tick);
     }
 }
 

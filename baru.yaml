@@ -82,6 +82,18 @@ pulse_tick: 50
 battery:
 # Takes the following options:
 
+  # tick: u32, default: 500
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 1000
+
+  # placeholder: String, default: +@fn=1;󱃍+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
   # name: String, default: BAT0
   #
   # The directory name under /sys/class/power_supply/
@@ -100,12 +112,25 @@ battery:
   #
   full_design: true
 
+
 # # # # # # # # # # #
 # Brightness module #
 # # # # # # # # # # #
 
 brightness:
 # Takes the following option:
+
+  # tick: u32, default: 50
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 100
+
+  # placeholder: String, default: +@fn=1;󰃞+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
 
   # sys_path: String, default: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight
   #
@@ -127,6 +152,12 @@ cpu:
   #
   tick: 1000
 
+  # placeholder: String, default: +@fn=1;󰻠+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
   # proc_stat: String, default: /proc/stat
   #
   # /proc/stat path
@@ -147,6 +178,18 @@ cpu:
 date_time:
 # Takes the following option:
 
+  # tick: u32, default: 500
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 1000
+
+  # placeholder: String, default: +@fn=1;󰸗+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
   # format: String, default: %a. %-e %B %Y, %-kh%M
   #
   # The format. For the syntax see https://docs.rs/chrono/*/chrono/format/strftime/index.html
@@ -160,6 +203,18 @@ date_time:
 
 memory:
 # Takes the following options:
+
+  # tick: u32, default: 500
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 1000
+
+  # placeholder: String, default: +@fn=1;󰍛+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
 
   # meminfo: String, default: /proc/meminfo
   #
@@ -189,6 +244,18 @@ memory:
 mic:
 # Takes the following options:
 
+  # tick: u32, default: 50
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 100
+
+  # placeholder: String, default: +@fn=1;󰍮+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
   # index: u32, default: 0
   #
   # The source index.
@@ -209,6 +276,18 @@ mic:
 sound:
 # Takes the following options:
 
+  # tick: u32, default: 50
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 100
+
+  # placeholder: String, default: +@fn=1;󰸈+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
   # index: u32, default: 0
   #
   # The sink index.
@@ -228,6 +307,18 @@ sound:
 
 temperature:
 # Takes the following options:
+
+  # tick: u32, default: 50
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 100
+
+  # placeholder: String, default: +@fn=1;󱃃+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
 
   # coretemp: String, default: /sys/devices/platform/coretemp.0/hwmon
   #
@@ -272,11 +363,17 @@ wired:
   #
   # The refresh rate in millisecond of the module thread.
   #
-  tick: 2000
+  tick: 500
+
+  # placeholder: String, default: +@fn=1;󰈀+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
 
   # discrete: bool, default: false
   #
-  # If true and the status is not connected, show nothing.
+  # If true and the status is not connected, print nothing.
   #
   discrete: true
 
@@ -299,6 +396,12 @@ wireless:
   # The refresh rate in millisecond of the module thread.
   #
   tick: 250
+
+  # placeholder: String, default: +@fn=1;󰤯+@fn=0;
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
 
   # display: Display, default: Signal
   #

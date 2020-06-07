@@ -3,91 +3,104 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
+use crate::module::BaruMod;
 use crate::nl_data::{self, WiredState};
-use crate::{BarModule, Config as MainConfig};
+use crate::Config as MainConfig;
+use crate::Pulse;
 use serde::{Deserialize, Serialize};
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::thread::{self, JoinHandle};
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 
+const PLACEHOLDER: &str = "+@fn=1;󰈀+@fn=0;";
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
     interface: Option<String>,
     discrete: Option<bool>,
+    placeholder: Option<String>,
 }
 
-pub struct Wired<'a> {
-    config: &'a MainConfig,
-    handle: JoinHandle<Result<(), Error>>,
-    receiver: Receiver<WiredState>,
-    prev_data: Option<WiredState>,
+#[derive(Debug)]
+pub struct InternalConfig<'a> {
+    interface: &'a str,
     discrete: bool,
+    tick: Duration,
 }
 
-impl<'a> Wired<'a> {
-    pub fn with_config(config: &'a MainConfig) -> Result<Self, Error> {
-        let (tx, rx) = mpsc::channel();
+impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
+    fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut interface = INTERFACE.to_string();
+        let mut interface = INTERFACE;
         let mut discrete = false;
         if let Some(c) = &config.wired {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
             if let Some(i) = &c.interface {
-                interface = i.clone()
+                interface = i
             }
             if let Some(b) = c.discrete {
                 discrete = b;
             }
         };
-        let builder = thread::Builder::new().name("wired_mod".into());
-        let handle = builder.spawn(move || -> Result<(), Error> {
-            run(tick, tx, interface)?;
-            Ok(())
-        })?;
-        Ok(Wired {
-            handle,
-            receiver: rx,
-            config,
-            prev_data: None,
+        InternalConfig {
+            interface,
             discrete,
-        })
-    }
-
-    pub fn data(&self) -> Option<WiredState> {
-        self.receiver.try_iter().last()
+            tick,
+        }
     }
 }
 
-impl<'a> BarModule for Wired<'a> {
-    fn refresh(&mut self) -> Result<String, Error> {
-        if let Some(state) = self.data() {
-            self.prev_data = Some(state);
-        }
-        let mut icon = "󰈂";
-        if let Some(state) = &self.prev_data {
-            if let WiredState::Connected = state {
-                icon = "󰈁";
+#[derive(Debug)]
+pub struct Wired<'a> {
+    placeholder: &'a str,
+    config: &'a MainConfig,
+}
+
+impl<'a> Wired<'a> {
+    pub fn with_config(config: &'a MainConfig) -> Self {
+        let mut placeholder = PLACEHOLDER;
+        if let Some(c) = &config.wired {
+            if let Some(p) = &c.placeholder {
+                placeholder = p
             }
         }
-        if self.discrete && icon == "󰈂" {
-            return Ok("".to_string());
+        Wired {
+            placeholder,
+            config,
         }
-        Ok(format!(
-            "{}{}{}",
-            self.config.icon_font, icon, self.config.default_font
-        ))
     }
 }
 
-fn run(tick: Duration, tx: Sender<WiredState>, interface: String) -> Result<(), Error> {
+impl<'a> BaruMod for Wired<'a> {
+    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+        run
+    }
+
+    fn placeholder(&self) -> &str {
+        self.placeholder
+    }
+}
+
+pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+    let config = InternalConfig::from(&main_config);
     loop {
-        tx.send(nl_data::wired_data(&interface))?;
-        thread::sleep(tick);
+        let mut icon = "󰈂";
+        if let WiredState::Connected = nl_data::wired_data(&config.interface) {
+            icon = "󰈁";
+        } else if config.discrete {
+            tx.send("".to_string())?;
+            return Ok(());
+        }
+        tx.send(format!(
+            "{}{}{}",
+            main_config.icon_font, icon, main_config.default_font
+        ))?;
+        thread::sleep(config.tick);
     }
 }
