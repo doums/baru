@@ -17,7 +17,7 @@ const PLACEHOLDER: &str = "+@fn=1;󰤯+@fn=0;";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const DISPLAY: Display = Display::Signal;
 const MAX_ESSID_LEN: usize = 10;
-const INTERFACE: &str = "wlp2s0";
+const INTERFACE: &str = "wlan0";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {

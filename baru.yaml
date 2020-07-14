@@ -417,8 +417,8 @@ wireless:
   #
   max_essid_len: 5
 
-  # interface: String, default: wlp2s0
+  # interface: String, default: wlan0
   #
   # The name of the wireless interface.
   #
-  interface: wlan0
+  interface: wlp2s0
