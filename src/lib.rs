@@ -118,3 +118,84 @@ fn read_and_parse<'a>(file: &'a str) -> Result<i32, Error> {
         .map_err(|err| format!("error while parsing the file \"{}\": {}", file, err))?;
     Ok(data)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_empty_format() {
+        let result = parse_format("");
+        assert_eq!(result.is_empty(), true);
+    }
+
+    #[test]
+    fn parse_one_char() {
+        let result = parse_format("a");
+        assert_eq!(result.is_empty(), true);
+    }
+
+    #[test]
+    fn parse_one_percent() {
+        let result = parse_format("%");
+        assert_eq!(result.is_empty(), true);
+    }
+
+    #[test]
+    fn parse_one_escaped_percent_i() {
+        let result = parse_format("\\%");
+        assert_eq!(result.is_empty(), true);
+    }
+
+    #[test]
+    fn parse_one_escaped_percent_ii() {
+        let result = parse_format("\\%%");
+        assert_eq!(result.is_empty(), true);
+    }
+
+    #[test]
+    fn parse_one_escaped_and_one_markup() {
+        let result = parse_format("\\%%a");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, 'a');
+        assert_eq!(result[0].1, 3);
+    }
+
+    #[test]
+    fn parse_peaceful_markup() {
+        let result = parse_format("%a");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, 'a');
+        assert_eq!(result[0].1, 1);
+    }
+
+    #[test]
+    fn parse_easy_markup() {
+        let result = parse_format("\\%a%b");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, 'b');
+        assert_eq!(result[0].1, 4);
+    }
+
+    #[test]
+    fn parse_normal_markup() {
+        let result = parse_format("\\%a%b%c");
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].0, 'b');
+        assert_eq!(result[0].1, 4);
+        assert_eq!(result[1].0, 'c');
+        assert_eq!(result[1].1, 6);
+    }
+
+    #[test]
+    fn parse_hard_markup() {
+        let result = parse_format("\\%a%b%c \\% %a\\% %");
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].0, 'b');
+        assert_eq!(result[0].1, 4);
+        assert_eq!(result[1].0, 'c');
+        assert_eq!(result[1].1, 6);
+        assert_eq!(result[2].0, 'a');
+        assert_eq!(result[2].1, 12);
+    }
+}
