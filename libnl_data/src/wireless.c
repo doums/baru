@@ -146,7 +146,6 @@ static int      send_for_station(t_wireless *wireless, struct nl_sock *socket) {
     }
     if (nl_send_sync(socket, msg) < 0) {
         printf("%s: unable to send Netlink message\n", PREFIX_ERROR);
-        goto error;
     }
     return 0;
 
@@ -186,7 +185,6 @@ static int      send_for_scan(t_wireless *wireless, struct nl_sock *socket) {
     }
     if (nl_send_sync(socket, msg) < 0) {
         printf("%s: unable to send Netlink message\n", PREFIX_ERROR);
-        goto error;
     }
     return 0;
 
