@@ -105,13 +105,13 @@ fn parse_format(format: &str) -> Vec<MarkupMatch> {
     matches
 }
 
-fn read_and_trim<'a>(file: &'a str) -> Result<String, Error> {
+fn read_and_trim(file: &str) -> Result<String, Error> {
     let content = fs::read_to_string(file)
         .map_err(|err| format!("error while reading the file \"{}\": {}", file, err))?;
     Ok(content.trim().to_string())
 }
 
-fn read_and_parse<'a>(file: &'a str) -> Result<i32, Error> {
+fn read_and_parse(file: &str) -> Result<i32, Error> {
     let content = read_and_trim(file)?;
     let data = content
         .parse::<i32>()

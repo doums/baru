@@ -19,8 +19,10 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+pub type RunPtr = fn(Config, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error>;
+
 pub trait BaruMod {
-    fn run_fn(&self) -> fn(Config, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error>;
+    fn run_fn(&self) -> RunPtr;
     fn placeholder(&self) -> &str;
 }
 
@@ -38,7 +40,7 @@ enum Module<'a> {
 }
 
 impl<'a> BaruMod for Module<'a> {
-    fn run_fn(&self) -> fn(Config, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+    fn run_fn(&self) -> RunPtr {
         match self {
             Module::Battery(m) => m.run_fn(),
             Module::Brightness(m) => m.run_fn(),

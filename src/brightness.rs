@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::BaruMod;
+use crate::module::{BaruMod, RunPtr};
 use crate::Pulse;
 use crate::{read_and_parse, Config as MainConfig};
 use serde::{Deserialize, Serialize};
@@ -13,8 +13,7 @@ use std::thread;
 use std::time::Duration;
 
 const PLACEHOLDER: &str = "+@fn=1;󰃞+@fn=0;";
-const SYS_PATH: &'static str =
-    "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
+const SYS_PATH: &str = "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const TICK_RATE: Duration = Duration::from_millis(50);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -68,7 +67,7 @@ impl<'a> Brightness<'a> {
 }
 
 impl<'a> BaruMod for Brightness<'a> {
-    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+    fn run_fn(&self) -> RunPtr {
         run
     }
 

@@ -59,11 +59,11 @@ pub fn wireless_data(interface: &str) -> WirelessState {
         } else {
             Some(CStr::from_ptr(essid_ptr).to_string_lossy().into_owned())
         };
-        return if signal.is_none() && essid.is_none() {
+        if signal.is_none() && essid.is_none() {
             WirelessState::Disconnected
         } else {
             WirelessState::Connected(WirelessData { signal, essid })
-        };
+        }
     }
 }
 
@@ -74,12 +74,12 @@ pub fn wired_data(interface: &str) -> WiredState {
         let is_op = data.is_operational;
         let is_carrying = data.is_carrying;
         let has_ip = data.has_ip;
-        return if is_carrying && is_op && has_ip {
+        if is_carrying && is_op && has_ip {
             WiredState::Connected
         } else if is_carrying {
             WiredState::Disconnected
         } else {
             WiredState::NotPlugged
-        };
+        }
     }
 }

@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::BaruMod;
+use crate::module::{BaruMod, RunPtr};
 use crate::Config as MainConfig;
 use crate::Pulse;
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ use std::thread;
 use std::time::Duration;
 
 const PLACEHOLDER: &str = "+@fn=1;󰻠+@fn=0;";
-const PROC_STAT: &'static str = "/proc/stat";
+const PROC_STAT: &str = "/proc/stat";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const HIGH_LEVEL: u32 = 90;
 
@@ -81,7 +81,7 @@ impl<'a> Cpu<'a> {
 }
 
 impl<'a> BaruMod for Cpu<'a> {
-    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+    fn run_fn(&self) -> RunPtr {
         run
     }
 
@@ -103,14 +103,13 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
         data.next();
         let times: Vec<i32> = data
             .map(|n| {
-                n.parse::<i32>().expect(&format!(
-                    "error while parsing the file \"{}\"",
-                    config.proc_stat
-                ))
+                n.parse::<i32>().unwrap_or_else(|_| {
+                    panic!("error while parsing the file \"{}\"", config.proc_stat)
+                })
             })
             .collect();
         let idle = times[3] + times[4];
-        let total = times.iter().fold(0, |acc, i| acc + i);
+        let total = times.iter().sum();
         let diff_total = total - prev_total;
         let diff_idle = idle - prev_idle;
         let usage = (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;

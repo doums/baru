@@ -56,7 +56,7 @@ pub struct Pulse(
 );
 
 impl Pulse {
-    pub fn new<'a>(config: &'a Config) -> Result<Self, Error> {
+    pub fn new(config: &Config) -> Result<Self, Error> {
         let (out_tx, out_rx) = mpsc::channel();
         let (in_tx, in_rx) = mpsc::channel();
         let tick = match &config.pulse_tick {
@@ -198,18 +198,16 @@ fn run(
 
 fn parse_sink_info(list: ListResult<&SinkInfo>) -> Option<PulseData> {
     match list {
-        ListResult::Item(item) => {
-            return match parse_info(&IntroInfo::from(item)) {
-                Ok(data) => Some(data),
-                Err(err) => {
-                    eprintln!("in pulse module, sink, {}", err);
-                    return None;
-                }
-            };
-        }
+        ListResult::Item(item) => match parse_info(&IntroInfo::from(item)) {
+            Ok(data) => Some(data),
+            Err(err) => {
+                eprintln!("in pulse module, sink, {}", err);
+                None
+            }
+        },
         ListResult::Error => {
             eprintln!("in pulse module, failed to get sink info");
-            return None;
+            None
         }
         _ => None,
     }
@@ -217,18 +215,16 @@ fn parse_sink_info(list: ListResult<&SinkInfo>) -> Option<PulseData> {
 
 fn parse_source_info(list: ListResult<&SourceInfo>) -> Option<PulseData> {
     match list {
-        ListResult::Item(item) => {
-            return match parse_info(&IntroInfo::from(item)) {
-                Ok(data) => Some(data),
-                Err(err) => {
-                    eprintln!("in pulse module, source, {}", err);
-                    return None;
-                }
-            };
-        }
+        ListResult::Item(item) => match parse_info(&IntroInfo::from(item)) {
+            Ok(data) => Some(data),
+            Err(err) => {
+                eprintln!("in pulse module, source, {}", err);
+                None
+            }
+        },
         ListResult::Error => {
             eprintln!("in pulse module, failed to get source info");
-            return None;
+            None
         }
         _ => None,
     }

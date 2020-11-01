@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::BaruMod;
+use crate::module::{BaruMod, RunPtr};
 use crate::pulse::Pulse;
 use crate::{read_and_trim, Config as MainConfig};
 use regex::Regex;
@@ -14,7 +14,7 @@ use std::thread;
 use std::time::Duration;
 
 const PLACEHOLDER: &str = "+@fn=1;󰍛+@fn=0;";
-const MEMINFO: &'static str = "/proc/meminfo";
+const MEMINFO: &str = "/proc/meminfo";
 const DISPLAY: Display = Display::GiB;
 const HIGH_LEVEL: u32 = 90;
 const TICK_RATE: Duration = Duration::from_millis(500);
@@ -94,7 +94,7 @@ impl<'a> Memory<'a> {
 }
 
 impl<'a> BaruMod for Memory<'a> {
-    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+    fn run_fn(&self) -> RunPtr {
         run
     }
 
@@ -206,11 +206,11 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
 
 fn humanize<'a>(v1: f32, v2: f32, u1: &'a str, u2: &'a str) -> String {
     if v1 >= 1.0 {
-        return if v1.fract() == 0.0 {
+        if v1.fract() == 0.0 {
             format!("{:4.0}{}", v1, u1)
         } else {
             format!("{:4.1}{}", v1, u1)
-        };
+        }
     } else {
         format!("{:4.0}{}", v2, u2)
     }

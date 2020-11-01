@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::BaruMod;
+use crate::module::{BaruMod, RunPtr};
 use crate::pulse::Pulse;
 use crate::{read_and_parse, Config as MainConfig};
 use regex::Regex;
@@ -16,7 +16,7 @@ use std::thread;
 use std::time::Duration;
 
 const PLACEHOLDER: &str = "+@fn=1;󱃃+@fn=0;";
-const CORETEMP: &'static str = "/sys/devices/platform/coretemp.0/hwmon";
+const CORETEMP: &str = "/sys/devices/platform/coretemp.0/hwmon";
 const HIGH_LEVEL: u32 = 75;
 const INPUT: u32 = 1;
 const TICK_RATE: Duration = Duration::from_millis(50);
@@ -61,19 +61,17 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig {
             if let Some(i) = &c.core_inputs {
                 if let Ok(v) = i.parse::<u32>() {
                     inputs.push(v);
-                } else {
-                    if let Some(caps) = re.captures(i) {
-                        let start = caps.get(1).unwrap().as_str().parse::<u32>().unwrap();
-                        let end = caps.get(2).unwrap().as_str().parse::<u32>().unwrap();
-                        if start > end {
-                            return Err(Error::new(error));
-                        }
-                        for i in start..end + 1 {
-                            inputs.push(i)
-                        }
-                    } else {
+                } else if let Some(caps) = re.captures(i) {
+                    let start = caps.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                    let end = caps.get(2).unwrap().as_str().parse::<u32>().unwrap();
+                    if start > end {
                         return Err(Error::new(error));
                     }
+                    for i in start..end + 1 {
+                        inputs.push(i)
+                    }
+                } else {
+                    return Err(Error::new(error));
                 }
             }
         }
@@ -111,7 +109,7 @@ impl<'a> Temperature<'a> {
 }
 
 impl<'a> BaruMod for Temperature<'a> {
-    fn run_fn(&self) -> fn(MainConfig, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error> {
+    fn run_fn(&self) -> RunPtr {
         run
     }
 
@@ -130,7 +128,7 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
                 config.coretemp, i
             ))?)
         }
-        let sum = inputs.iter().fold(0, |acc, x| acc + x);
+        let sum: i32 = inputs.iter().sum();
         let average = ((sum as f32 / inputs.len() as f32) / 1000_f32).round() as i32;
         let mut color = &main_config.default_color;
         let icon = match average {
@@ -155,7 +153,7 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
     }
 }
 
-fn find_temp_dir<'a>(str_path: &'a str) -> Result<String, Error> {
+fn find_temp_dir(str_path: &str) -> Result<String, Error> {
     let entries = fs::read_dir(str_path).map_err(|err| {
         format!(
             "error while reading the directory \"{}\": {}",
