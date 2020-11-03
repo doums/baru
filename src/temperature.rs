@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::pulse::Pulse;
-use crate::{read_and_parse, Config as MainConfig};
+use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -109,6 +109,10 @@ impl<'a> Temperature<'a> {
 }
 
 impl<'a> BaruMod for Temperature<'a> {
+    fn name(&self) -> &str {
+        "temperature"
+    }
+
     fn run_fn(&self) -> RunPtr {
         run
     }
@@ -118,7 +122,12 @@ impl<'a> BaruMod for Temperature<'a> {
     }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::try_from(&main_config)?;
     loop {
         let mut inputs = vec![];
@@ -140,14 +149,17 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
         if average >= config.high_level as i32 {
             color = &main_config.red;
         }
-        tx.send(format!(
-            "{:3}°{}{}{}{}{}",
-            average,
-            color,
-            main_config.icon_font,
-            icon,
-            main_config.default_font,
-            main_config.default_color
+        tx.send(ModuleMsg(
+            key,
+            format!(
+                "{:3}°{}{}{}{}{}",
+                average,
+                color,
+                main_config.icon_font,
+                icon,
+                main_config.default_font,
+                main_config.default_color
+            ),
         ))?;
         thread::sleep(config.tick);
     }

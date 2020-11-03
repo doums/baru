@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::nl_data::{self, WirelessState};
 use crate::pulse::Pulse;
-use crate::Config as MainConfig;
+use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -101,9 +101,18 @@ impl<'a> BaruMod for Wireless<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "wireless"
+    }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
         let state = nl_data::wireless_data(&config.interface);
@@ -138,13 +147,13 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
             main_config.icon_font, icon, main_config.default_font
         );
         match config.display {
-            Display::IconOnly => tx.send(icon_format)?,
-            Display::Essid => tx.send(format!("{}{}", essid, icon_format))?,
+            Display::IconOnly => tx.send(ModuleMsg(key, icon_format))?,
+            Display::Essid => tx.send(ModuleMsg(key, format!("{}{}", essid, icon_format)))?,
             Display::Signal => {
                 if let Some(s) = signal {
-                    tx.send(format!("{:3}%{}", s, icon_format))?;
+                    tx.send(ModuleMsg(key, format!("{:3}%{}", s, icon_format)))?;
                 } else {
-                    tx.send(format!("    {}", icon_format))?;
+                    tx.send(ModuleMsg(key, format!("    {}", icon_format)))?;
                 }
             }
         }

@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::pulse::Pulse;
-use crate::{read_and_trim, Config as MainConfig};
+use crate::{read_and_trim, Config as MainConfig, ModuleMsg};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
@@ -101,6 +101,10 @@ impl<'a> BaruMod for Memory<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "memory"
+    }
 }
 
 #[derive(Debug)]
@@ -124,7 +128,12 @@ impl MemRegex {
     }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     let mem_regex = MemRegex::new();
     loop {
@@ -182,22 +191,28 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
             color = &main_config.red;
         }
         match config.display {
-            Display::GB | Display::GiB => tx.send(format!(
-                "{}/{}{}{}󰍛{}{}",
-                used,
-                total,
-                color,
-                main_config.icon_font,
-                main_config.default_font,
-                main_config.default_color
+            Display::GB | Display::GiB => tx.send(ModuleMsg(
+                key,
+                format!(
+                    "{}/{}{}{}󰍛{}{}",
+                    used,
+                    total,
+                    color,
+                    main_config.icon_font,
+                    main_config.default_font,
+                    main_config.default_color
+                ),
             ))?,
-            Display::Percentage => tx.send(format!(
-                "{:3}%{}{}󰍛{}{}",
-                percentage,
-                color,
-                main_config.icon_font,
-                main_config.default_font,
-                main_config.default_color
+            Display::Percentage => tx.send(ModuleMsg(
+                key,
+                format!(
+                    "{:3}%{}{}󰍛{}{}",
+                    percentage,
+                    color,
+                    main_config.icon_font,
+                    main_config.default_font,
+                    main_config.default_color
+                ),
             ))?,
         };
         thread::sleep(config.tick);

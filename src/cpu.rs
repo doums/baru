@@ -4,8 +4,8 @@
 
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
-use crate::Config as MainConfig;
 use crate::Pulse;
+use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
@@ -88,9 +88,18 @@ impl<'a> BaruMod for Cpu<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "cpu"
+    }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     let mut prev_idle = 0;
     let mut prev_total = 0;
@@ -119,13 +128,16 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
         if usage >= config.high_level as i32 {
             color = &main_config.red;
         }
-        tx.send(format!(
-            "{:3}%{}{}󰻠{}{}",
-            usage,
-            color,
-            &main_config.icon_font,
-            &main_config.default_font,
-            &main_config.default_color
+        tx.send(ModuleMsg(
+            key,
+            format!(
+                "{:3}%{}{}󰻠{}{}",
+                usage,
+                color,
+                &main_config.icon_font,
+                &main_config.default_font,
+                &main_config.default_color
+            ),
         ))?;
         thread::sleep(config.tick);
     }

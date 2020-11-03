@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::pulse::Pulse;
-use crate::Config as MainConfig;
+use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -75,12 +75,17 @@ impl<'a> BaruMod for Sound<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "sound"
+    }
 }
 
 pub fn run(
+    key: char,
     main_config: MainConfig,
     pulse: Arc<Mutex<Pulse>>,
-    tx: Sender<String>,
+    tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
@@ -98,14 +103,17 @@ pub fn run(
             if data.0 > config.high_level as i32 {
                 color = &main_config.red;
             }
-            tx.send(format!(
-                "{:3}%{}{}{}{}{}",
-                data.0,
-                color,
-                main_config.icon_font,
-                icon,
-                main_config.default_font,
-                main_config.default_color
+            tx.send(ModuleMsg(
+                key,
+                format!(
+                    "{:3}%{}{}{}{}{}",
+                    data.0,
+                    color,
+                    main_config.icon_font,
+                    icon,
+                    main_config.default_font,
+                    main_config.default_color
+                ),
             ))?;
         }
         thread::sleep(config.tick);

@@ -5,8 +5,8 @@
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::nl_data::{self, WiredState};
-use crate::Config as MainConfig;
 use crate::Pulse;
+use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -85,21 +85,33 @@ impl<'a> BaruMod for Wired<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "wired"
+    }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
         let mut icon = "󰈂";
         if let WiredState::Connected = nl_data::wired_data(&config.interface) {
             icon = "󰈁";
         } else if config.discrete {
-            tx.send("".to_string())?;
+            tx.send(ModuleMsg(key, "".to_string()))?;
             return Ok(());
         }
-        tx.send(format!(
-            "{}{}{}",
-            main_config.icon_font, icon, main_config.default_font
+        tx.send(ModuleMsg(
+            key,
+            format!(
+                "{}{}{}",
+                main_config.icon_font, icon, main_config.default_font
+            ),
         ))?;
         thread::sleep(config.tick);
     }

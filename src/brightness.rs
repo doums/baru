@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::Pulse;
-use crate::{read_and_parse, Config as MainConfig};
+use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -74,17 +74,29 @@ impl<'a> BaruMod for Brightness<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "brightness"
+    }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
         let brightness = read_and_parse(&format!("{}/actual_brightness", config.sys_path))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", config.sys_path))?;
         let percentage = 100 * brightness / max_brightness;
-        tx.send(format!(
-            "{:3}%{}󰃟{}",
-            percentage, main_config.icon_font, main_config.default_font
+        tx.send(ModuleMsg(
+            key,
+            format!(
+                "{:3}%{}󰃟{}",
+                percentage, main_config.icon_font, main_config.default_font
+            ),
         ))?;
         thread::sleep(config.tick);
     }

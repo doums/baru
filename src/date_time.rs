@@ -4,8 +4,8 @@
 
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
-use crate::Config as MainConfig;
 use crate::Pulse;
+use crate::{Config as MainConfig, ModuleMsg};
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
@@ -75,13 +75,22 @@ impl<'a> BaruMod for DateTime<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "date_time"
+    }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
         let now = Local::now();
-        tx.send(now.format(config.format).to_string())?;
+        tx.send(ModuleMsg(key, now.format(config.format).to_string()))?;
         thread::sleep(config.tick);
     }
 }

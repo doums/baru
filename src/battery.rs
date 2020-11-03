@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{BaruMod, RunPtr};
 use crate::pulse::Pulse;
-use crate::{read_and_parse, read_and_trim, Config as MainConfig};
+use crate::{read_and_parse, read_and_trim, Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::sync::mpsc::Sender;
@@ -96,9 +96,18 @@ impl<'a> BaruMod for Battery<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn name(&self) -> &str {
+        "battery"
+    }
 }
 
-pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) -> Result<(), Error> {
+pub fn run(
+    key: char,
+    main_config: MainConfig,
+    _: Arc<Mutex<Pulse>>,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
         let energy_full = match config.full_design {
@@ -117,14 +126,17 @@ pub fn run(main_config: MainConfig, _: Arc<Mutex<Pulse>>, tx: Sender<String>) ->
         if status == "Full" {
             color = &main_config.green
         }
-        tx.send(format!(
-            "{:3}%{}{}{}{}{}",
-            battery_level,
-            color,
-            main_config.icon_font,
-            get_battery_icon(&status, battery_level),
-            main_config.default_font,
-            main_config.default_color
+        tx.send(ModuleMsg(
+            key,
+            format!(
+                "{:3}%{}{}{}{}{}",
+                battery_level,
+                color,
+                main_config.icon_font,
+                get_battery_icon(&status, battery_level),
+                main_config.default_font,
+                main_config.default_color
+            ),
         ))?;
         thread::sleep(config.tick);
     }

@@ -52,6 +52,10 @@ fn main() -> Result<(), Error> {
         print_out_err(&format!("baru: {}", err));
         process::exit(1);
     });
+    baru.start().unwrap_or_else(|err| {
+        print_out_err(&format!("baru: {}", err));
+        process::exit(1);
+    });
     loop {
         baru.update().unwrap_or_else(|err| {
             print_out_err(&format!("baru: {}", err));

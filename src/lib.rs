@@ -23,15 +23,20 @@ use date_time::Config as DateTimeConfig;
 use error::Error;
 use memory::Config as MemoryConfig;
 use mic::Config as MicConfig;
-use module::Wrapper;
+use module::{BaruMod, ModuleData};
 use pulse::Pulse;
 use serde::{Deserialize, Serialize};
 use sound::Config as SoundConfig;
 use std::fs;
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
+use std::thread;
 use temperature::Config as TemperatureConfig;
 use wired::Config as WiredConfig;
 use wireless::Config as WirelessConfig;
+
+#[derive(Debug)]
+pub struct ModuleMsg(char, String);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -46,19 +51,22 @@ pub struct Config {
     brightness: Option<BrightnessConfig>,
     battery: Option<BatteryConfig>,
     cpu: Option<CpuConfig>,
+    date_time: Option<DateTimeConfig>,
     memory: Option<MemoryConfig>,
     mic: Option<MicConfig>,
     sound: Option<SoundConfig>,
     temperature: Option<TemperatureConfig>,
     wireless: Option<WirelessConfig>,
     wired: Option<WiredConfig>,
-    date_time: Option<DateTimeConfig>,
 }
 
 pub struct Baru<'a> {
-    modules: Vec<Wrapper<'a>>,
+    config: &'a Config,
+    modules: Vec<ModuleData<'a>>,
     format: &'a str,
+    pulse: &'a Arc<Mutex<Pulse>>,
     markup_matches: Vec<MarkupMatch>,
+    channel: (Sender<ModuleMsg>, Receiver<ModuleMsg>),
 }
 
 #[derive(Debug)]
@@ -68,23 +76,61 @@ impl<'a> Baru<'a> {
     pub fn with_config(config: &'a Config, pulse: &'a Arc<Mutex<Pulse>>) -> Result<Self, Error> {
         let mut modules = vec![];
         let markup_matches = parse_format(&config.bar);
-        for module in &markup_matches {
-            modules.push(Wrapper::new(module.0, config, &pulse)?);
-        }
-        for module in &mut modules {
-            module.start()?;
+        for markup in &markup_matches {
+            modules.push(ModuleData::new(markup.0, config)?);
         }
         Ok(Baru {
+            config,
+            pulse,
+            channel: mpsc::channel(),
             modules,
             format: &config.bar,
             markup_matches,
         })
     }
 
+    pub fn start(&self) -> Result<(), Error> {
+        for data in &self.modules {
+            let builder = thread::Builder::new().name(format!("mod_{}", data.module.name()));
+            let cloned_m_conf = self.config.clone();
+            let tx1 = mpsc::Sender::clone(&self.channel.0);
+            let pulse = Arc::clone(self.pulse);
+            let run = data.module.run_fn();
+            let key = data.key;
+            builder.spawn(move || -> Result<(), Error> {
+                run(key, cloned_m_conf, pulse, tx1)?;
+                Ok(())
+            })?;
+        }
+        Ok(())
+    }
+
+    fn module_output(&self, key: char) -> Result<&str, Error> {
+        let module = self
+            .modules
+            .iter()
+            .find(|data| data.key == key)
+            .ok_or(format!("module for key \"{}\" not found", key))?;
+
+        if let Some(data) = &module.prev_data {
+            Ok(data)
+        } else {
+            Ok(module.module.placeholder())
+        }
+    }
+
     pub fn update(&mut self) -> Result<(), Error> {
+        let messages: Vec<ModuleMsg> = self.channel.1.try_iter().collect();
+        for module in &mut self.modules {
+            let mut iter = messages.iter().rev();
+            let message = iter.find(|v| v.0 == module.key);
+            if let Some(value) = message {
+                module.prev_data = Some(value.1.clone());
+            }
+        }
         let mut output = self.format.to_string();
-        for (i, v) in self.markup_matches.iter().enumerate().rev() {
-            output.replace_range(v.1 - 1..v.1 + 1, &self.modules[i].refresh()?);
+        for v in self.markup_matches.iter().rev() {
+            output.replace_range(v.1 - 1..v.1 + 1, self.module_output(v.0)?);
         }
         output = output.replace("\\%", "%");
         println!("{}", output);

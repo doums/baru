@@ -14,29 +14,51 @@ use crate::temperature::Temperature;
 use crate::wired::Wired;
 use crate::wireless::Wireless;
 use crate::Config;
+use crate::ModuleMsg;
 use crate::Pulse;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::convert::TryFrom;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
-pub type RunPtr = fn(Config, Arc<Mutex<Pulse>>, Sender<String>) -> Result<(), Error>;
+pub type RunPtr = fn(char, Config, Arc<Mutex<Pulse>>, Sender<ModuleMsg>) -> Result<(), Error>;
 
 pub trait BaruMod {
+    fn name(&self) -> &str;
     fn run_fn(&self) -> RunPtr;
     fn placeholder(&self) -> &str;
 }
 
-enum Module<'a> {
+pub enum Module<'a> {
     Battery(Battery<'a>),
     Brightness(Brightness<'a>),
     Cpu(Cpu<'a>),
-    Mic(Mic<'a>),
-    Wired(Wired<'a>),
     DateTime(DateTime<'a>),
     Memory(Memory<'a>),
+    Mic(Mic<'a>),
+    Wired(Wired<'a>),
     Sound(Sound<'a>),
     Temperature(Temperature<'a>),
     Wireless(Wireless<'a>),
+}
+
+impl<'a> TryFrom<(char, &'a Config)> for Module<'a> {
+    type Error = Error;
+
+    fn try_from((key, config): (char, &'a Config)) -> Result<Self, Self::Error> {
+        match key {
+            'a' => Ok(Module::Battery(Battery::with_config(config))),
+            'b' => Ok(Module::Brightness(Brightness::with_config(config))),
+            'c' => Ok(Module::Cpu(Cpu::with_config(config))),
+            'd' => Ok(Module::DateTime(DateTime::with_config(config))),
+            'e' => Ok(Module::Wired(Wired::with_config(config))),
+            'i' => Ok(Module::Mic(Mic::with_config(config))),
+            'm' => Ok(Module::Memory(Memory::with_config(config))),
+            's' => Ok(Module::Sound(Sound::with_config(config))),
+            't' => Ok(Module::Temperature(Temperature::with_config(config))),
+            'w' => Ok(Module::Wireless(Wireless::with_config(config))),
+            _ => Err(Error::new(format!("unknown markup \"{}\"", key))),
+        }
+    }
 }
 
 impl<'a> BaruMod for Module<'a> {
@@ -46,11 +68,11 @@ impl<'a> BaruMod for Module<'a> {
             Module::Brightness(m) => m.run_fn(),
             Module::Cpu(m) => m.run_fn(),
             Module::DateTime(m) => m.run_fn(),
-            Module::Wired(m) => m.run_fn(),
             Module::Memory(m) => m.run_fn(),
             Module::Mic(m) => m.run_fn(),
             Module::Sound(m) => m.run_fn(),
             Module::Temperature(m) => m.run_fn(),
+            Module::Wired(m) => m.run_fn(),
             Module::Wireless(m) => m.run_fn(),
         }
     }
@@ -61,142 +83,43 @@ impl<'a> BaruMod for Module<'a> {
             Module::Brightness(m) => m.placeholder(),
             Module::Cpu(m) => m.placeholder(),
             Module::DateTime(m) => m.placeholder(),
-            Module::Wired(m) => m.placeholder(),
             Module::Memory(m) => m.placeholder(),
+            Module::Wired(m) => m.placeholder(),
             Module::Mic(m) => m.placeholder(),
             Module::Sound(m) => m.placeholder(),
             Module::Temperature(m) => m.placeholder(),
             Module::Wireless(m) => m.placeholder(),
         }
     }
+
+    fn name(&self) -> &str {
+        match self {
+            Module::Battery(m) => m.name(),
+            Module::Brightness(m) => m.name(),
+            Module::Cpu(m) => m.name(),
+            Module::DateTime(m) => m.name(),
+            Module::Memory(m) => m.name(),
+            Module::Mic(m) => m.name(),
+            Module::Wired(m) => m.name(),
+            Module::Sound(m) => m.name(),
+            Module::Temperature(m) => m.name(),
+            Module::Wireless(m) => m.name(),
+        }
+    }
 }
 
-pub struct Wrapper<'a> {
-    channel: (Sender<String>, Receiver<String>),
-    prev_data: Option<String>,
-    config: &'a Config,
-    name: &'a str,
-    pulse: &'a Arc<Mutex<Pulse>>,
-    module: Module<'a>,
+pub struct ModuleData<'a> {
+    pub key: char,
+    pub module: Module<'a>,
+    pub prev_data: Option<String>,
 }
 
-impl<'a> Wrapper<'a> {
-    pub fn new(
-        markup: char,
-        config: &'a Config,
-        pulse: &'a Arc<Mutex<Pulse>>,
-    ) -> Result<Self, Error> {
-        let (tx, rx) = mpsc::channel();
-        match markup {
-            'a' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "battery",
-                pulse,
-                module: Module::Battery(Battery::with_config(config)),
-            }),
-            'b' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "brightness",
-                pulse,
-                module: Module::Brightness(Brightness::with_config(config)),
-            }),
-            'c' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "cpu",
-                pulse,
-                module: Module::Cpu(Cpu::with_config(config)),
-            }),
-            'd' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "date_time",
-                pulse,
-                module: Module::DateTime(DateTime::with_config(config)),
-            }),
-            'e' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "wired",
-                pulse,
-                module: Module::Wired(Wired::with_config(config)),
-            }),
-            'm' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "memory",
-                pulse,
-                module: Module::Memory(Memory::with_config(config)),
-            }),
-            'i' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "mic",
-                pulse,
-                module: Module::Mic(Mic::with_config(config)),
-            }),
-            's' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "sound",
-                pulse,
-                module: Module::Sound(Sound::with_config(config)),
-            }),
-            't' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "temperature",
-                pulse,
-                module: Module::Temperature(Temperature::with_config(config)),
-            }),
-            'w' => Ok(Wrapper {
-                channel: (tx, rx),
-                config,
-                prev_data: None,
-                name: "wireless",
-                pulse,
-                module: Module::Wireless(Wireless::with_config(config)),
-            }),
-            _ => Err(Error::new(format!("unknown markup \"{}\"", markup))),
-        }
-    }
-
-    pub fn start(&mut self) -> Result<(), Error> {
-        let builder = thread::Builder::new().name(format!("mod_{}", self.name));
-        let cloned_m_conf = self.config.clone();
-        let tx1 = mpsc::Sender::clone(&self.channel.0);
-        let pulse = Arc::clone(self.pulse);
-        let run = self.module.run_fn();
-        builder.spawn(move || -> Result<(), Error> {
-            run(cloned_m_conf, pulse, tx1)?;
-            Ok(())
-        })?;
-        Ok(())
-    }
-
-    pub fn data(&self) -> Option<String> {
-        self.channel.1.try_iter().last()
-    }
-
-    pub fn refresh(&mut self) -> Result<&str, Error> {
-        if let Some(data) = self.data() {
-            self.prev_data = Some(data);
-        }
-        if let Some(data) = &self.prev_data {
-            Ok(data)
-        } else {
-            Ok(self.module.placeholder())
-        }
+impl<'a> ModuleData<'a> {
+    pub fn new(key: char, config: &'a Config) -> Result<Self, Error> {
+        Ok(ModuleData {
+            key,
+            module: Module::try_from((key, config))?,
+            prev_data: None,
+        })
     }
 }
