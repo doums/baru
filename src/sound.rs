@@ -14,8 +14,8 @@ use std::time::Duration;
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);
-const MUTE_TEXT: &str = ".so";
-const TEXT: &str = "sou";
+const MUTE_LABEL: &str = ".so";
+const LABEL: &str = "sou";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -36,8 +36,8 @@ pub struct InternalConfig<'a> {
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut text = TEXT;
-        let mut mute_text = MUTE_TEXT;
+        let mut text = LABEL;
+        let mut mute_text = MUTE_LABEL;
         if let Some(c) = &config.sound {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)

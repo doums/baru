@@ -18,8 +18,8 @@ const MEMINFO: &str = "/proc/meminfo";
 const DISPLAY: Display = Display::GiB;
 const HIGH_LEVEL: u32 = 90;
 const TICK_RATE: Duration = Duration::from_millis(500);
-const TEXT: &str = "mem";
-const HIGH_TEXT: &str = "!me";
+const LABEL: &str = "mem";
+const HIGH_LABEL: &str = "!me";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
@@ -55,8 +55,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut high_level = HIGH_LEVEL;
         let mut display = DISPLAY;
         let mut tick = TICK_RATE;
-        let mut text = TEXT;
-        let mut high_text = HIGH_TEXT;
+        let mut text = LABEL;
+        let mut high_text = HIGH_LABEL;
         if let Some(c) = &config.memory {
             if let Some(v) = &c.meminfo {
                 meminfo = v;

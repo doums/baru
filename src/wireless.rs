@@ -18,8 +18,8 @@ const TICK_RATE: Duration = Duration::from_millis(500);
 const DISPLAY: Display = Display::Signal;
 const MAX_ESSID_LEN: usize = 10;
 const INTERFACE: &str = "wlan0";
-const TEXT: &str = "wle";
-const DISCONNECTED_TEXT: &str = ".wl";
+const LABEL: &str = "wle";
+const DISCONNECTED_LABEL: &str = ".wl";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
@@ -55,8 +55,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut display = DISPLAY;
         let mut max_essid_len = MAX_ESSID_LEN;
         let mut interface = INTERFACE;
-        let mut text = TEXT;
-        let mut disconnected_text = DISCONNECTED_TEXT;
+        let mut text = LABEL;
+        let mut disconnected_text = DISCONNECTED_LABEL;
         if let Some(c) = &config.wireless {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)

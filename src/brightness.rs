@@ -15,7 +15,7 @@ use std::time::Duration;
 const PLACEHOLDER: &str = "-";
 const SYS_PATH: &str = "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const TICK_RATE: Duration = Duration::from_millis(50);
-const TEXT: &str = "bri";
+const LABEL: &str = "bri";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -36,7 +36,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut sys_path = SYS_PATH;
         let mut tick = TICK_RATE;
-        let mut text = TEXT;
+        let mut text = LABEL;
         if let Some(c) = &config.brightness {
             if let Some(v) = &c.sys_path {
                 sys_path = &v;

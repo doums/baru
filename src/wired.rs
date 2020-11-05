@@ -16,8 +16,8 @@ use std::time::Duration;
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
-const TEXT: &str = "wir";
-const DISCONNECTED_TEXT: &str = ".wi";
+const LABEL: &str = "wir";
+const DISCONNECTED_LABEL: &str = ".wi";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -43,8 +43,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut tick = TICK_RATE;
         let mut interface = INTERFACE;
         let mut discrete = false;
-        let mut text = TEXT;
-        let mut disconnected_text = DISCONNECTED_TEXT;
+        let mut text = LABEL;
+        let mut disconnected_text = DISCONNECTED_LABEL;
         if let Some(c) = &config.wired {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)

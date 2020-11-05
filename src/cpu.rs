@@ -19,8 +19,8 @@ const PLACEHOLDER: &str = "-";
 const PROC_STAT: &str = "/proc/stat";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const HIGH_LEVEL: u32 = 90;
-const TEXT: &str = "cpu";
-const HIGH_TEXT: &str = "!cp";
+const LABEL: &str = "cpu";
+const HIGH_LABEL: &str = "!cp";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -46,8 +46,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut tick = TICK_RATE;
         let mut proc_stat = PROC_STAT;
         let mut high_level = HIGH_LEVEL;
-        let mut text = TEXT;
-        let mut high_text = HIGH_TEXT;
+        let mut text = LABEL;
+        let mut high_text = HIGH_LABEL;
         if let Some(c) = &config.cpu {
             if let Some(f) = &c.proc_stat {
                 proc_stat = &f;

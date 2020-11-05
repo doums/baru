@@ -20,8 +20,8 @@ const CORETEMP: &str = "/sys/devices/platform/coretemp.0/hwmon";
 const HIGH_LEVEL: u32 = 75;
 const INPUT: u32 = 1;
 const TICK_RATE: Duration = Duration::from_millis(50);
-const TEXT: &str = "tem";
-const HIGH_TEXT: &str = "!te";
+const LABEL: &str = "tem";
+const HIGH_LABEL: &str = "!te";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -54,8 +54,8 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let mut inputs = vec![];
         let error = "error when parsing temperature config, wrong core_inputs option, a digit or an inclusive range (eg. 2..4) expected";
         let re = Regex::new(r"^(\d+)\.\.(\d+)$").unwrap();
-        let mut text = TEXT;
-        let mut high_text = HIGH_TEXT;
+        let mut text = LABEL;
+        let mut high_text = HIGH_LABEL;
         if let Some(c) = &config.temperature {
             if let Some(v) = &c.coretemp {
                 coretemp = &v;
