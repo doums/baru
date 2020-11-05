@@ -22,21 +22,21 @@ pub struct Config {
     format: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
-    text: Option<String>,
+    label: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
     format: &'a str,
     tick: Duration,
-    text: Option<&'a str>,
+    label: Option<&'a str>,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
         let mut format = FORMAT;
-        let mut text = None;
+        let mut label = None;
         if let Some(c) = &config.date_time {
             if let Some(d) = &c.format {
                 format = d;
@@ -44,9 +44,13 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            text = c.text.as_deref();
+            label = c.label.as_deref();
         }
-        InternalConfig { format, tick, text }
+        InternalConfig {
+            format,
+            tick,
+            label,
+        }
     }
 }
 
@@ -94,10 +98,10 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         let now = Local::now();
-        match config.text {
-            Some(text) => tx.send(ModuleMsg(
+        match config.label {
+            Some(label) => tx.send(ModuleMsg(
                 key,
-                format!("{}{}", now.format(config.format), text),
+                format!("{}{}", now.format(config.format), label),
             ))?,
             None => tx.send(ModuleMsg(key, now.format(config.format).to_string()))?,
         }

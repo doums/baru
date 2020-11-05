@@ -35,8 +35,8 @@ pub struct Config {
     max_essid_len: Option<usize>,
     interface: Option<String>,
     placeholder: Option<String>,
-    text: Option<String>,
-    disconnected_text: Option<String>,
+    label: Option<String>,
+    disconnected_label: Option<String>,
 }
 
 #[derive(Debug)]
@@ -45,8 +45,8 @@ pub struct InternalConfig<'a> {
     max_essid_len: usize,
     interface: &'a str,
     tick: Duration,
-    text: &'a str,
-    disconnected_text: &'a str,
+    label: &'a str,
+    disconnected_label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -55,8 +55,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut display = DISPLAY;
         let mut max_essid_len = MAX_ESSID_LEN;
         let mut interface = INTERFACE;
-        let mut text = LABEL;
-        let mut disconnected_text = DISCONNECTED_LABEL;
+        let mut label = LABEL;
+        let mut disconnected_label = DISCONNECTED_LABEL;
         if let Some(c) = &config.wireless {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -70,11 +70,11 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(i) = &c.interface {
                 interface = i
             }
-            if let Some(v) = &c.text {
-                text = v;
+            if let Some(v) = &c.label {
+                label = v;
             }
-            if let Some(v) = &c.disconnected_text {
-                disconnected_text = v;
+            if let Some(v) = &c.disconnected_label {
+                disconnected_label = v;
             }
         };
         InternalConfig {
@@ -82,8 +82,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             max_essid_len,
             interface,
             tick,
-            text,
-            disconnected_text,
+            label,
+            disconnected_label,
         }
     }
 }
@@ -132,11 +132,11 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         let state = nl_data::wireless_data(&config.interface);
-        let text;
+        let label;
         let mut essid = "".to_owned();
         let mut signal = None;
         if let WirelessState::Connected(data) = state {
-            text = config.text;
+            label = config.label;
             if let Some(strength) = data.signal {
                 signal = Some(strength);
             };
@@ -148,16 +148,16 @@ pub fn run(
                 }
             }
         } else {
-            text = config.disconnected_text;
+            label = config.disconnected_label;
         }
         match config.display {
-            Display::TextOnly => tx.send(ModuleMsg(key, text.to_string()))?,
-            Display::Essid => tx.send(ModuleMsg(key, format!("{}{}", essid, text)))?,
+            Display::TextOnly => tx.send(ModuleMsg(key, label.to_string()))?,
+            Display::Essid => tx.send(ModuleMsg(key, format!("{}{}", essid, label)))?,
             Display::Signal => {
                 if let Some(s) = signal {
-                    tx.send(ModuleMsg(key, format!("{:3}%{}", s, text)))?;
+                    tx.send(ModuleMsg(key, format!("{:3}%{}", s, label)))?;
                 } else {
-                    tx.send(ModuleMsg(key, format!("    {}", text)))?;
+                    tx.send(ModuleMsg(key, format!("    {}", label)))?;
                 }
             }
         }

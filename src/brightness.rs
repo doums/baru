@@ -22,21 +22,21 @@ pub struct Config {
     placeholder: Option<String>,
     sys_path: Option<String>,
     tick: Option<u32>,
-    text: Option<String>,
+    label: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct InternalConfig<'a> {
     sys_path: &'a str,
     tick: Duration,
-    text: &'a str,
+    label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut sys_path = SYS_PATH;
         let mut tick = TICK_RATE;
-        let mut text = LABEL;
+        let mut label = LABEL;
         if let Some(c) = &config.brightness {
             if let Some(v) = &c.sys_path {
                 sys_path = &v;
@@ -44,14 +44,14 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            if let Some(v) = &c.text {
-                text = v;
+            if let Some(v) = &c.label {
+                label = v;
             }
         }
         InternalConfig {
             sys_path,
             tick,
-            text,
+            label,
         }
     }
 }
@@ -102,7 +102,7 @@ pub fn run(
         let brightness = read_and_parse(&format!("{}/actual_brightness", config.sys_path))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", config.sys_path))?;
         let percentage = 100 * brightness / max_brightness;
-        tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, config.text)))?;
+        tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, config.label)))?;
         thread::sleep(config.tick);
     }
 }

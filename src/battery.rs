@@ -41,11 +41,11 @@ pub struct Config {
     full_design: Option<bool>,
     tick: Option<u32>,
     placeholder: Option<String>,
-    full_text: Option<String>,
-    charging_text: Option<String>,
-    discharging_text: Option<String>,
-    low_text: Option<String>,
-    unknown_text: Option<String>,
+    full_label: Option<String>,
+    charging_label: Option<String>,
+    discharging_label: Option<String>,
+    low_label: Option<String>,
+    unknown_label: Option<String>,
 }
 
 #[derive(Debug)]
@@ -57,11 +57,11 @@ pub struct InternalConfig<'a> {
     uevent: String,
     now_attribute: String,
     full_attribute: String,
-    full_text: &'a str,
-    charging_text: &'a str,
-    discharging_text: &'a str,
-    low_text: &'a str,
-    unknown_text: &'a str,
+    full_label: &'a str,
+    charging_label: &'a str,
+    discharging_label: &'a str,
+    low_label: &'a str,
+    unknown_label: &'a str,
 }
 
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
@@ -72,11 +72,11 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let mut name = BATTERY_NAME;
         let mut full_design = false;
         let mut tick = TICK_RATE;
-        let mut full_text = FULL_LABEL;
-        let mut charging_text = CHARGING_LABEL;
-        let mut discharging_text = DISCHARGING_LABEL;
-        let mut low_text = LOW_LABEL;
-        let mut unknown_text = UNKNOWN_LABEL;
+        let mut full_label = FULL_LABEL;
+        let mut charging_label = CHARGING_LABEL;
+        let mut discharging_label = DISCHARGING_LABEL;
+        let mut low_label = LOW_LABEL;
+        let mut unknown_label = UNKNOWN_LABEL;
         if let Some(c) = &config.battery {
             if let Some(n) = &c.name {
                 name = n;
@@ -92,20 +92,20 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            if let Some(v) = &c.full_text {
-                full_text = v;
+            if let Some(v) = &c.full_label {
+                full_label = v;
             }
-            if let Some(v) = &c.charging_text {
-                charging_text = v;
+            if let Some(v) = &c.charging_label {
+                charging_label = v;
             }
-            if let Some(v) = &c.discharging_text {
-                discharging_text = v;
+            if let Some(v) = &c.discharging_label {
+                discharging_label = v;
             }
-            if let Some(v) = &c.low_text {
-                low_text = v;
+            if let Some(v) = &c.low_label {
+                low_label = v;
             }
-            if let Some(v) = &c.unknown_text {
-                unknown_text = v;
+            if let Some(v) = &c.unknown_label {
+                unknown_label = v;
             }
         }
         let full_attr = match full_design {
@@ -122,11 +122,11 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             uevent,
             now_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, NOW_ATTRIBUTE),
             full_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, full_attr),
-            full_text,
-            charging_text,
-            discharging_text,
-            low_text,
-            unknown_text,
+            full_label,
+            charging_label,
+            discharging_label,
+            low_label,
+            unknown_label,
         })
     }
 }
@@ -182,19 +182,19 @@ pub fn run(
         let capacity = capacity as u64;
         let energy = energy as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        let text = match status.as_str() {
-            "Full" => config.full_text,
+        let label = match status.as_str() {
+            "Full" => config.full_label,
             "Discharging" => {
                 if battery_level <= config.low_level {
-                    config.low_text
+                    config.low_label
                 } else {
-                    config.discharging_text
+                    config.discharging_label
                 }
             }
-            "Charging" => config.charging_text,
-            _ => config.unknown_text,
+            "Charging" => config.charging_label,
+            _ => config.unknown_label,
         };
-        tx.send(ModuleMsg(key, format!("{:3}%{}", battery_level, text)))?;
+        tx.send(ModuleMsg(key, format!("{:3}%{}", battery_level, label)))?;
         thread::sleep(config.tick);
     }
 }

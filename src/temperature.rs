@@ -30,8 +30,8 @@ pub struct Config {
     core_inputs: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
-    text: Option<String>,
-    high_text: Option<String>,
+    label: Option<String>,
+    high_label: Option<String>,
 }
 
 #[derive(Debug)]
@@ -40,8 +40,8 @@ pub struct InternalConfig<'a> {
     high_level: u32,
     tick: Duration,
     inputs: Vec<u32>,
-    text: &'a str,
-    high_text: &'a str,
+    label: &'a str,
+    high_label: &'a str,
 }
 
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
@@ -54,8 +54,8 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let mut inputs = vec![];
         let error = "error when parsing temperature config, wrong core_inputs option, a digit or an inclusive range (eg. 2..4) expected";
         let re = Regex::new(r"^(\d+)\.\.(\d+)$").unwrap();
-        let mut text = LABEL;
-        let mut high_text = HIGH_LABEL;
+        let mut label = LABEL;
+        let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.temperature {
             if let Some(v) = &c.coretemp {
                 coretemp = &v;
@@ -66,11 +66,11 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            if let Some(v) = &c.text {
-                text = v;
+            if let Some(v) = &c.label {
+                label = v;
             }
-            if let Some(v) = &c.high_text {
-                high_text = v;
+            if let Some(v) = &c.high_label {
+                high_label = v;
             }
             if let Some(i) = &c.core_inputs {
                 if let Ok(v) = i.parse::<u32>() {
@@ -97,8 +97,8 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             high_level,
             inputs,
             tick,
-            text,
-            high_text,
+            label,
+            high_label,
         })
     }
 }
@@ -155,11 +155,11 @@ pub fn run(
         }
         let sum: i32 = inputs.iter().sum();
         let average = ((sum as f32 / inputs.len() as f32) / 1000_f32).round() as i32;
-        let mut text = config.text;
+        let mut label = config.label;
         if average >= config.high_level as i32 {
-            text = config.high_text;
+            label = config.high_label;
         }
-        tx.send(ModuleMsg(key, format!("{:3}°{}", average, text)))?;
+        tx.send(ModuleMsg(key, format!("{:3}°{}", average, label)))?;
         thread::sleep(config.tick);
     }
 }

@@ -28,8 +28,8 @@ pub struct Config {
     proc_stat: Option<String>,
     high_level: Option<u32>,
     placeholder: Option<String>,
-    text: Option<String>,
-    high_text: Option<String>,
+    label: Option<String>,
+    high_label: Option<String>,
 }
 
 #[derive(Debug)]
@@ -37,8 +37,8 @@ pub struct InternalConfig<'a> {
     proc_stat: &'a str,
     high_level: u32,
     tick: Duration,
-    text: &'a str,
-    high_text: &'a str,
+    label: &'a str,
+    high_label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -46,8 +46,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut tick = TICK_RATE;
         let mut proc_stat = PROC_STAT;
         let mut high_level = HIGH_LEVEL;
-        let mut text = LABEL;
-        let mut high_text = HIGH_LABEL;
+        let mut label = LABEL;
+        let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.cpu {
             if let Some(f) = &c.proc_stat {
                 proc_stat = &f;
@@ -58,19 +58,19 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(c) = c.high_level {
                 high_level = c;
             }
-            if let Some(v) = &c.text {
-                text = v;
+            if let Some(v) = &c.label {
+                label = v;
             }
-            if let Some(v) = &c.high_text {
-                high_text = v;
+            if let Some(v) = &c.high_label {
+                high_label = v;
             }
         };
         InternalConfig {
             high_level,
             proc_stat,
             tick,
-            text,
-            high_text,
+            label,
+            high_label,
         }
     }
 }
@@ -140,11 +140,11 @@ pub fn run(
         let usage = (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;
         prev_total = total;
         prev_idle = idle;
-        let mut text = config.text;
+        let mut label = config.label;
         if usage >= config.high_level as i32 {
-            text = config.high_text;
+            label = config.high_label;
         }
-        tx.send(ModuleMsg(key, format!("{:3}%{}", usage, text)))?;
+        tx.send(ModuleMsg(key, format!("{:3}%{}", usage, label)))?;
         thread::sleep(config.tick);
     }
 }

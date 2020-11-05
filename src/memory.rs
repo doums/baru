@@ -35,8 +35,8 @@ pub struct Config {
     display: Option<Display>,
     tick: Option<u32>,
     placeholder: Option<String>,
-    text: Option<String>,
-    high_text: Option<String>,
+    label: Option<String>,
+    high_label: Option<String>,
 }
 
 #[derive(Debug)]
@@ -45,8 +45,8 @@ pub struct InternalConfig<'a> {
     high_level: u32,
     display: Display,
     tick: Duration,
-    text: &'a str,
-    high_text: &'a str,
+    label: &'a str,
+    high_label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -55,8 +55,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut high_level = HIGH_LEVEL;
         let mut display = DISPLAY;
         let mut tick = TICK_RATE;
-        let mut text = LABEL;
-        let mut high_text = HIGH_LABEL;
+        let mut label = LABEL;
+        let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.memory {
             if let Some(v) = &c.meminfo {
                 meminfo = v;
@@ -70,11 +70,11 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            if let Some(v) = &c.text {
-                text = v;
+            if let Some(v) = &c.label {
+                label = v;
             }
-            if let Some(v) = &c.high_text {
-                high_text = v;
+            if let Some(v) = &c.high_label {
+                high_label = v;
             }
         };
         InternalConfig {
@@ -82,8 +82,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             high_level,
             display,
             tick,
-            text,
-            high_text,
+            label,
+            high_label,
         }
     }
 }
@@ -202,15 +202,17 @@ pub fn run(
             }
             _ => {}
         }
-        let mut text = config.text;
+        let mut label = config.label;
         if percentage > config.high_level as i32 {
-            text = config.high_text;
+            label = config.high_label;
         }
         match config.display {
             Display::GB | Display::GiB => {
-                tx.send(ModuleMsg(key, format!("{}/{}{}", used, total, text)))?
+                tx.send(ModuleMsg(key, format!("{}/{}{}", used, total, label)))?
             }
-            Display::Percentage => tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, text)))?,
+            Display::Percentage => {
+                tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, label)))?
+            }
         };
         thread::sleep(config.tick);
     }
