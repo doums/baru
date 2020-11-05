@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::{BaruMod, RunPtr};
+use crate::module::{Bar, RunPtr};
 use crate::pulse::Pulse;
 use crate::{read_and_trim, Config as MainConfig, ModuleMsg};
 use regex::Regex;
@@ -109,17 +109,17 @@ impl<'a> Memory<'a> {
     }
 }
 
-impl<'a> BaruMod for Memory<'a> {
+impl<'a> Bar for Memory<'a> {
+    fn name(&self) -> &str {
+        "memory"
+    }
+
     fn run_fn(&self) -> RunPtr {
         run
     }
 
     fn placeholder(&self) -> &str {
         self.placeholder
-    }
-
-    fn name(&self) -> &str {
-        "memory"
     }
 }
 

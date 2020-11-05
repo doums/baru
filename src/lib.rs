@@ -23,7 +23,7 @@ use date_time::Config as DateTimeConfig;
 use error::Error;
 use memory::Config as MemoryConfig;
 use mic::Config as MicConfig;
-use module::{BaruMod, ModuleData};
+use module::{Bar, ModuleData};
 use pulse::Pulse;
 use serde::{Deserialize, Serialize};
 use sound::Config as SoundConfig;
@@ -43,16 +43,16 @@ pub struct Config {
     bar: String,
     pub tick: Option<u32>,
     pulse_tick: Option<u32>,
-    brightness: Option<BrightnessConfig>,
     battery: Option<BatteryConfig>,
+    brightness: Option<BrightnessConfig>,
     cpu: Option<CpuConfig>,
     date_time: Option<DateTimeConfig>,
     memory: Option<MemoryConfig>,
     mic: Option<MicConfig>,
     sound: Option<SoundConfig>,
     temperature: Option<TemperatureConfig>,
-    wireless: Option<WirelessConfig>,
     wired: Option<WiredConfig>,
+    wireless: Option<WirelessConfig>,
 }
 
 pub struct Baru<'a> {

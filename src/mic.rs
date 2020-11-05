@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::{BaruMod, RunPtr};
+use crate::module::{Bar, RunPtr};
 use crate::pulse::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
@@ -78,17 +78,17 @@ impl<'a> Mic<'a> {
     }
 }
 
-impl<'a> BaruMod for Mic<'a> {
+impl<'a> Bar for Mic<'a> {
+    fn name(&self) -> &str {
+        "mic"
+    }
+
     fn run_fn(&self) -> RunPtr {
         run
     }
 
     fn placeholder(&self) -> &str {
         self.placeholder
-    }
-
-    fn name(&self) -> &str {
-        "mic"
     }
 }
 

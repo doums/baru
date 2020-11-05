@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::{BaruMod, RunPtr};
+use crate::module::{Bar, RunPtr};
 use crate::nl_data::{self, WiredState};
 use crate::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
@@ -93,17 +93,17 @@ impl<'a> Wired<'a> {
     }
 }
 
-impl<'a> BaruMod for Wired<'a> {
+impl<'a> Bar for Wired<'a> {
+    fn name(&self) -> &str {
+        "wired"
+    }
+
     fn run_fn(&self) -> RunPtr {
         run
     }
 
     fn placeholder(&self) -> &str {
         self.placeholder
-    }
-
-    fn name(&self) -> &str {
-        "wired"
     }
 }
 

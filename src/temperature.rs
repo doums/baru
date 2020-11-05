@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::module::{BaruMod, RunPtr};
+use crate::module::{Bar, RunPtr};
 use crate::pulse::Pulse;
 use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
 use regex::Regex;
@@ -124,7 +124,7 @@ impl<'a> Temperature<'a> {
     }
 }
 
-impl<'a> BaruMod for Temperature<'a> {
+impl<'a> Bar for Temperature<'a> {
     fn name(&self) -> &str {
         "temperature"
     }

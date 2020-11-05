@@ -22,7 +22,7 @@ use std::sync::{Arc, Mutex};
 
 pub type RunPtr = fn(char, Config, Arc<Mutex<Pulse>>, Sender<ModuleMsg>) -> Result<(), Error>;
 
-pub trait BaruMod {
+pub trait Bar {
     fn name(&self) -> &str;
     fn run_fn(&self) -> RunPtr;
     fn placeholder(&self) -> &str;
@@ -61,7 +61,22 @@ impl<'a> TryFrom<(char, &'a Config)> for Module<'a> {
     }
 }
 
-impl<'a> BaruMod for Module<'a> {
+impl<'a> Bar for Module<'a> {
+    fn name(&self) -> &str {
+        match self {
+            Module::Battery(m) => m.name(),
+            Module::Brightness(m) => m.name(),
+            Module::Cpu(m) => m.name(),
+            Module::DateTime(m) => m.name(),
+            Module::Memory(m) => m.name(),
+            Module::Mic(m) => m.name(),
+            Module::Wired(m) => m.name(),
+            Module::Sound(m) => m.name(),
+            Module::Temperature(m) => m.name(),
+            Module::Wireless(m) => m.name(),
+        }
+    }
+
     fn run_fn(&self) -> RunPtr {
         match self {
             Module::Battery(m) => m.run_fn(),
@@ -89,21 +104,6 @@ impl<'a> BaruMod for Module<'a> {
             Module::Sound(m) => m.placeholder(),
             Module::Temperature(m) => m.placeholder(),
             Module::Wireless(m) => m.placeholder(),
-        }
-    }
-
-    fn name(&self) -> &str {
-        match self {
-            Module::Battery(m) => m.name(),
-            Module::Brightness(m) => m.name(),
-            Module::Cpu(m) => m.name(),
-            Module::DateTime(m) => m.name(),
-            Module::Memory(m) => m.name(),
-            Module::Mic(m) => m.name(),
-            Module::Wired(m) => m.name(),
-            Module::Sound(m) => m.name(),
-            Module::Temperature(m) => m.name(),
-            Module::Wireless(m) => m.name(),
         }
     }
 }
