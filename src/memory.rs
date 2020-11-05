@@ -13,11 +13,13 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󰍛+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const MEMINFO: &str = "/proc/meminfo";
 const DISPLAY: Display = Display::GiB;
 const HIGH_LEVEL: u32 = 90;
 const TICK_RATE: Duration = Duration::from_millis(500);
+const TEXT: &str = "mem";
+const HIGH_TEXT: &str = "!me";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
@@ -33,6 +35,8 @@ pub struct Config {
     display: Option<Display>,
     tick: Option<u32>,
     placeholder: Option<String>,
+    text: Option<String>,
+    high_text: Option<String>,
 }
 
 #[derive(Debug)]
@@ -41,6 +45,8 @@ pub struct InternalConfig<'a> {
     high_level: u32,
     display: Display,
     tick: Duration,
+    text: &'a str,
+    high_text: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -49,6 +55,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut high_level = HIGH_LEVEL;
         let mut display = DISPLAY;
         let mut tick = TICK_RATE;
+        let mut text = TEXT;
+        let mut high_text = HIGH_TEXT;
         if let Some(c) = &config.memory {
             if let Some(v) = &c.meminfo {
                 meminfo = v;
@@ -62,12 +70,20 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
+            if let Some(v) = &c.text {
+                text = v;
+            }
+            if let Some(v) = &c.high_text {
+                high_text = v;
+            }
         };
         InternalConfig {
             meminfo,
             high_level,
             display,
             tick,
+            text,
+            high_text,
         }
     }
 }
@@ -186,34 +202,15 @@ pub fn run(
             }
             _ => {}
         }
-        let mut color = &main_config.default_color;
+        let mut text = config.text;
         if percentage > config.high_level as i32 {
-            color = &main_config.red;
+            text = config.high_text;
         }
         match config.display {
-            Display::GB | Display::GiB => tx.send(ModuleMsg(
-                key,
-                format!(
-                    "{}/{}{}{}󰍛{}{}",
-                    used,
-                    total,
-                    color,
-                    main_config.icon_font,
-                    main_config.default_font,
-                    main_config.default_color
-                ),
-            ))?,
-            Display::Percentage => tx.send(ModuleMsg(
-                key,
-                format!(
-                    "{:3}%{}{}󰍛{}{}",
-                    percentage,
-                    color,
-                    main_config.icon_font,
-                    main_config.default_font,
-                    main_config.default_color
-                ),
-            ))?,
+            Display::GB | Display::GiB => {
+                tx.send(ModuleMsg(key, format!("{}/{}{}", used, total, text)))?
+            }
+            Display::Percentage => tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, text)))?,
         };
         thread::sleep(config.tick);
     }

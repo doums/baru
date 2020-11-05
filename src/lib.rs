@@ -42,11 +42,6 @@ pub struct ModuleMsg(char, String);
 pub struct Config {
     bar: String,
     pub tick: Option<u32>,
-    default_font: String,
-    icon_font: String,
-    default_color: String,
-    red: String,
-    green: String,
     pulse_tick: Option<u32>,
     brightness: Option<BrightnessConfig>,
     battery: Option<BatteryConfig>,

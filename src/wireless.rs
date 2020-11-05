@@ -13,17 +13,19 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󰤯+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const DISPLAY: Display = Display::Signal;
 const MAX_ESSID_LEN: usize = 10;
 const INTERFACE: &str = "wlan0";
+const TEXT: &str = "wle";
+const DISCONNECTED_TEXT: &str = ".wl";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
     Essid,
     Signal,
-    IconOnly,
+    TextOnly,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -33,6 +35,8 @@ pub struct Config {
     max_essid_len: Option<usize>,
     interface: Option<String>,
     placeholder: Option<String>,
+    text: Option<String>,
+    disconnected_text: Option<String>,
 }
 
 #[derive(Debug)]
@@ -41,6 +45,8 @@ pub struct InternalConfig<'a> {
     max_essid_len: usize,
     interface: &'a str,
     tick: Duration,
+    text: &'a str,
+    disconnected_text: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -49,6 +55,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut display = DISPLAY;
         let mut max_essid_len = MAX_ESSID_LEN;
         let mut interface = INTERFACE;
+        let mut text = TEXT;
+        let mut disconnected_text = DISCONNECTED_TEXT;
         if let Some(c) = &config.wireless {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -62,12 +70,20 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(i) = &c.interface {
                 interface = i
             }
+            if let Some(v) = &c.text {
+                text = v;
+            }
+            if let Some(v) = &c.disconnected_text {
+                disconnected_text = v;
+            }
         };
         InternalConfig {
             display,
             max_essid_len,
             interface,
             tick,
+            text,
+            disconnected_text,
         }
     }
 }
@@ -116,21 +132,13 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         let state = nl_data::wireless_data(&config.interface);
-        let icon;
+        let text;
         let mut essid = "".to_owned();
         let mut signal = None;
         if let WirelessState::Connected(data) = state {
+            text = config.text;
             if let Some(strength) = data.signal {
                 signal = Some(strength);
-                icon = match strength {
-                    0 => "󰤯",
-                    1..=25 => "󰤟",
-                    26..=50 => "󰤢",
-                    51..=75 => "󰤥",
-                    _ => "󰤨",
-                }
-            } else {
-                icon = "󰤫"
             };
             if let Some(val) = data.essid {
                 essid = if val.chars().count() > config.max_essid_len {
@@ -140,20 +148,16 @@ pub fn run(
                 }
             }
         } else {
-            icon = "󰤮";
+            text = config.disconnected_text;
         }
-        let icon_format = format!(
-            "{}{}{}",
-            main_config.icon_font, icon, main_config.default_font
-        );
         match config.display {
-            Display::IconOnly => tx.send(ModuleMsg(key, icon_format))?,
-            Display::Essid => tx.send(ModuleMsg(key, format!("{}{}", essid, icon_format)))?,
+            Display::TextOnly => tx.send(ModuleMsg(key, text.to_string()))?,
+            Display::Essid => tx.send(ModuleMsg(key, format!("{}{}", essid, text)))?,
             Display::Signal => {
                 if let Some(s) = signal {
-                    tx.send(ModuleMsg(key, format!("{:3}%{}", s, icon_format)))?;
+                    tx.send(ModuleMsg(key, format!("{:3}%{}", s, text)))?;
                 } else {
-                    tx.send(ModuleMsg(key, format!("    {}", icon_format)))?;
+                    tx.send(ModuleMsg(key, format!("    {}", text)))?;
                 }
             }
         }

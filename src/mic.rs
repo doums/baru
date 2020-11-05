@@ -12,37 +12,48 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󰍮+@fn=0;";
-const HIGH_LEVEL: u32 = 100;
+const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);
+const MUTE_TEXT: &str = ".mi";
+const TEXT: &str = "mic";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub index: Option<u32>,
-    high_level: Option<u32>,
     tick: Option<u32>,
     placeholder: Option<String>,
+    text: Option<String>,
+    mute_text: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct InternalConfig {
-    high_level: u32,
+pub struct InternalConfig<'a> {
     tick: Duration,
+    text: &'a str,
+    mute_text: &'a str,
 }
 
-impl<'a> From<&'a MainConfig> for InternalConfig {
+impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut high_level = HIGH_LEVEL;
+        let mut text = TEXT;
+        let mut mute_text = MUTE_TEXT;
         if let Some(c) = &config.mic {
-            if let Some(v) = c.high_level {
-                high_level = v;
-            }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
+            if let Some(v) = &c.text {
+                text = v;
+            }
+            if let Some(v) = &c.mute_text {
+                mute_text = v;
+            }
         }
-        InternalConfig { high_level, tick }
+        InternalConfig {
+            tick,
+            text,
+            mute_text,
+        }
     }
 }
 
@@ -90,23 +101,11 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         if let Some(data) = pulse.lock().unwrap().input_data() {
-            let mut color = &main_config.default_color;
-            let icon = if data.1 { "󰍭" } else { "󰍬" };
-            if data.0 > config.high_level as i32 {
-                color = &main_config.red;
-            }
-            tx.send(ModuleMsg(
-                key,
-                format!(
-                    "{:3}%{}{}{}{}{}",
-                    data.0,
-                    color,
-                    main_config.icon_font,
-                    icon,
-                    main_config.default_font,
-                    main_config.default_color
-                ),
-            ))?;
+            let text = match data.1 {
+                true => config.mute_text,
+                false => config.text,
+            };
+            tx.send(ModuleMsg(key, format!("{:3}%{}", data.0, text,)))?;
         }
         thread::sleep(config.tick);
     }

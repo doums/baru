@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󱃍+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const BATTERY_NAME: &str = "BAT0";
 const UEVENT: &str = "uevent";
@@ -26,7 +26,11 @@ const FULL_ATTRIBUTE: &str = "FULL";
 const FULL_DESIGN_ATTRIBUTE: &str = "FULL_DESIGN";
 const NOW_ATTRIBUTE: &str = "NOW";
 const STATUS_ATTRIBUTE: &str = "POWER_SUPPLY_STATUS";
-
+const FULL_TEXT: &str = "*ba";
+const CHARGING_TEXT: &str = "^ba";
+const DISCHARGING_TEXT: &str = "bat";
+const LOW_TEXT: &str = "!ba";
+const UNKNOWN_TEXT: &str = ".ba";
 const LOW_LEVEL: u32 = 10;
 const TICK_RATE: Duration = Duration::from_millis(500);
 
@@ -37,6 +41,11 @@ pub struct Config {
     full_design: Option<bool>,
     tick: Option<u32>,
     placeholder: Option<String>,
+    full_text: Option<String>,
+    charging_text: Option<String>,
+    discharging_text: Option<String>,
+    low_text: Option<String>,
+    unknown_text: Option<String>,
 }
 
 #[derive(Debug)]
@@ -48,6 +57,11 @@ pub struct InternalConfig<'a> {
     uevent: String,
     now_attribute: String,
     full_attribute: String,
+    full_text: &'a str,
+    charging_text: &'a str,
+    discharging_text: &'a str,
+    low_text: &'a str,
+    unknown_text: &'a str,
 }
 
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
@@ -58,6 +72,11 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let mut name = BATTERY_NAME;
         let mut full_design = false;
         let mut tick = TICK_RATE;
+        let mut full_text = FULL_TEXT;
+        let mut charging_text = CHARGING_TEXT;
+        let mut discharging_text = DISCHARGING_TEXT;
+        let mut low_text = LOW_TEXT;
+        let mut unknown_text = UNKNOWN_TEXT;
         if let Some(c) = &config.battery {
             if let Some(n) = &c.name {
                 name = n;
@@ -72,6 +91,21 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
+            }
+            if let Some(v) = &c.full_text {
+                full_text = v;
+            }
+            if let Some(v) = &c.charging_text {
+                charging_text = v;
+            }
+            if let Some(v) = &c.discharging_text {
+                discharging_text = v;
+            }
+            if let Some(v) = &c.low_text {
+                low_text = v;
+            }
+            if let Some(v) = &c.unknown_text {
+                unknown_text = v;
             }
         }
         let full_attr = match full_design {
@@ -88,6 +122,11 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             uevent,
             now_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, NOW_ATTRIBUTE),
             full_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, full_attr),
+            full_text,
+            charging_text,
+            discharging_text,
+            low_text,
+            unknown_text,
         })
     }
 }
@@ -143,61 +182,20 @@ pub fn run(
         let capacity = capacity as u64;
         let energy = energy as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        let mut color = &main_config.default_color;
-        if status != "Charging" && battery_level <= config.low_level {
-            color = &main_config.red;
-        }
-        if status == "Full" {
-            color = &main_config.green
-        }
-        tx.send(ModuleMsg(
-            key,
-            format!(
-                "{:3}%{}{}{}{}{}",
-                battery_level,
-                color,
-                main_config.icon_font,
-                get_battery_icon(&status, battery_level),
-                main_config.default_font,
-                main_config.default_color
-            ),
-        ))?;
+        let text = match status.as_str() {
+            "Full" => config.full_text,
+            "Discharging" => {
+                if battery_level <= config.low_level {
+                    config.low_text
+                } else {
+                    config.discharging_text
+                }
+            }
+            "Charging" => config.charging_text,
+            _ => config.unknown_text,
+        };
+        tx.send(ModuleMsg(key, format!("{:3}%{}", battery_level, text)))?;
         thread::sleep(config.tick);
-    }
-}
-
-fn get_battery_icon<'a>(state: &'a str, level: u32) -> &'static str {
-    match state {
-        "Full" => "󰁹",
-        "Discharging" => match level {
-            0..=9 => "󰂎",
-            10..=19 => "󰁺",
-            20..=29 => "󰁻",
-            30..=39 => "󰁼",
-            40..=49 => "󰁽",
-            50..=59 => "󰁾",
-            60..=69 => "󰁿",
-            70..=79 => "󰂀",
-            80..=89 => "󰂁",
-            90..=99 => "󰂂",
-            100 => "󰁹",
-            _ => "󱃍",
-        },
-        "Charging" => match level {
-            0..=9 => "󰢟",
-            10..=19 => "󰢜",
-            20..=29 => "󰂆",
-            30..=39 => "󰂇",
-            40..=49 => "󰂈",
-            50..=59 => "󰢝",
-            60..=69 => "󰂉",
-            70..=79 => "󰢞",
-            80..=89 => "󰂊",
-            90..=99 => "󰂋",
-            100 => "󰂅",
-            _ => "󱃍",
-        },
-        _ => "󱃍",
     }
 }
 

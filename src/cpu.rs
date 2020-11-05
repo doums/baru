@@ -15,10 +15,12 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󰻠+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const PROC_STAT: &str = "/proc/stat";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const HIGH_LEVEL: u32 = 90;
+const TEXT: &str = "cpu";
+const HIGH_TEXT: &str = "!cp";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -26,6 +28,8 @@ pub struct Config {
     proc_stat: Option<String>,
     high_level: Option<u32>,
     placeholder: Option<String>,
+    text: Option<String>,
+    high_text: Option<String>,
 }
 
 #[derive(Debug)]
@@ -33,6 +37,8 @@ pub struct InternalConfig<'a> {
     proc_stat: &'a str,
     high_level: u32,
     tick: Duration,
+    text: &'a str,
+    high_text: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -40,6 +46,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut tick = TICK_RATE;
         let mut proc_stat = PROC_STAT;
         let mut high_level = HIGH_LEVEL;
+        let mut text = TEXT;
+        let mut high_text = HIGH_TEXT;
         if let Some(c) = &config.cpu {
             if let Some(f) = &c.proc_stat {
                 proc_stat = &f;
@@ -50,11 +58,19 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(c) = c.high_level {
                 high_level = c;
             }
+            if let Some(v) = &c.text {
+                text = v;
+            }
+            if let Some(v) = &c.high_text {
+                high_text = v;
+            }
         };
         InternalConfig {
             high_level,
             proc_stat,
             tick,
+            text,
+            high_text,
         }
     }
 }
@@ -124,21 +140,11 @@ pub fn run(
         let usage = (100_f32 * (diff_total - diff_idle) as f32 / diff_total as f32).round() as i32;
         prev_total = total;
         prev_idle = idle;
-        let mut color = &main_config.default_color;
+        let mut text = config.text;
         if usage >= config.high_level as i32 {
-            color = &main_config.red;
+            text = config.high_text;
         }
-        tx.send(ModuleMsg(
-            key,
-            format!(
-                "{:3}%{}{}󰻠{}{}",
-                usage,
-                color,
-                &main_config.icon_font,
-                &main_config.default_font,
-                &main_config.default_color
-            ),
-        ))?;
+        tx.send(ModuleMsg(key, format!("{:3}%{}", usage, text)))?;
         thread::sleep(config.tick);
     }
 }

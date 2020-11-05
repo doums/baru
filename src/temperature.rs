@@ -15,11 +15,13 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󱃃+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const CORETEMP: &str = "/sys/devices/platform/coretemp.0/hwmon";
 const HIGH_LEVEL: u32 = 75;
 const INPUT: u32 = 1;
 const TICK_RATE: Duration = Duration::from_millis(50);
+const TEXT: &str = "tem";
+const HIGH_TEXT: &str = "!te";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -28,17 +30,21 @@ pub struct Config {
     core_inputs: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
+    text: Option<String>,
+    high_text: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct InternalConfig {
+pub struct InternalConfig<'a> {
     coretemp: String,
     high_level: u32,
     tick: Duration,
     inputs: Vec<u32>,
+    text: &'a str,
+    high_text: &'a str,
 }
 
-impl<'a> TryFrom<&'a MainConfig> for InternalConfig {
+impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
     type Error = Error;
 
     fn try_from(config: &'a MainConfig) -> Result<Self, Self::Error> {
@@ -48,6 +54,8 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig {
         let mut inputs = vec![];
         let error = "error when parsing temperature config, wrong core_inputs option, a digit or an inclusive range (eg. 2..4) expected";
         let re = Regex::new(r"^(\d+)\.\.(\d+)$").unwrap();
+        let mut text = TEXT;
+        let mut high_text = HIGH_TEXT;
         if let Some(c) = &config.temperature {
             if let Some(v) = &c.coretemp {
                 coretemp = &v;
@@ -57,6 +65,12 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig {
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
+            }
+            if let Some(v) = &c.text {
+                text = v;
+            }
+            if let Some(v) = &c.high_text {
+                high_text = v;
             }
             if let Some(i) = &c.core_inputs {
                 if let Ok(v) = i.parse::<u32>() {
@@ -83,6 +97,8 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig {
             high_level,
             inputs,
             tick,
+            text,
+            high_text,
         })
     }
 }
@@ -139,28 +155,11 @@ pub fn run(
         }
         let sum: i32 = inputs.iter().sum();
         let average = ((sum as f32 / inputs.len() as f32) / 1000_f32).round() as i32;
-        let mut color = &main_config.default_color;
-        let icon = match average {
-            0..=49 => "󱃃",
-            50..=69 => "󰔏",
-            70..=100 => "󱃂",
-            _ => "󰸁",
-        };
+        let mut text = config.text;
         if average >= config.high_level as i32 {
-            color = &main_config.red;
+            text = config.high_text;
         }
-        tx.send(ModuleMsg(
-            key,
-            format!(
-                "{:3}°{}{}{}{}{}",
-                average,
-                color,
-                main_config.icon_font,
-                icon,
-                main_config.default_font,
-                main_config.default_color
-            ),
-        ))?;
+        tx.send(ModuleMsg(key, format!("{:3}°{}", average, text)))?;
         thread::sleep(config.tick);
     }
 }

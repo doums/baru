@@ -13,9 +13,11 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󰈀+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
+const TEXT: &str = "wir";
+const DISCONNECTED_TEXT: &str = ".wi";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -23,6 +25,8 @@ pub struct Config {
     interface: Option<String>,
     discrete: Option<bool>,
     placeholder: Option<String>,
+    text: Option<String>,
+    disconnected_text: Option<String>,
 }
 
 #[derive(Debug)]
@@ -30,6 +34,8 @@ pub struct InternalConfig<'a> {
     interface: &'a str,
     discrete: bool,
     tick: Duration,
+    text: &'a str,
+    disconnected_text: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
@@ -37,6 +43,8 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut tick = TICK_RATE;
         let mut interface = INTERFACE;
         let mut discrete = false;
+        let mut text = TEXT;
+        let mut disconnected_text = DISCONNECTED_TEXT;
         if let Some(c) = &config.wired {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -47,11 +55,19 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(b) = c.discrete {
                 discrete = b;
             }
+            if let Some(v) = &c.text {
+                text = v;
+            }
+            if let Some(v) = &c.disconnected_text {
+                disconnected_text = v;
+            }
         };
         InternalConfig {
             interface,
             discrete,
             tick,
+            text,
+            disconnected_text,
         }
     }
 }
@@ -99,20 +115,13 @@ pub fn run(
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
-        let mut icon = "󰈂";
         if let WiredState::Connected = nl_data::wired_data(&config.interface) {
-            icon = "󰈁";
+            tx.send(ModuleMsg(key, config.text.to_string()))?;
         } else if config.discrete {
             tx.send(ModuleMsg(key, "".to_string()))?;
-            return Ok(());
+        } else {
+            tx.send(ModuleMsg(key, config.disconnected_text.to_string()))?;
         }
-        tx.send(ModuleMsg(
-            key,
-            format!(
-                "{}{}{}",
-                main_config.icon_font, icon, main_config.default_font
-            ),
-        ))?;
         thread::sleep(config.tick);
     }
 }

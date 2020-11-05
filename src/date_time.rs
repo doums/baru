@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const PLACEHOLDER: &str = "+@fn=1;󰸗+@fn=0;";
+const PLACEHOLDER: &str = "-";
 const FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
 const TICK_RATE: Duration = Duration::from_millis(500);
 
@@ -22,18 +22,21 @@ pub struct Config {
     format: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
+    text: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
     format: &'a str,
     tick: Duration,
+    text: Option<&'a str>,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
         let mut format = FORMAT;
+        let mut text = None;
         if let Some(c) = &config.date_time {
             if let Some(d) = &c.format {
                 format = d;
@@ -41,8 +44,9 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
+            text = c.text.as_deref();
         }
-        InternalConfig { format, tick }
+        InternalConfig { format, tick, text }
     }
 }
 
@@ -90,7 +94,13 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         let now = Local::now();
-        tx.send(ModuleMsg(key, now.format(config.format).to_string()))?;
+        match config.text {
+            Some(text) => tx.send(ModuleMsg(
+                key,
+                format!("{}{}", now.format(config.format), text),
+            ))?,
+            None => tx.send(ModuleMsg(key, now.format(config.format).to_string()))?,
+        }
         thread::sleep(config.tick);
     }
 }
