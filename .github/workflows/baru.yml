@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install libnl
-      run: sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev
+      run: sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libpulse-dev
     - name: Lint
       run: cargo clippy
     - name: Build
