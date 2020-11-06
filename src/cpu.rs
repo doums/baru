@@ -87,10 +87,13 @@ pub struct Cpu<'a> {
 impl<'a> Cpu<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
-        let format = FORMAT;
+        let mut format = FORMAT;
         if let Some(c) = &config.cpu {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Cpu {
