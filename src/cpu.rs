@@ -21,6 +21,7 @@ const TICK_RATE: Duration = Duration::from_millis(500);
 const HIGH_LEVEL: u32 = 90;
 const LABEL: &str = "cpu";
 const HIGH_LABEL: &str = "!cp";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -30,6 +31,7 @@ pub struct Config {
     placeholder: Option<String>,
     label: Option<String>,
     high_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -79,11 +81,13 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct Cpu<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Cpu<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let format = FORMAT;
         if let Some(c) = &config.cpu {
             if let Some(p) = &c.placeholder {
                 placeholder = p
@@ -92,6 +96,7 @@ impl<'a> Cpu<'a> {
         Cpu {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -107,6 +112,10 @@ impl<'a> Bar for Cpu<'a> {
 
     fn placeholder(&self) -> &str {
         self.placeholder
+    }
+
+    fn format(&self) -> &str {
+        self.format
     }
 }
 
@@ -144,7 +153,11 @@ pub fn run(
         if usage >= config.high_level as i32 {
             label = config.high_label;
         }
-        tx.send(ModuleMsg(key, format!("{:3}%{}", usage, label)))?;
+        tx.send(ModuleMsg(
+            key,
+            format!("{:3}%", usage),
+            Some(label.to_string()),
+        ))?;
         thread::sleep(config.tick);
     }
 }

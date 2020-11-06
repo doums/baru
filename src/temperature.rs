@@ -22,6 +22,7 @@ const INPUT: u32 = 1;
 const TICK_RATE: Duration = Duration::from_millis(50);
 const LABEL: &str = "tem";
 const HIGH_LABEL: &str = "!te";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -32,6 +33,7 @@ pub struct Config {
     placeholder: Option<String>,
     label: Option<String>,
     high_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -107,19 +109,25 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
 pub struct Temperature<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Temperature<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.temperature {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Temperature {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -135,6 +143,10 @@ impl<'a> Bar for Temperature<'a> {
 
     fn placeholder(&self) -> &str {
         self.placeholder
+    }
+
+    fn format(&self) -> &str {
+        self.format
     }
 }
 
@@ -159,7 +171,11 @@ pub fn run(
         if average >= config.high_level as i32 {
             label = config.high_label;
         }
-        tx.send(ModuleMsg(key, format!("{:3}°{}", average, label)))?;
+        tx.send(ModuleMsg(
+            key,
+            format!("{:3}°", average),
+            Some(label.to_string()),
+        ))?;
         thread::sleep(config.tick);
     }
 }

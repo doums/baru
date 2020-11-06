@@ -36,7 +36,7 @@ use wired::Config as WiredConfig;
 use wireless::Config as WirelessConfig;
 
 #[derive(Debug)]
-pub struct ModuleMsg(char, String);
+pub struct ModuleMsg(char, String, Option<String>);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -106,12 +106,7 @@ impl<'a> Baru<'a> {
             .iter()
             .find(|data| data.key == key)
             .ok_or(format!("module for key \"{}\" not found", key))?;
-
-        if let Some(data) = &module.prev_data {
-            Ok(data)
-        } else {
-            Ok(module.module.placeholder())
-        }
+        Ok(module.output())
     }
 
     pub fn update(&mut self) -> Result<(), Error> {
@@ -120,7 +115,7 @@ impl<'a> Baru<'a> {
             let mut iter = messages.iter().rev();
             let message = iter.find(|v| v.0 == module.key);
             if let Some(value) = message {
-                module.prev_data = Some(value.1.clone());
+                module.new_data(value.1.clone(), value.2.clone());
             }
         }
         let mut output = self.format.to_string();

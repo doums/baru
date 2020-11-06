@@ -33,6 +33,7 @@ const LOW_LABEL: &str = "!ba";
 const UNKNOWN_LABEL: &str = ".ba";
 const LOW_LEVEL: u32 = 10;
 const TICK_RATE: Duration = Duration::from_millis(500);
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -46,6 +47,7 @@ pub struct Config {
     discharging_label: Option<String>,
     low_label: Option<String>,
     unknown_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -135,19 +137,25 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
 pub struct Battery<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Battery<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.battery {
             if let Some(p) = &c.placeholder {
                 placeholder = p
             }
+            if let Some(v) = &c.format {
+                format = v;
+            }
         }
         Battery {
-            placeholder,
             config,
+            format,
+            placeholder,
         }
     }
 }
@@ -163,6 +171,10 @@ impl<'a> Bar for Battery<'a> {
 
     fn placeholder(&self) -> &str {
         self.placeholder
+    }
+
+    fn format(&self) -> &str {
+        self.format
     }
 }
 
@@ -194,7 +206,11 @@ pub fn run(
             "Charging" => config.charging_label,
             _ => config.unknown_label,
         };
-        tx.send(ModuleMsg(key, format!("{:3}%{}", battery_level, label)))?;
+        tx.send(ModuleMsg(
+            key,
+            format!("{:3}%", battery_level),
+            Some(label.to_string()),
+        ))?;
         thread::sleep(config.tick);
     }
 }

@@ -20,12 +20,13 @@ const MAX_ESSID_LEN: usize = 10;
 const INTERFACE: &str = "wlan0";
 const LABEL: &str = "wle";
 const DISCONNECTED_LABEL: &str = ".wl";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
     Essid,
     Signal,
-    TextOnly,
+    LabelOnly,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -37,6 +38,7 @@ pub struct Config {
     placeholder: Option<String>,
     label: Option<String>,
     disconnected_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -92,19 +94,25 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct Wireless<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Wireless<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.wireless {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Wireless {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -120,6 +128,10 @@ impl<'a> Bar for Wireless<'a> {
 
     fn placeholder(&self) -> &str {
         self.placeholder
+    }
+
+    fn format(&self) -> &str {
+        self.format
     }
 }
 
@@ -151,13 +163,13 @@ pub fn run(
             label = config.disconnected_label;
         }
         match config.display {
-            Display::TextOnly => tx.send(ModuleMsg(key, label.to_string()))?,
-            Display::Essid => tx.send(ModuleMsg(key, format!("{}{}", essid, label)))?,
+            Display::LabelOnly => tx.send(ModuleMsg(key, label.to_string(), None))?,
+            Display::Essid => tx.send(ModuleMsg(key, essid, Some(label.to_string())))?,
             Display::Signal => {
                 if let Some(s) = signal {
-                    tx.send(ModuleMsg(key, format!("{:3}%{}", s, label)))?;
+                    tx.send(ModuleMsg(key, format!("{:3}%", s), Some(label.to_string())))?;
                 } else {
-                    tx.send(ModuleMsg(key, format!("    {}", label)))?;
+                    tx.send(ModuleMsg(key, format!("    {}", label), None))?;
                 }
             }
         }

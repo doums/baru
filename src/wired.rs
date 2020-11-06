@@ -18,6 +18,7 @@ const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
 const LABEL: &str = "wir";
 const DISCONNECTED_LABEL: &str = ".wi";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -27,6 +28,7 @@ pub struct Config {
     placeholder: Option<String>,
     label: Option<String>,
     disconnected_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -76,19 +78,25 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct Wired<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Wired<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.wired {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Wired {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -105,6 +113,10 @@ impl<'a> Bar for Wired<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn format(&self) -> &str {
+        self.format
+    }
 }
 
 pub fn run(
@@ -116,11 +128,11 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         if let WiredState::Connected = nl_data::wired_data(&config.interface) {
-            tx.send(ModuleMsg(key, config.label.to_string()))?;
+            tx.send(ModuleMsg(key, config.label.to_string(), None))?;
         } else if config.discrete {
-            tx.send(ModuleMsg(key, "".to_string()))?;
+            tx.send(ModuleMsg(key, "".to_string(), None))?;
         } else {
-            tx.send(ModuleMsg(key, config.disconnected_label.to_string()))?;
+            tx.send(ModuleMsg(key, config.disconnected_label.to_string(), None))?;
         }
         thread::sleep(config.tick);
     }

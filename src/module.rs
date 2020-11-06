@@ -26,6 +26,7 @@ pub trait Bar {
     fn name(&self) -> &str;
     fn run_fn(&self) -> RunPtr;
     fn placeholder(&self) -> &str;
+    fn format(&self) -> &str;
 }
 
 pub enum Module<'a> {
@@ -106,12 +107,27 @@ impl<'a> Bar for Module<'a> {
             Module::Wireless(m) => m.placeholder(),
         }
     }
+
+    fn format(&self) -> &str {
+        match self {
+            Module::Battery(m) => m.format(),
+            Module::Brightness(m) => m.format(),
+            Module::Cpu(m) => m.format(),
+            Module::DateTime(m) => m.format(),
+            Module::Memory(m) => m.format(),
+            Module::Wired(m) => m.format(),
+            Module::Mic(m) => m.format(),
+            Module::Sound(m) => m.format(),
+            Module::Temperature(m) => m.format(),
+            Module::Wireless(m) => m.format(),
+        }
+    }
 }
 
 pub struct ModuleData<'a> {
     pub key: char,
     pub module: Module<'a>,
-    pub prev_data: Option<String>,
+    data: Option<String>,
 }
 
 impl<'a> ModuleData<'a> {
@@ -119,7 +135,23 @@ impl<'a> ModuleData<'a> {
         Ok(ModuleData {
             key,
             module: Module::try_from((key, config))?,
-            prev_data: None,
+            data: None,
         })
+    }
+
+    pub fn new_data(&mut self, value: String, label: Option<String>) {
+        let mut module_format = self.module.format().to_string();
+        if let Some(value) = label {
+            module_format = module_format.replace("%l", &value);
+        }
+        self.data = Some(module_format.replace("%v", &value));
+    }
+
+    pub fn output(&self) -> &str {
+        if let Some(data) = &self.data {
+            data
+        } else {
+            self.module.placeholder()
+        }
     }
 }

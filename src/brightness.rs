@@ -16,6 +16,7 @@ const PLACEHOLDER: &str = "-";
 const SYS_PATH: &str = "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const TICK_RATE: Duration = Duration::from_millis(50);
 const LABEL: &str = "bri";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -23,6 +24,7 @@ pub struct Config {
     sys_path: Option<String>,
     tick: Option<u32>,
     label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -60,19 +62,25 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct Brightness<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Brightness<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.brightness {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Brightness {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -89,6 +97,10 @@ impl<'a> Bar for Brightness<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn format(&self) -> &str {
+        self.format
+    }
 }
 
 pub fn run(
@@ -102,7 +114,11 @@ pub fn run(
         let brightness = read_and_parse(&format!("{}/actual_brightness", config.sys_path))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", config.sys_path))?;
         let percentage = 100 * brightness / max_brightness;
-        tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, config.label)))?;
+        tx.send(ModuleMsg(
+            key,
+            format!("{:3}%", percentage),
+            Some(config.label.to_string()),
+        ))?;
         thread::sleep(config.tick);
     }
 }

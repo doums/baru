@@ -20,6 +20,7 @@ const HIGH_LEVEL: u32 = 90;
 const TICK_RATE: Duration = Duration::from_millis(500);
 const LABEL: &str = "mem";
 const HIGH_LABEL: &str = "!me";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 enum Display {
@@ -37,6 +38,7 @@ pub struct Config {
     placeholder: Option<String>,
     label: Option<String>,
     high_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -92,19 +94,25 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct Memory<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Memory<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.memory {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Memory {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -120,6 +128,10 @@ impl<'a> Bar for Memory<'a> {
 
     fn placeholder(&self) -> &str {
         self.placeholder
+    }
+
+    fn format(&self) -> &str {
+        self.format
     }
 }
 
@@ -207,12 +219,16 @@ pub fn run(
             label = config.high_label;
         }
         match config.display {
-            Display::GB | Display::GiB => {
-                tx.send(ModuleMsg(key, format!("{}/{}{}", used, total, label)))?
-            }
-            Display::Percentage => {
-                tx.send(ModuleMsg(key, format!("{:3}%{}", percentage, label)))?
-            }
+            Display::GB | Display::GiB => tx.send(ModuleMsg(
+                key,
+                format!("{}/{}", used, total),
+                Some(label.to_string()),
+            ))?,
+            Display::Percentage => tx.send(ModuleMsg(
+                key,
+                format!("{:3}%", percentage),
+                Some(label.to_string()),
+            ))?,
         };
         thread::sleep(config.tick);
     }

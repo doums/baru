@@ -16,6 +16,7 @@ const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);
 const MUTE_LABEL: &str = ".so";
 const LABEL: &str = "sou";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -24,6 +25,7 @@ pub struct Config {
     placeholder: Option<String>,
     label: Option<String>,
     mute_label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
@@ -61,19 +63,25 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct Sound<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> Sound<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.sound {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         Sound {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -90,6 +98,10 @@ impl<'a> Bar for Sound<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn format(&self) -> &str {
+        ""
+    }
 }
 
 pub fn run(
@@ -105,7 +117,11 @@ pub fn run(
                 true => config.mute_label,
                 false => config.label,
             };
-            tx.send(ModuleMsg(key, format!("{:3}%{}", data.0, label,)))?;
+            tx.send(ModuleMsg(
+                key,
+                format!("{:3}%", data.0),
+                Some(label.to_string()),
+            ))?;
         }
         thread::sleep(config.tick);
     }

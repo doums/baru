@@ -14,20 +14,22 @@ use std::thread;
 use std::time::Duration;
 
 const PLACEHOLDER: &str = "-";
-const FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
+const DATE_FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
 const TICK_RATE: Duration = Duration::from_millis(500);
+const FORMAT: &str = "%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    format: Option<String>,
+    date_format: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
     label: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
-    format: &'a str,
+    date_format: &'a str,
     tick: Duration,
     label: Option<&'a str>,
 }
@@ -35,11 +37,11 @@ pub struct InternalConfig<'a> {
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut format = FORMAT;
+        let mut date_format = DATE_FORMAT;
         let mut label = None;
         if let Some(c) = &config.date_time {
-            if let Some(d) = &c.format {
-                format = d;
+            if let Some(d) = &c.date_format {
+                date_format = d;
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -47,7 +49,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             label = c.label.as_deref();
         }
         InternalConfig {
-            format,
+            date_format,
             tick,
             label,
         }
@@ -58,19 +60,25 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 pub struct DateTime<'a> {
     placeholder: &'a str,
     config: &'a MainConfig,
+    format: &'a str,
 }
 
 impl<'a> DateTime<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
+        let mut format = FORMAT;
         if let Some(c) = &config.date_time {
             if let Some(p) = &c.placeholder {
                 placeholder = p
+            }
+            if let Some(v) = &c.format {
+                format = v;
             }
         }
         DateTime {
             placeholder,
             config,
+            format,
         }
     }
 }
@@ -87,6 +95,10 @@ impl<'a> Bar for DateTime<'a> {
     fn placeholder(&self) -> &str {
         self.placeholder
     }
+
+    fn format(&self) -> &str {
+        self.format
+    }
 }
 
 pub fn run(
@@ -97,14 +109,11 @@ pub fn run(
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
-        let now = Local::now();
-        match config.label {
-            Some(label) => tx.send(ModuleMsg(
-                key,
-                format!("{}{}", now.format(config.format), label),
-            ))?,
-            None => tx.send(ModuleMsg(key, now.format(config.format).to_string()))?,
-        }
+        tx.send(ModuleMsg(
+            key,
+            Local::now().format(config.date_format).to_string(),
+            config.label.map(|v| v.to_string()),
+        ))?;
         thread::sleep(config.tick);
     }
 }
