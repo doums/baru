@@ -115,10 +115,7 @@ impl<'a> Baru<'a> {
             let mut iter = messages.iter().rev();
             let message = iter.find(|v| v.0 == module.key);
             if let Some(value) = message {
-                module.new_data(
-                    value.1.as_ref().map(|v| v.as_str()),
-                    value.2.as_ref().map(|v| v.as_str()),
-                );
+                module.new_data(value.1.as_deref(), value.2.as_deref());
             }
         }
         let mut output = self.format.to_string();
