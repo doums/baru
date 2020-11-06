@@ -38,36 +38,6 @@ bar: '%c  %t  %b  %s   %w %a   %d'
 #
 tick: 100
 
-# default_font: String, required
-#
-# Spectrwm markup for the default font.
-#
-default_font: +@fn=0;
-
-# icon_font: String, required
-#
-# Spectrwm markup for the icon font.
-#
-icon_font: +@fn=1;
-
-# default_color: String, required
-#
-# Spectrwm markup for the default color.
-#
-default_color: +@fg=0;
-
-# red: String, required
-#
-# Spectrwm markup for the red color.
-#
-red: +@fg=1;
-
-# green: String, required
-#
-# Spectrwm markup for the green color.
-#
-green: +@fg=2;
-
 # pulse_tick: u32, default: 16
 #
 # The refresh rate in millisecond of the PulseAudio thread.
@@ -88,11 +58,11 @@ battery:
   #
   tick: 1000
 
-  # placeholder: String, default: +@fn=1;󱃍+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # name: String, default: BAT0
   #
@@ -102,7 +72,7 @@ battery:
 
   # low_level: u32, default: 10
   #
-  # The level below which the color is red.
+  # The level below which the battery level is considered low.
   #
   low_level: 20
 
@@ -111,6 +81,42 @@ battery:
   # Whether or not the current level is calculated based on the full design value.
   #
   full_design: true
+
+  # full_label: string, default: *ba
+  #
+  # The label printed when the battery is full.
+  #
+  full_label: "*ba"
+
+  # charging_label: string, default: ^ba
+  #
+  # The label printed when the battery is charging.
+  #
+  charging_label: ^ba
+
+  # discharging_label: string, default: bat
+  #
+  # The label printed when the battery is discharging.
+  #
+  discharging_label: bat
+
+  # low_label: string, default: !ba
+  #
+  # The label printed when the battery is discharging and the level is low.
+  #
+  low_label: !ba
+
+  # unknown_label: string, default: .ba
+  #
+  # The label printed when the battery state is unknown.
+  #
+  unknown_label: .ba
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # # # # #
@@ -126,17 +132,29 @@ brightness:
   #
   tick: 100
 
-  # placeholder: String, default: +@fn=1;󰃞+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # sys_path: String, default: /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight
   #
   # /sys/devices path
   #
   sys_path: /sys/devices/something/intel_backlight
+
+  # label: string, default: bri
+  #
+  # The label printed.
+  #
+  label: bri
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # #
@@ -152,11 +170,11 @@ cpu:
   #
   tick: 1000
 
-  # placeholder: String, default: +@fn=1;󰻠+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # proc_stat: String, default: /proc/stat
   #
@@ -166,9 +184,27 @@ cpu:
 
   # high_level: u32, default: 90
   #
-  # The percentage above which the color is red.
+  # The percentage above which the cpu usage is considered high.
   #
   high_level: 95
+
+  # label: string, default: cpu
+  #
+  # The label printed when the cpu usage is below high level.
+  #
+  label: cpu
+
+  # high_label: string, default: !cp
+  #
+  # The label printed when the cpu usage is above high level.
+  #
+  high_label: !cp
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # # # #
@@ -184,17 +220,29 @@ date_time:
   #
   tick: 1000
 
-  # placeholder: String, default: +@fn=1;󰸗+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
-  # format: String, default: %a. %-e %B %Y, %-kh%M
+  # date_format: String, default: %a. %-e %B %Y, %-kh%M
   #
   # The format. For the syntax see https://docs.rs/chrono/*/chrono/format/strftime/index.html
   #
-  format: '%-kh%M'
+  date_format: '%-kh%M'
+
+  # label: string, default: None
+  #
+  # The label printed.
+  #
+  label: dat
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # # #
@@ -210,11 +258,11 @@ memory:
   #
   tick: 1000
 
-  # placeholder: String, default: +@fn=1;󰍛+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # meminfo: String, default: /proc/meminfo
   #
@@ -232,9 +280,27 @@ memory:
 
   # high_level: u32, default: 90
   #
-  # The percentage above which the color is red.
+  # The percentage above which the memory usage is considered high.
   #
   high_level: 95
+
+  # label: string, default: mem
+  #
+  # The label printed when the memory usage is below high level.
+  #
+  label: mem
+
+  # high_label: string, default: !me
+  #
+  # The label printed when the memory usage is above high level.
+  #
+  high_label: !me
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # #
@@ -250,11 +316,11 @@ mic:
   #
   tick: 100
 
-  # placeholder: String, default: +@fn=1;󰍮+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # index: u32, default: 0
   #
@@ -262,11 +328,23 @@ mic:
   #
   index: 1
 
-  # high_level: u32, default: 100
+  # label: string, default: mic
   #
-  # The percentage above which the color is red.
+  # The label printed when the mic is unmute.
   #
-  high_level: 80
+  label: mic
+
+  # mute_label: string, default: .mi
+  #
+  # The label printed when the mic is mute.
+  #
+  mute_label: .mi
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # # #
@@ -282,11 +360,11 @@ sound:
   #
   tick: 100
 
-  # placeholder: String, default: +@fn=1;󰸈+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # index: u32, default: 0
   #
@@ -294,11 +372,23 @@ sound:
   #
   index: 1
 
-  # high_level: u32, default: 100
+  # label: string, default: sou
   #
-  # The percentage above which the color is red.
+  # The label printed when the sound is unmute.
   #
-  high_level: 80
+  label: sou
+
+  # mute_label: string, default: .so
+  #
+  # The label printed when the sound is mute.
+  #
+  mute_label: .so
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # # # # # #
@@ -314,11 +404,11 @@ temperature:
   #
   tick: 100
 
-  # placeholder: String, default: +@fn=1;󱃃+@fn=0;
+  # placeholder: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # coretemp: String, default: /sys/devices/platform/coretemp.0/hwmon
   #
@@ -347,9 +437,27 @@ temperature:
 
   # high_level: u32, default: 75
   #
-  # The percentage above which the color is red.
+  # The percentage above which the temperature is considered high.
   #
   high_level: 80
+
+  # label: string, default: tem
+  #
+  # The label printed when the temperature is below high level.
+  #
+  label: tem
+
+  # high_label: string, default: !te
+  #
+  # The label printed when the temperature is above high level.
+  #
+  high_label: !te
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l_%v
 
 
 # # # # # # # # #
@@ -365,15 +473,15 @@ wired:
   #
   tick: 500
 
-  # placeholder: String, default: +@fn=1;󰈀+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # discrete: bool, default: false
   #
-  # If true and the status is not connected, print nothing.
+  # If true and there is no active wired connection, print nothing.
   #
   discrete: true
 
@@ -382,6 +490,24 @@ wired:
   # The name of the wired interface.
   #
   interface: eth0
+
+  # label: string, default: eth
+  #
+  # The label printed when a wired connection is active.
+  #
+  label: eth
+
+  # disconnected_label: string, default: .et
+  #
+  # The label printed when there is no active wired connection.
+  #
+  disconnected_label: .et
+
+  # format: string, default: %v
+  #
+  # The module format.
+  #
+  format: %v
 
 
 # # # # # # # # # #
@@ -397,17 +523,17 @@ wireless:
   #
   tick: 250
 
-  # placeholder: String, default: +@fn=1;󰤯+@fn=0;
+  # placeholder: String, default: "-"
   #
   # Value to display when there is no data available yet.
   #
-  placeholder: '-'
+  placeholder: "-"
 
   # display: Display, default: Signal
   #
-  # enum Display { Essid, Signal, IconOnly }
+  # enum Display { Essid, Signal, LabelOnly }
   #
-  # Display the essid name, the signal strength in percentage or just the icon.
+  # Print the essid name, the signal strength in percentage or just the label.
   #
   display: Essid
 
@@ -422,3 +548,21 @@ wireless:
   # The name of the wireless interface.
   #
   interface: wlp2s0
+
+  # label: string, default: wle
+  #
+  # The label printed when a wireless connection is active.
+  #
+  label: wle
+
+  # disconnected_label: string, default: .wl
+  #
+  # The label printed when there is no active wireless connection.
+  #
+  disconnected_label: .wl
+
+  # format: string, default: %l:%v
+  #
+  # The module format.
+  #
+  format: %l:%v

@@ -16,9 +16,9 @@ use std::time::Duration;
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
-const LABEL: &str = "wir";
-const DISCONNECTED_LABEL: &str = ".wi";
-const FORMAT: &str = "%l:%v";
+const LABEL: &str = "eth";
+const DISCONNECTED_LABEL: &str = ".et";
+const FORMAT: &str = "%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
