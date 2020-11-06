@@ -57,6 +57,11 @@ wireless:
   max_essid_len: 4
 ```
 
+### usage
+```
+$ baru
+```
+
 ### credits
 
 Clément Dommerc for providing me with the C code for the lib `nl_data`, wireless part.
