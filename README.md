@@ -1,6 +1,6 @@
 ## baru
 
-My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust (and a little bit of C).
+A system monitor written in Rust and C.
 
 ![baru](https://raw.githubusercontent.com/doums/baru/master/public/baru.png)
 
@@ -14,7 +14,8 @@ My own bar for [spectrwm](https://github.com/conformal/spectrwm), coded in Rust 
 * brightness
 * cpu usage and temperature
 * memory (percent or used/total in gigabyte/gibibyte)
-* dynamic icons, colors
+* dynamic and customizable labels
+* customizable format output
 * configuration in YAML
 
 All the info is read direclty from the kernel files (`/sys`, `/proc`). Except audio and network modules which use libraries.\
@@ -31,7 +32,6 @@ Baru is modular. This means that only the modules you want to see are instantiat
 
 - libnl (for wired and wireless modules)
 - pulseaudio (for sound and mic modules)
-- an icon font installed (I use [this](https://github.com/Templarian/MaterialDesign-Font))
 
 ### configuration
 
@@ -43,19 +43,18 @@ Example:
 ```yaml
 bar: '%c  %t  %b  %s   %w %a   %d'
 tick: 50
-default_font: +@fn=0;
-icon_font: +@fn=1;
-default_color: +@fg=0;
-red: +@fg=1;
-green: +@fg=2;
+memory:
+  display: GiB
 mic:
   index: 1
+temperature:
+  core_inputs: 2..5
+wired:
+  discrete: true
 wireless:
   interface: wlp2s0
   display: Essid
   max_essid_len: 4
-temperature:
-  core_inputs: 2..5
 ```
 
 ### credits
