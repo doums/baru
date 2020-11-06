@@ -36,7 +36,7 @@ use wired::Config as WiredConfig;
 use wireless::Config as WirelessConfig;
 
 #[derive(Debug)]
-pub struct ModuleMsg(char, String, Option<String>);
+pub struct ModuleMsg(char, Option<String>, Option<String>);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -115,7 +115,10 @@ impl<'a> Baru<'a> {
             let mut iter = messages.iter().rev();
             let message = iter.find(|v| v.0 == module.key);
             if let Some(value) = message {
-                module.new_data(value.1.clone(), value.2.clone());
+                module.new_data(
+                    value.1.as_ref().map(|v| v.as_str()),
+                    value.2.as_ref().map(|v| v.as_str()),
+                );
             }
         }
         let mut output = self.format.to_string();

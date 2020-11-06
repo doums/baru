@@ -163,13 +163,21 @@ pub fn run(
             label = config.disconnected_label;
         }
         match config.display {
-            Display::LabelOnly => tx.send(ModuleMsg(key, label.to_string(), None))?,
-            Display::Essid => tx.send(ModuleMsg(key, essid, Some(label.to_string())))?,
+            Display::LabelOnly => tx.send(ModuleMsg(key, None, Some(label.to_string())))?,
+            Display::Essid => tx.send(ModuleMsg(key, Some(essid), Some(label.to_string())))?,
             Display::Signal => {
                 if let Some(s) = signal {
-                    tx.send(ModuleMsg(key, format!("{:3}%", s), Some(label.to_string())))?;
+                    tx.send(ModuleMsg(
+                        key,
+                        Some(format!("{:3}%", s)),
+                        Some(label.to_string()),
+                    ))?;
                 } else {
-                    tx.send(ModuleMsg(key, format!("    {}", label), None))?;
+                    tx.send(ModuleMsg(
+                        key,
+                        Some("  ?%".to_string()),
+                        Some(label.to_string()),
+                    ))?;
                 }
             }
         }

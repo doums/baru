@@ -100,7 +100,7 @@ impl<'a> Bar for Sound<'a> {
     }
 
     fn format(&self) -> &str {
-        ""
+        self.format
     }
 }
 
@@ -119,7 +119,7 @@ pub fn run(
             };
             tx.send(ModuleMsg(
                 key,
-                format!("{:3}%", data.0),
+                Some(format!("{:3}%", data.0)),
                 Some(label.to_string()),
             ))?;
         }

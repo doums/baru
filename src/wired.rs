@@ -18,7 +18,7 @@ const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
 const LABEL: &str = "eth";
 const DISCONNECTED_LABEL: &str = ".et";
-const FORMAT: &str = "%v";
+const FORMAT: &str = "%l";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -128,11 +128,15 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     loop {
         if let WiredState::Connected = nl_data::wired_data(&config.interface) {
-            tx.send(ModuleMsg(key, config.label.to_string(), None))?;
+            tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
         } else if config.discrete {
-            tx.send(ModuleMsg(key, "".to_string(), None))?;
+            tx.send(ModuleMsg(key, None, None))?;
         } else {
-            tx.send(ModuleMsg(key, config.disconnected_label.to_string(), None))?;
+            tx.send(ModuleMsg(
+                key,
+                None,
+                Some(config.disconnected_label.to_string()),
+            ))?;
         }
         thread::sleep(config.tick);
     }

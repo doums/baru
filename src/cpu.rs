@@ -155,7 +155,7 @@ pub fn run(
         }
         tx.send(ModuleMsg(
             key,
-            format!("{:3}%", usage),
+            Some(format!("{:3}%", usage)),
             Some(label.to_string()),
         ))?;
         thread::sleep(config.tick);

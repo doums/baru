@@ -221,12 +221,12 @@ pub fn run(
         match config.display {
             Display::GB | Display::GiB => tx.send(ModuleMsg(
                 key,
-                format!("{}/{}", used, total),
+                Some(format!("{}/{}", used, total)),
                 Some(label.to_string()),
             ))?,
             Display::Percentage => tx.send(ModuleMsg(
                 key,
-                format!("{:3}%", percentage),
+                Some(format!("{:3}%", percentage)),
                 Some(label.to_string()),
             ))?,
         };

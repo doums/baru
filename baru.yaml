@@ -238,11 +238,11 @@ date_time:
   #
   label: dat
 
-  # format: string, default: %l:%v
+  # format: string, default: %v
   #
   # The module format.
   #
-  format: %l_%v
+  format: %v
 
 
 # # # # # # # # #
@@ -503,11 +503,11 @@ wired:
   #
   disconnected_label: .et
 
-  # format: string, default: %v
+  # format: string, default: %l
   #
-  # The module format.
+  # The module format (this module has no value to print).
   #
-  format: %v
+  format: %l
 
 
 # # # # # # # # # #

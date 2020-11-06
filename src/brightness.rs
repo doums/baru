@@ -116,7 +116,7 @@ pub fn run(
         let percentage = 100 * brightness / max_brightness;
         tx.send(ModuleMsg(
             key,
-            format!("{:3}%", percentage),
+            Some(format!("{:3}%", percentage)),
             Some(config.label.to_string()),
         ))?;
         thread::sleep(config.tick);

@@ -29,6 +29,7 @@ pub trait Bar {
     fn format(&self) -> &str;
 }
 
+#[derive(Debug)]
 pub enum Module<'a> {
     Battery(Battery<'a>),
     Brightness(Brightness<'a>),
@@ -124,6 +125,7 @@ impl<'a> Bar for Module<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct ModuleData<'a> {
     pub key: char,
     pub module: Module<'a>,
@@ -139,12 +141,17 @@ impl<'a> ModuleData<'a> {
         })
     }
 
-    pub fn new_data(&mut self, value: String, label: Option<String>) {
+    pub fn new_data(&mut self, value: Option<&str>, label: Option<&str>) {
         let mut module_format = self.module.format().to_string();
-        if let Some(value) = label {
-            module_format = module_format.replace("%l", &value);
-        }
-        self.data = Some(module_format.replace("%v", &value));
+        module_format = match value {
+            Some(v) => module_format.replace("%v", &v),
+            None => module_format.replace("%v", ""),
+        };
+        module_format = match label {
+            Some(l) => module_format.replace("%l", &l),
+            None => module_format.replace("%l", ""),
+        };
+        self.data = Some(module_format);
     }
 
     pub fn output(&self) -> &str {

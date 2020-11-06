@@ -173,7 +173,7 @@ pub fn run(
         }
         tx.send(ModuleMsg(
             key,
-            format!("{:3}°", average),
+            Some(format!("{:3}°", average)),
             Some(label.to_string()),
         ))?;
         thread::sleep(config.tick);

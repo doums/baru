@@ -111,7 +111,7 @@ pub fn run(
     loop {
         tx.send(ModuleMsg(
             key,
-            Local::now().format(config.date_format).to_string(),
+            Some(Local::now().format(config.date_format).to_string()),
             config.label.map(|v| v.to_string()),
         ))?;
         thread::sleep(config.tick);

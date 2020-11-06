@@ -208,7 +208,7 @@ pub fn run(
         };
         tx.send(ModuleMsg(
             key,
-            format!("{:3}%", battery_level),
+            Some(format!("{:3}%", battery_level)),
             Some(label.to_string()),
         ))?;
         thread::sleep(config.tick);
