@@ -40,7 +40,7 @@ pub struct ModuleMsg(char, Option<String>, Option<String>);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    bar: String,
+    format: String,
     pub tick: Option<u32>,
     pulse_tick: Option<u32>,
     battery: Option<BatteryConfig>,
@@ -70,7 +70,7 @@ struct MarkupMatch(char, usize);
 impl<'a> Baru<'a> {
     pub fn with_config(config: &'a Config, pulse: &'a Arc<Mutex<Pulse>>) -> Result<Self, Error> {
         let mut modules = vec![];
-        let markup_matches = parse_format(&config.bar);
+        let markup_matches = parse_format(&config.format);
         for markup in &markup_matches {
             modules.push(ModuleData::new(markup.0, config)?);
         }
@@ -79,7 +79,7 @@ impl<'a> Baru<'a> {
             pulse,
             channel: mpsc::channel(),
             modules,
-            format: &config.bar,
+            format: &config.format,
             markup_matches,
         })
     }

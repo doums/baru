@@ -41,20 +41,55 @@ All options are detailed [here](https://github.com/doums/baru/blob/master/baru.y
 
 Example:
 ```yaml
-bar: '%c  %t  %b  %s   %w %a   %d'
+format: '%m  %c  %t  %b  %i  %s   %w%e  %a    %d'
 tick: 50
+battery:
+  full_design: true
+  low_level: 30
+  full_label: '*'
+  charging_label: '^'
+  discharging_label: 'b'
+  low_label: '!'
+  unknown_label: '?'
+  format: '%l %v'
+brightness:
+  label: 'l'
+  format: '%l %v'
+cpu:
+  label: 'c'
+  high_label: '!'
+  format: '%v %l'
 memory:
-  display: GiB
+  label: 'm'
+  high_label: '!'
+  format: '%v %l'
 mic:
   index: 1
+  label: 'i'
+  mute_label: '.'
+  format: '%v %l'
+sound:
+  index: 0
+  label: 's'
+  mute_label: '.'
+  format: '%v %l'
 temperature:
   core_inputs: 2..5
+  label: 't'
+  high_label: '!'
+  format: '%v %l'
 wired:
   discrete: true
+  label: 'e'
+  disconnected_label: '\'
+  format: '%l'
 wireless:
-  interface: wlp2s0
+  interface: wlan0
   display: Essid
-  max_essid_len: 4
+  max_essid_len: 5
+  label: 'w'
+  disconnected_label: '\'
+  format: '%v %l'
 ```
 
 ### usage
