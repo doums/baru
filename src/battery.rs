@@ -19,6 +19,7 @@ const PLACEHOLDER: &str = "-";
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const BATTERY_NAME: &str = "BAT0";
 const UEVENT: &str = "uevent";
+const FULL_DESIGN: bool = false;
 const POWER_SUPPLY: &str = "POWER_SUPPLY";
 const CHARGE_PREFIX: &str = "CHARGE";
 const ENERGY_PREFIX: &str = "ENERGY";
@@ -72,7 +73,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
     fn try_from(config: &'a MainConfig) -> Result<Self, Self::Error> {
         let mut low_level = LOW_LEVEL;
         let mut name = BATTERY_NAME;
-        let mut full_design = false;
+        let mut full_design = FULL_DESIGN;
         let mut tick = TICK_RATE;
         let mut full_label = FULL_LABEL;
         let mut charging_label = CHARGING_LABEL;

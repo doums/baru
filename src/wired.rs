@@ -16,6 +16,7 @@ use std::time::Duration;
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
 const INTERFACE: &str = "enp0s31f6";
+const DISCRETE: bool = false;
 const LABEL: &str = "eth";
 const DISCONNECTED_LABEL: &str = ".et";
 const FORMAT: &str = "%l";
@@ -44,7 +45,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
         let mut interface = INTERFACE;
-        let mut discrete = false;
+        let mut discrete = DISCRETE;
         let mut label = LABEL;
         let mut disconnected_label = DISCONNECTED_LABEL;
         if let Some(c) = &config.wired {
