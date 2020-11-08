@@ -4,8 +4,8 @@
 
 // Wireless code written by Clément Dommerc
 
-#ifndef NL_DATA_H_
-#define NL_DATA_H_
+#ifndef NL_DATA_H
+#define NL_DATA_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,4 +72,4 @@ t_wired_data    get_wired_data(char *interface);
 char    *alloc_buffer(size_t size);
 void    *alloc_ptr(size_t size);
 
-#endif // NL_DATA_H_
+#endif // NL_DATA_H
