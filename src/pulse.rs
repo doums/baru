@@ -3,8 +3,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
+// use crate::new_pulse::Callback;
 use crate::Config;
-use libpulse_binding as pulse;
+/*use libpulse_binding as pulse;
 use pulse::callbacks::ListResult;
 use pulse::context::introspect::{SinkInfo, SourceInfo};
 use pulse::context::subscribe::{subscription_masks, Facility};
@@ -14,7 +15,7 @@ use pulse::proplist::Proplist;
 use pulse::volume::ChannelVolumes;
 use std::cell::RefCell;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::rc::Rc;*/
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
@@ -24,9 +25,13 @@ const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 0;
 
 #[derive(Copy, Clone, Debug)]
+#[repr(C)]
 pub struct PulseData(pub i32, pub bool);
 
-struct IntroInfo {
+#[repr(C)]
+pub struct CallbackContext(Sender<PulseData>, Sender<PulseData>);
+
+/*struct IntroInfo {
     volume: ChannelVolumes,
     muted: bool,
 }
@@ -47,7 +52,7 @@ impl From<&SourceInfo<'_>> for IntroInfo {
             muted: source_info.mute,
         }
     }
-}
+}*/
 
 pub struct Pulse(
     JoinHandle<Result<(), Error>>,
@@ -93,6 +98,16 @@ impl Pulse {
 }
 
 fn run(
+    tick: Duration,
+    sink: u32,
+    source: u32,
+    out_tx: Sender<PulseData>,
+    in_tx: Sender<PulseData>,
+) -> Result<(), Error> {
+    Ok(())
+}
+
+/*fn run(
     tick: Duration,
     sink: u32,
     source: u32,
@@ -245,3 +260,4 @@ fn parse_info(info: &IntroInfo) -> Result<PulseData, Error> {
         Err(err) => Err(Error::new(format!("failed to parse volume: {}", err))),
     }
 }
+*/

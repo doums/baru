@@ -31,7 +31,7 @@ Baru is modular. This means that only the modules you want to see are instantiat
 ### prerequisite
 
 - libnl (for wired and wireless modules)
-- pulseaudio (for sound and mic modules)
+- libpulse (for sound and mic modules)
 
 ### configuration
 
