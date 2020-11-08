@@ -4,12 +4,7 @@
 
 #include "../include/sound.h"
 
-static void sig_handler(int signum) {
-    (void)signum;
-    alive = false;
-}
-
-void print_and_exit(char *err) {
+void printe(char *err) {
     fprintf(stderr, "%s: %s, %s\n", PREFIX_ERROR, err, strerror(errno));
     exit(EXIT_FAILURE);
 }
@@ -21,7 +16,7 @@ void context_state_cb(pa_context *context, void *data) {
     if (state == PA_CONTEXT_READY) {
         ((t_data *)data)->connected = true;
     } else if (state == PA_CONTEXT_FAILED) {
-        print_and_exit("context fails to connect");
+        printe("context fails to connect");
     }
 }
 
@@ -79,11 +74,11 @@ void iterate(t_data *data) {
     t_timespec  tick;
 
     if (clock_gettime(CLOCK_REALTIME, &data->start) == -1) {
-        print_and_exit("clock_gettime fails");
+        printe("clock_gettime fails");
     }
     abs_time_tick(&data->start, &tick, data->tick);
     if (pa_mainloop_iterate(data->mainloop, 0, NULL) < 0) {
-        print_and_exit("pa_mainloop_iterate fails");
+        printe("pa_mainloop_iterate fails");
     }
     clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
 }
@@ -91,17 +86,6 @@ void iterate(t_data *data) {
 int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_context, send_sink_cb sink_cb, send_source_cb source_cb) {
     pa_proplist     *proplist;
     t_data          data;
-    t_sigaction     sa;
-
-    memset(&sa, 0, sizeof(t_sigaction));
-    sa.sa_handler = sig_handler;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGINT, &sa, NULL) == -1) {
-        print_and_exit("sigaction fails");
-    }
-    if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        print_and_exit("sigaction fails");
-    }
 
     data.tick = tick;
     data.sink_index = sink_index;
@@ -116,18 +100,18 @@ int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_cont
 
     // context creation
     if (pa_proplist_sets(proplist, PA_PROP_APPLICATION_NAME, APPLICATION_NAME) != 0) {
-        print_and_exit("pa_proplist_sets fails");
+        printe("pa_proplist_sets fails");
     }
     data.context = pa_context_new_with_proplist(data.api, APPLICATION_NAME, proplist);
 
     // context connection to the sever
     pa_context_set_state_callback(data.context, context_state_cb, &data);
     if (pa_context_connect(data.context, NULL, PA_CONTEXT_NOFAIL, NULL) < 0) {
-        print_and_exit("pa_context_connect fails");
+        printe("pa_context_connect fails");
     }
     while(data.connected == false) {
         if (pa_mainloop_iterate(data.mainloop, 0, NULL) < 0) {
-            print_and_exit("pa_mainloop_iterate fails");
+            printe("pa_mainloop_iterate fails");
         }
     }
 
