@@ -7,7 +7,7 @@ use crate::Config;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 
-const PULSE_RATE: u32 = 16;
+const PULSE_RATE: u32 = 16_000_000; // in nanosecond
 const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 0;
 
@@ -31,7 +31,7 @@ impl Pulse {
         let (sink_tx, sink_rx) = mpsc::channel();
         let (source_tx, source_rx) = mpsc::channel();
         let tick = match config.pulse_tick {
-            Some(val) => val,
+            Some(val) => val * 1e6 as u32,
             None => PULSE_RATE,
         };
         let mut sink_index = SINK_INDEX;
