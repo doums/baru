@@ -21,7 +21,6 @@ version = "0.2.0"
 dependencies = [
  "chrono",
  "cmake",
- "libpulse-binding",
  "regex",
  "serde",
  "serde_yaml",
@@ -74,28 +73,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d58d1b70b004888f764dfbf6a26a3b0342a1632d33968e4a179d8011c760614"
 
 [[package]]
-name = "libpulse-binding"
-version = "2.16.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1795efad67f34ae95740ded62e3c346e707b0caeb0f6088d75958e97316b5538"
-dependencies = [
- "libc",
- "libpulse-sys",
- "winapi",
-]
-
-[[package]]
-name = "libpulse-sys"
-version = "1.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f53857071d564f864755a6945d316cc8fe62c36ed20bd4231c8ab6b62141786"
-dependencies = [
- "libc",
- "pkg-config",
- "winapi",
-]
-
-[[package]]
 name = "linked-hash-map"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -125,12 +102,6 @@ checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
 dependencies = [
  "autocfg",
 ]
-
-[[package]]
-name = "pkg-config"
-version = "0.3.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 
 [[package]]
 name = "proc-macro2"

@@ -112,7 +112,7 @@ pub fn run(
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
-        if let Some(data) = pulse.lock().unwrap().output_data() {
+        if let Some(data) = pulse.lock().unwrap().sink_data() {
             let label = match data.1 {
                 true => config.mute_label,
                 false => config.label,

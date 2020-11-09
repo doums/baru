@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <string.h>
-#include <signal.h>
 #include <pulse/context.h>
 #include <pulse/proplist.h>
 #include <pulse/mainloop.h>
@@ -34,8 +33,6 @@ static bool alive = true;
 
 typedef struct timespec
                         t_timespec;
-typedef struct sigaction
-                        t_sigaction;
 
 typedef struct          volume {
     uint32_t            volume;
@@ -59,6 +56,8 @@ typedef struct          data {
     send_sink_cb        sink_cb;
     send_source_cb      source_cb;
     t_timespec          start;
+    pa_operation        *sink_op;
+    pa_operation        *source_op;
 }                       t_data;
 
 int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *, send_sink_cb, send_source_cb);

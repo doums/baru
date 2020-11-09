@@ -61,11 +61,11 @@ impl Pulse {
         Ok(Pulse(handle, sink_rx, source_rx))
     }
 
-    pub fn output_data(&self) -> Option<PulseData> {
+    pub fn sink_data(&self) -> Option<PulseData> {
         self.1.try_iter().last()
     }
 
-    pub fn input_data(&self) -> Option<PulseData> {
+    pub fn source_data(&self) -> Option<PulseData> {
         self.2.try_iter().last()
     }
 }
