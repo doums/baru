@@ -16,3 +16,8 @@ char    *alloc_buffer(size_t size) {
     memset(buffer, 0, size);
     return buffer;
 }
+
+void    print_and_exit(char *err) {
+    fprintf(stderr, "%s: %s\n", PREFIX_ERROR, err);
+    exit(EXIT_FAILURE);
+}

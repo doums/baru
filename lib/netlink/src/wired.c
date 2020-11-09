@@ -4,11 +4,6 @@
 
 #include "../include/netlink.h"
 
-void print_and_exit(char *err) {
-    fprintf(stderr, "%s: %s\n", PREFIX_ERROR, err);
-    exit(EXIT_FAILURE);
-}
-
 bool is_operational(struct rtnl_link *link) {
     char        buf[BUF_SIZE];
     uint8_t     state;

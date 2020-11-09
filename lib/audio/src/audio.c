@@ -16,7 +16,7 @@ void context_state_cb(pa_context *context, void *data) {
     if (state == PA_CONTEXT_READY) {
         ((t_data *)data)->connected = true;
     } else if (state == PA_CONTEXT_FAILED) {
-        printe("context fails to connect");
+        printe("context connection failed");
     }
 }
 
@@ -76,11 +76,11 @@ void iterate(t_data *data) {
     t_timespec  tick;
 
     if (clock_gettime(CLOCK_REALTIME, &data->start) == -1) {
-        printe("clock_gettime fails");
+        printe("clock_gettime failed");
     }
     abs_time_tick(&data->start, &tick, data->tick);
     if (pa_mainloop_iterate(data->mainloop, 0, NULL) < 0) {
-        printe("pa_mainloop_iterate fails");
+        printe("pa_mainloop_iterate failed");
     }
     clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
 }
@@ -103,18 +103,18 @@ int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_cont
 
     // context creation
     if (pa_proplist_sets(proplist, PA_PROP_APPLICATION_NAME, APPLICATION_NAME) != 0) {
-        printe("pa_proplist_sets fails");
+        printe("pa_proplist_sets failed");
     }
     data.context = pa_context_new_with_proplist(data.api, APPLICATION_NAME, proplist);
 
     // context connection to the sever
     pa_context_set_state_callback(data.context, context_state_cb, &data);
     if (pa_context_connect(data.context, NULL, PA_CONTEXT_NOFAIL, NULL) < 0) {
-        printe("pa_context_connect fails");
+        printe("pa_context_connect failed");
     }
     while(data.connected == false) {
         if (pa_mainloop_iterate(data.mainloop, 0, NULL) < 0) {
-            printe("pa_mainloop_iterate fails");
+            printe("pa_mainloop_iterate failed");
         }
     }
 

@@ -21,36 +21,33 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <errno.h>
+#include <sys/socket.h>
 #include <net/if.h>
 #include <netlink/netlink.h>
-#include <sys/socket.h>
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
+#include <netlink/route/addr.h>
 #include <linux/nl80211.h>
 #include <linux/if_ether.h>
-#include <netlink/socket.h>
-#include <netlink/cache.h>
-#include <netlink/route/link.h>
-#include <netlink/route/addr.h>
 
 #define NL80211 "nl80211"
-#define WLAN_EID_SSID 0
-#define WIRELESS_INFO_FLAG_HAS_ESSID (1 << 0)
-#define WIRELESS_INFO_FLAG_HAS_QUALITY (1 << 1)
-#define WIRELESS_ESSID_MAX_SIZE 16
+#define EID_SSID 0
 #define NOISE_FLOOR_DBM (-90)
 #define SIGNAL_MAX_DBM (-20)
 #define PREFIX_ERROR "libnetlink error"
 #define BUF_SIZE 1024
+#define ESSID_MAX_SIZE 1024
 
 typedef struct      s_wireless {
-    unsigned int    flags;
+    bool            essid_found;
+    bool            signal_found;
     int             nl80211_id;
     unsigned int    if_index;
     char            *if_name;
     uint8_t         bssid[ETH_ALEN];
     char            *essid;
-    int             quality;
+    int             signal;
+    struct nl_sock  *socket;
 }                   t_wireless;
 
 /* API */
@@ -67,6 +64,7 @@ typedef struct  s_wired_data {
 
 t_wireless_data get_wireless_data(char *interface);
 t_wired_data    get_wired_data(char *interface);
+void            print_and_exit(char *err);
 
 /* HELPERS */
 char    *alloc_buffer(size_t size);
