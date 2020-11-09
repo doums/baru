@@ -16,13 +16,3 @@ char    *alloc_buffer(size_t size) {
     memset(buffer, 0, size);
     return buffer;
 }
-
-void    *alloc_ptr(size_t size) {
-    void    *ptr;
-
-    if ((ptr = malloc(size)) == NULL) {
-        printf("Call to 'malloc()' failed: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    return ptr;
-}

@@ -193,14 +193,13 @@ static int      send_for_scan(t_wireless *wireless, struct nl_sock *socket) {
     return -1;
 }
 
-t_wireless_data        *get_wireless_data(char *interface) {
+t_wireless_data get_wireless_data(char *interface) {
     t_wireless          wireless;
-    t_wireless_data           *nl_data;
+    t_wireless_data     nl_data;
     struct nl_sock      *socket;
 
-    nl_data = alloc_ptr(sizeof(t_wireless_data));
-    nl_data->essid = NULL;
-    nl_data->signal = -1;
+    nl_data.essid = NULL;
+    nl_data.signal = -1;
     socket = nl_socket_alloc();
     if (genl_connect(socket) != 0) {
         printf("%s: unable to alloc memory for Netlink socket\n", PREFIX_ERROR);
@@ -213,10 +212,10 @@ t_wireless_data        *get_wireless_data(char *interface) {
         exit(EXIT_FAILURE);
     }
     if (wireless.flags & WIRELESS_INFO_FLAG_HAS_QUALITY) {
-        nl_data->signal = wireless.quality;
+        nl_data.signal = wireless.quality;
     }
     if (wireless.flags & WIRELESS_INFO_FLAG_HAS_ESSID) {
-        nl_data->essid = wireless.essid;
+        nl_data.essid = wireless.essid;
     }
 
     nl_socket_free(socket);

@@ -39,7 +39,7 @@ pub struct WirelessData {
 
 #[link(name = "nl_data", kind = "static")]
 extern "C" {
-    pub fn get_wireless_data(interface: *const c_char) -> *const NlWirelessData;
+    pub fn get_wireless_data(interface: *const c_char) -> NlWirelessData;
     pub fn get_wired_data(interface: *const c_char) -> NlWiredData;
 }
 
@@ -47,8 +47,8 @@ pub fn wireless_data(interface: &str) -> WirelessState {
     let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
         let nl_data = get_wireless_data(c_interface.as_ptr());
-        let signal_ptr = (*nl_data).signal;
-        let essid_ptr = (*nl_data).essid;
+        let signal_ptr = nl_data.signal;
+        let essid_ptr = nl_data.essid;
         let signal = if signal_ptr == -1 {
             None
         } else {

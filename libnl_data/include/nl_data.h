@@ -65,11 +65,10 @@ typedef struct  s_wired_data {
     bool        has_ip;
 }               t_wired_data;
 
-t_wireless_data *get_wireless_data(char *interface);
+t_wireless_data get_wireless_data(char *interface);
 t_wired_data    get_wired_data(char *interface);
 
 /* HELPERS */
 char    *alloc_buffer(size_t size);
-void    *alloc_ptr(size_t size);
 
 #endif // NL_DATA_H
