@@ -64,6 +64,7 @@ typedef struct  s_wired_data {
 
 t_wireless_data get_wireless_data(char *interface);
 t_wired_data    get_wired_data(char *interface);
+void            free_essid(char *essid);
 void            print_and_exit(char *err);
 
 /* HELPERS */

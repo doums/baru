@@ -91,7 +91,7 @@ extern "C" fn source_cb(context: *const CallbackContext, volume: u32, mute: bool
 
 #[link(name = "audio", kind = "static")]
 extern "C" {
-    pub fn run(
+    fn run(
         tick: u32,
         sink_index: u32,
         source_index: u32,

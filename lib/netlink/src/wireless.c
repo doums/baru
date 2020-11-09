@@ -225,3 +225,7 @@ t_wireless_data get_wireless_data(char *interface) {
     nl_socket_free(wireless.socket);
     return data;
 }
+
+void free_essid(char *essid) {
+    free(essid);
+}

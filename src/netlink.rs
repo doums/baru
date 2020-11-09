@@ -39,8 +39,9 @@ pub struct WirelessData {
 
 #[link(name = "netlink", kind = "static")]
 extern "C" {
-    pub fn get_wireless_data(interface: *const c_char) -> NlWirelessData;
-    pub fn get_wired_data(interface: *const c_char) -> NlWiredData;
+    fn get_wireless_data(interface: *const c_char) -> NlWirelessData;
+    fn get_wired_data(interface: *const c_char) -> NlWiredData;
+    fn free_essid(essid: *const c_char);
 }
 
 pub fn wireless_data(interface: &str) -> WirelessState {
@@ -59,6 +60,7 @@ pub fn wireless_data(interface: &str) -> WirelessState {
         } else {
             Some(CStr::from_ptr(essid_ptr).to_string_lossy().into_owned())
         };
+        free_essid(essid_ptr);
         if signal.is_none() && essid.is_none() {
             WirelessState::Disconnected
         } else {
