@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-#ifndef SOUND_H
-#define SOUND_H
+#ifndef AUDIO_H
+#define AUDIO_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +18,7 @@
 #include <pulse/subscribe.h>
 #include <time.h>
 
-#define PREFIX_ERROR "libsound"
+#define PREFIX_ERROR "libaudio"
 #define APPLICATION_NAME "baru"
 #define NSEC_TO_SECOND(N) N / (long)1e9
 #define MAX_NSEC 999999999
@@ -62,4 +62,4 @@ typedef struct          data {
 
 int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *, send_sink_cb, send_source_cb);
 
-#endif //SOUND_H
+#endif //AUDIO_H

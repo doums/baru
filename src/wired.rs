@@ -4,7 +4,7 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::nl_data::{self, WiredState};
+use crate::netlink::{self, WiredState};
 use crate::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
@@ -128,7 +128,7 @@ pub fn run(
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
-        if let WiredState::Connected = nl_data::wired_data(&config.interface) {
+        if let WiredState::Connected = netlink::wired_data(&config.interface) {
             tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
         } else if config.discrete {
             tx.send(ModuleMsg(key, None, None))?;

@@ -4,8 +4,8 @@
 
 // Wireless code written by Clément Dommerc
 
-#ifndef NL_DATA_H
-#define NL_DATA_H
+#ifndef NETLINK_H
+#define NETLINK_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +40,7 @@
 #define WIRELESS_ESSID_MAX_SIZE 16
 #define NOISE_FLOOR_DBM (-90)
 #define SIGNAL_MAX_DBM (-20)
-#define PREFIX_ERROR "nl_data error"
+#define PREFIX_ERROR "libnetlink error"
 #define BUF_SIZE 1024
 
 typedef struct      s_wireless {
@@ -71,4 +71,4 @@ t_wired_data    get_wired_data(char *interface);
 /* HELPERS */
 char    *alloc_buffer(size_t size);
 
-#endif // NL_DATA_H
+#endif // NETLINK_H

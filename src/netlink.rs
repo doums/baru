@@ -37,7 +37,7 @@ pub struct WirelessData {
     pub signal: Option<i32>,
 }
 
-#[link(name = "nl_data", kind = "static")]
+#[link(name = "netlink", kind = "static")]
 extern "C" {
     pub fn get_wireless_data(interface: *const c_char) -> NlWirelessData;
     pub fn get_wired_data(interface: *const c_char) -> NlWiredData;

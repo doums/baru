@@ -10,7 +10,7 @@ mod error;
 mod memory;
 mod mic;
 mod module;
-mod nl_data;
+mod netlink;
 pub mod pulse;
 mod sound;
 mod temperature;

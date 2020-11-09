@@ -4,7 +4,7 @@
 
 // By Clément Dommerc
 
-#include "../include/nl_data.h"
+#include "../include/netlink.h"
 
 char    *alloc_buffer(size_t size) {
     char    *buffer;

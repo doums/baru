@@ -4,7 +4,7 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::nl_data::{self, WirelessState};
+use crate::netlink::{self, WirelessState};
 use crate::pulse::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
@@ -143,7 +143,7 @@ pub fn run(
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     loop {
-        let state = nl_data::wireless_data(&config.interface);
+        let state = netlink::wireless_data(&config.interface);
         let label;
         let mut essid = "".to_owned();
         let mut signal = None;

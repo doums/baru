@@ -89,7 +89,7 @@ extern "C" fn source_cb(context: *const CallbackContext, volume: u32, mute: bool
     }
 }
 
-#[link(name = "sound", kind = "static")]
+#[link(name = "audio", kind = "static")]
 extern "C" {
     pub fn run(
         tick: u32,

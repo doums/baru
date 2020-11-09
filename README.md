@@ -99,7 +99,7 @@ $ baru
 
 ### credits
 
-Clément Dommerc for providing me with the C code for the lib `nl_data`, wireless part.
+Clément Dommerc for providing me with the C code for the lib `netlink`, wireless part.
 
 ### license
 Mozilla Public License 2.0

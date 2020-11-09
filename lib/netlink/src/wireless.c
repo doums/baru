@@ -4,7 +4,7 @@
 
 // By Clément Dommerc
 
-#include "../include/nl_data.h"
+#include "../include/netlink.h"
 
 static uint32_t     nl80211_xbm_to_percent(int32_t xbm, int32_t divisor) {
     xbm /= divisor;
