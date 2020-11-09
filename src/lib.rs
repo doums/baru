@@ -10,7 +10,6 @@ mod error;
 mod memory;
 mod mic;
 mod module;
-pub mod new_pulse;
 mod nl_data;
 pub mod pulse;
 mod sound;

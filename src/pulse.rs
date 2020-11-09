@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::error::Error;
-use crate::new_pulse::pulse_run;
 use crate::Config;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
@@ -11,6 +10,8 @@ use std::thread::{self, JoinHandle};
 const PULSE_RATE: u32 = 16;
 const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 0;
+
+pub type Callback = extern "C" fn(*const CallbackContext, u32, bool);
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
@@ -85,5 +86,38 @@ extern "C" fn source_cb(context: *const CallbackContext, volume: u32, mute: bool
             .1
             .send(PulseData(volume, mute))
             .expect("in pulse module, failed to send source data");
+    }
+}
+
+#[link(name = "sound", kind = "static")]
+extern "C" {
+    pub fn run(
+        tick: u32,
+        sink_index: u32,
+        source_index: u32,
+        cb_context: *const CallbackContext,
+        sink_cb: Callback,
+        source_cb: Callback,
+    ) -> u32;
+}
+
+pub fn pulse_run(
+    tick: u32,
+    sink_index: u32,
+    source_index: u32,
+    callback_context: &CallbackContext,
+    sink_cb: Callback,
+    source_cb: Callback,
+) {
+    let context_ptr: *const CallbackContext = callback_context;
+    unsafe {
+        run(
+            tick,
+            sink_index,
+            source_index,
+            context_ptr,
+            sink_cb,
+            source_cb,
+        );
     }
 }
