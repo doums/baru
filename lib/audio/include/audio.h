@@ -60,6 +60,6 @@ typedef struct          data {
     pa_operation        *source_op;
 }                       t_data;
 
-int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *, send_sink_cb, send_source_cb);
+void run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *, send_sink_cb, send_source_cb);
 
 #endif //AUDIO_H

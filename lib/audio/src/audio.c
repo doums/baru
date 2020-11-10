@@ -10,20 +10,20 @@ void printe(char *err) {
 }
 
 void context_state_cb(pa_context *context, void *data) {
-    pa_context_state_t  state;
+    pa_context_state_t state;
 
     state = pa_context_get_state(context);
     if (state == PA_CONTEXT_READY) {
-        ((t_data *)data)->connected = true;
+        ((t_data *) data)->connected = true;
     } else if (state == PA_CONTEXT_FAILED) {
         printe("context connection failed");
     }
 }
 
 void sink_info_cb(pa_context *context, const pa_sink_info *info, int eol, void *data) {
-    t_data      *d = data;
+    t_data *d = data;
 
-    (void)context;
+    (void) context;
     if (info != NULL && eol == 0) {
         d->sink_volume.mute = info->mute;
         d->sink_volume.volume = VOLUME(pa_cvolume_avg(&info->volume));
@@ -33,9 +33,9 @@ void sink_info_cb(pa_context *context, const pa_sink_info *info, int eol, void *
 }
 
 void source_info_cb(pa_context *context, const pa_source_info *info, int eol, void *data) {
-    t_data      *d = data;
+    t_data *d = data;
 
-    (void)context;
+    (void) context;
     if (info != NULL && eol == 0) {
         d->source_volume.mute = info->mute;
         d->source_volume.volume = VOLUME(pa_cvolume_avg(&info->volume));
@@ -45,10 +45,10 @@ void source_info_cb(pa_context *context, const pa_source_info *info, int eol, vo
 }
 
 void subscription_cb(pa_context *context, pa_subscription_event_type_t t, uint32_t idx, void *data) {
-    t_data  *d;
+    t_data *d;
 
-    (void)context;
-    (void)idx;
+    (void) context;
+    (void) idx;
     d = data;
     if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK) {
         d->sink_op = pa_context_get_sink_info_by_index(d->context, d->sink_index, sink_info_cb, data);
@@ -58,11 +58,11 @@ void subscription_cb(pa_context *context, pa_subscription_event_type_t t, uint32
 }
 
 void abs_time_tick(t_timespec *start, t_timespec *end, uint32_t tick) {
-    long int    sec;
-    long int    nsec;
+    long int sec;
+    long int nsec;
 
     sec = start->tv_sec + (long int) NSEC_TO_SECOND(tick);
-    nsec = start->tv_nsec + (long int)tick;
+    nsec = start->tv_nsec + (long int) tick;
     if (nsec > MAX_NSEC) {
         end->tv_sec = sec + 1;
         end->tv_nsec = nsec - MAX_NSEC;
@@ -73,7 +73,7 @@ void abs_time_tick(t_timespec *start, t_timespec *end, uint32_t tick) {
 }
 
 void iterate(t_data *data) {
-    t_timespec  tick;
+    t_timespec tick;
 
     if (clock_gettime(CLOCK_REALTIME, &data->start) == -1) {
         printe("clock_gettime failed");
@@ -85,10 +85,11 @@ void iterate(t_data *data) {
     clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
 }
 
-int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_context, send_sink_cb sink_cb, send_source_cb source_cb) {
-    pa_proplist     *proplist;
-    t_data          data;
-    pa_operation    *context_subscription;
+void run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_context, send_sink_cb sink_cb,
+         send_source_cb source_cb) {
+    pa_proplist *proplist;
+    t_data data;
+    pa_operation *context_subscription;
 
     data.tick = tick;
     data.sink_index = sink_index;
@@ -112,7 +113,7 @@ int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_cont
     if (pa_context_connect(data.context, NULL, PA_CONTEXT_NOFAIL, NULL) < 0) {
         printe("pa_context_connect failed");
     }
-    while(data.connected == false) {
+    while (data.connected == false) {
         if (pa_mainloop_iterate(data.mainloop, 0, NULL) < 0) {
             printe("pa_mainloop_iterate failed");
         }
@@ -123,11 +124,12 @@ int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_cont
     data.source_op = pa_context_get_source_info_by_index(data.context, data.source_index, source_info_cb, &data);
 
     // subscription introspection
-    context_subscription = pa_context_subscribe(data.context, PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SOURCE, NULL, NULL);
+    context_subscription =
+            pa_context_subscribe(data.context, PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SOURCE, NULL, NULL);
     pa_context_set_subscribe_callback(data.context, subscription_cb, &data);
 
     // iterate main loop
-    while(alive) {
+    while (alive) {
         iterate(&data);
     }
 
@@ -135,6 +137,4 @@ int run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *cb_cont
     pa_operation_unref(context_subscription);
     pa_context_disconnect(data.context);
     pa_mainloop_free(data.mainloop);
-    printf("quit gracefully\n");
-    return 0;
 }

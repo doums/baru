@@ -98,7 +98,7 @@ extern "C" {
         cb_context: *const CallbackContext,
         sink_cb: Callback,
         source_cb: Callback,
-    ) -> u32;
+    );
 }
 
 pub fn pulse_run(
