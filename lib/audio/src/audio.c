@@ -64,8 +64,10 @@ void subscription_cb(pa_context *context, pa_subscription_event_type_t t, uint32
     (void) idx;
     d = data;
     if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK) {
+        try_free_op(&d->sink_op);
         d->sink_op = pa_context_get_sink_info_by_index(d->context, d->sink_index, sink_info_cb, data);
     } else if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SOURCE) {
+        try_free_op(&d->source_op);
         d->source_op = pa_context_get_source_info_by_index(d->context, d->source_index, source_info_cb, data);
     }
 }
