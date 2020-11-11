@@ -6,18 +6,7 @@
 
 #include "../include/netlink.h"
 
-char    *alloc_buffer(size_t size) {
-    char    *buffer;
-
-    if ((buffer = malloc(sizeof(char) * size)) == NULL) {
-        printf("Call to 'malloc()' failed: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    memset(buffer, 0, size);
-    return buffer;
-}
-
-void    print_and_exit(char *err) {
+void print_and_exit(char *err) {
     fprintf(stderr, "%s: %s\n", PREFIX_ERROR, err);
     exit(EXIT_FAILURE);
 }
