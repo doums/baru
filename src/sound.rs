@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);
@@ -111,7 +111,10 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         if let Some(data) = pulse.lock().unwrap().sink_data() {
             let label = match data.1 {
                 true => config.mute_label,
@@ -123,6 +126,9 @@ pub fn run(
                 Some(label.to_string()),
             ))?;
         }
-        thread::sleep(config.tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < config.tick {
+            thread::sleep(config.tick - iteration_end);
+        }
     }
 }

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const SYS_PATH: &str = "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
@@ -110,7 +110,10 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         let brightness = read_and_parse(&format!("{}/actual_brightness", config.sys_path))?;
         let max_brightness = read_and_parse(&format!("{}/max_brightness", config.sys_path))?;
         let percentage = 100 * brightness / max_brightness;
@@ -119,6 +122,9 @@ pub fn run(
             Some(format!("{:3}%", percentage)),
             Some(config.label.to_string()),
         ))?;
-        thread::sleep(config.tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < config.tick {
+            thread::sleep(config.tick - iteration_end);
+        }
     }
 }

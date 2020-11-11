@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
@@ -127,7 +127,10 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         if let WiredState::Connected = netlink::wired_data(&config.interface) {
             tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
         } else if config.discrete {
@@ -139,6 +142,9 @@ pub fn run(
                 Some(config.disconnected_label.to_string()),
             ))?;
         }
-        thread::sleep(config.tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < config.tick {
+            thread::sleep(config.tick - iteration_end);
+        }
     }
 }

@@ -10,7 +10,7 @@ use std::io::Error;
 use std::process;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const TICK_RATE: Duration = Duration::from_millis(50);
 
@@ -56,11 +56,17 @@ fn main() -> Result<(), Error> {
         print_out_err(&format!("baru: {}", err));
         process::exit(1);
     });
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         baru.update().unwrap_or_else(|err| {
             print_out_err(&format!("baru: {}", err));
             process::exit(1);
         });
-        thread::sleep(tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < tick {
+            thread::sleep(tick - iteration_end);
+        }
     }
 }

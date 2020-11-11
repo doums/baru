@@ -13,7 +13,7 @@ use std::io::{self, prelude::*, BufReader};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const SYS_PATH: &str = "/sys/class/power_supply/";
@@ -186,7 +186,10 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::try_from(&main_config)?;
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         let (energy, capacity, status) = parse_attributes(
             &config.uevent,
             &config.now_attribute,
@@ -212,7 +215,10 @@ pub fn run(
             Some(format!("{:3}%", battery_level)),
             Some(label.to_string()),
         ))?;
-        thread::sleep(config.tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < config.tick {
+            thread::sleep(config.tick - iteration_end);
+        }
     }
 }
 

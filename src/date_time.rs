@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const DATE_FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
@@ -108,12 +108,18 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         tx.send(ModuleMsg(
             key,
             Some(Local::now().format(config.date_format).to_string()),
             config.label.map(|v| v.to_string()),
         ))?;
-        thread::sleep(config.tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < config.tick {
+            thread::sleep(config.tick - iteration_end);
+        }
     }
 }

@@ -13,7 +13,7 @@ use std::io::BufReader;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const PROC_STAT: &str = "/proc/stat";
@@ -131,7 +131,10 @@ pub fn run(
     let config = InternalConfig::from(&main_config);
     let mut prev_idle = 0;
     let mut prev_total = 0;
+    let mut iteration_start: Instant;
+    let mut iteration_end: Duration;
     loop {
+        iteration_start = Instant::now();
         let proc_stat = File::open(&config.proc_stat)?;
         let mut reader = BufReader::new(proc_stat);
         let mut buf = String::new();
@@ -161,6 +164,9 @@ pub fn run(
             Some(format!("{:3}%", usage)),
             Some(label.to_string()),
         ))?;
-        thread::sleep(config.tick);
+        iteration_end = iteration_start.elapsed();
+        if iteration_end < config.tick {
+            thread::sleep(config.tick - iteration_end);
+        }
     }
 }
