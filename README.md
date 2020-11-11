@@ -46,9 +46,9 @@ Baru is modular. This means that only the modules you want to see are instantiat
 Rust is a language that compiles to native code and by default statically links all dependencies.\
 Simply download the latest [release](https://github.com/doums/baru/releases) of the compiled binary and use it! (do not forget to make it executable `chmod +x baru`)
 
-### Arch Linux AUR package
+### AUR package
 
-_soon_
+For Arch Linux users, baru is present as a [package](https://aur.archlinux.org/packages/baru-bin) in the Arch User Repository.
 
 ### configuration
 
