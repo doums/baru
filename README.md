@@ -1,3 +1,6 @@
+[![baru](https://img.shields.io/github/workflow/status/doums/baru/Baru?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/baru/actions?query=workflow%3ABaru)
+[![baru](https://img.shields.io/aur/version/baru-bin?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=arch-linux&style=for-the-badge)](https://aur.archlinux.org/packages/baru-bin/)
+
 ## baru
 
 A system monitor written in Rust and C.
