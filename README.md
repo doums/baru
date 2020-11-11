@@ -7,7 +7,7 @@ A system monitor written in Rust and C.
 - [features](#features)
 - [prerequisite](#prerequisite)
 - [install](#install)
-- [AUR](#arch-linux-aur-package)
+- [AUR](#aur-package)
 - [configuration](#configuration)
 - [usage](#usage)
 - [credits](#credits)
