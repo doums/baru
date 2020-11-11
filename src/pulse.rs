@@ -7,7 +7,7 @@ use crate::Config;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
 
-const PULSE_RATE: u32 = 16_000_000; // in nanosecond
+const PULSE_RATE: u32 = 50_000_000; // in nanosecond
 const SINK_INDEX: u32 = 0;
 const SOURCE_INDEX: u32 = 0;
 

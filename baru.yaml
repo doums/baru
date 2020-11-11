@@ -38,11 +38,11 @@ format: '%c  %t  %b  %s   %w%e %a   %d'
 #
 tick: 100
 
-# pulse_tick: u32, default: 16
+# pulse_tick: u32, default: 50
 #
 # The refresh rate in millisecond of the PulseAudio thread.
 #
-pulse_tick: 50
+pulse_tick: 100
 
 
 # Each module take a "format" option.
