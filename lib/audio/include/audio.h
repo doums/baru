@@ -56,6 +56,8 @@ typedef struct          data {
     send_sink_cb        sink_cb;
     send_source_cb      source_cb;
     t_timespec          start;
+    pa_operation        *sink_op;
+    pa_operation        *source_op;
 }                       t_data;
 
 void run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *, send_sink_cb, send_source_cb);
