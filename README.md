@@ -4,6 +4,15 @@ A system monitor written in Rust and C.
 
 ![baru](https://raw.githubusercontent.com/doums/baru/master/public/baru.png)
 
+- [features](#features)
+- [prerequisite](#prerequisite)
+- [install](#install)
+- [AUR](#arch-linux-aur-package)
+- [configuration](#configuration)
+- [usage](#usage)
+- [credits](#credits)
+- [license](#license)
+
 ### features
 
 * date and time
@@ -31,6 +40,15 @@ Baru is modular. This means that only the modules you want to see are instantiat
 
 - libnl (for wired and wireless modules)
 - libpulse (for sound and mic modules)
+
+### install
+
+Rust is a language that compiles to native code and by default statically links all dependencies.\
+Simply download the latest [release](https://github.com/doums/baru/releases) of the compiled binary and use it! (do not forget to make it executable `chmod +x baru`)
+
+### Arch Linux AUR package
+
+_soon_
 
 ### configuration
 
