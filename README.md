@@ -18,9 +18,8 @@ A system monitor written in Rust and C.
 * customizable format output
 * configuration in YAML
 
-All the info is read direclty from the kernel files (`/sys`, `/proc`). Except audio and network modules which use libraries.\
-All modules are threaded.
-Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at a refresh rate of 60 "fps" with a minimal processor footprint.
+All the info is read directly from the kernel files (`/sys`, `/proc`). Except audio and network modules which use C libraries.\
+There is no memory leak over time. All modules are threaded. Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at high refresh rate with a minimal processor footprint.
 
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
 Wireless and wired modules use the netlink interface with the help of [libnl](https://www.infradead.org/~tgr/libnl/) to talk directly to kernel and retrieve their data.\
@@ -60,6 +59,7 @@ cpu:
   high_label: '!'
   format: '%v %l'
 memory:
+  core_inputs: 2..5
   label: 'm'
   high_label: '!'
   format: '%v %l'
