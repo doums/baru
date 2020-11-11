@@ -7,7 +7,6 @@ A system monitor written in Rust and C.
 - [features](#features)
 - [prerequisite](#prerequisite)
 - [install](#install)
-- [AUR](#aur-package)
 - [configuration](#configuration)
 - [usage](#usage)
 - [credits](#credits)
@@ -45,8 +44,6 @@ Baru is modular. This means that only the modules you want to see are instantiat
 
 Rust is a language that compiles to native code and by default statically links all dependencies.\
 Simply download the latest [release](https://github.com/doums/baru/releases) of the compiled binary and use it! (do not forget to make it executable `chmod +x baru`)
-
-### AUR package
 
 For Arch Linux users, baru is present as a [package](https://aur.archlinux.org/packages/baru-bin) in the Arch User Repository.
 
