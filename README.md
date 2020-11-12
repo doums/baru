@@ -58,7 +58,7 @@ All options are detailed [here](https://github.com/doums/baru/blob/master/baru.y
 
 Example:
 ```yaml
-format: '%m  %c  %t  %b  %i  %s   %w%e  %a    %d'
+format: '%m  %f  %c  %t  %b  %i  %s   %w%e  %a    %d'
 tick: 50
 battery:
   full_design: true
