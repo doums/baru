@@ -5,6 +5,7 @@
 mod battery;
 mod brightness;
 mod cpu;
+mod cpu_freq;
 mod date_time;
 mod error;
 mod memory;
@@ -19,6 +20,7 @@ mod wireless;
 use battery::Config as BatteryConfig;
 use brightness::Config as BrightnessConfig;
 use cpu::Config as CpuConfig;
+use cpu_freq::Config as CpuFreqConfig;
 use date_time::Config as DateTimeConfig;
 use error::Error;
 use memory::Config as MemoryConfig;
@@ -46,6 +48,7 @@ pub struct Config {
     battery: Option<BatteryConfig>,
     brightness: Option<BrightnessConfig>,
     cpu: Option<CpuConfig>,
+    cpu_freq: Option<CpuFreqConfig>,
     date_time: Option<DateTimeConfig>,
     memory: Option<MemoryConfig>,
     mic: Option<MicConfig>,

@@ -5,6 +5,7 @@
 use crate::battery::Battery;
 use crate::brightness::Brightness;
 use crate::cpu::Cpu;
+use crate::cpu_freq::CpuFreq;
 use crate::date_time::DateTime;
 use crate::error::Error;
 use crate::memory::Memory;
@@ -34,6 +35,7 @@ pub enum Module<'a> {
     Battery(Battery<'a>),
     Brightness(Brightness<'a>),
     Cpu(Cpu<'a>),
+    CpuFreq(CpuFreq<'a>),
     DateTime(DateTime<'a>),
     Memory(Memory<'a>),
     Mic(Mic<'a>),
@@ -53,6 +55,7 @@ impl<'a> TryFrom<(char, &'a Config)> for Module<'a> {
             'c' => Ok(Module::Cpu(Cpu::with_config(config))),
             'd' => Ok(Module::DateTime(DateTime::with_config(config))),
             'e' => Ok(Module::Wired(Wired::with_config(config))),
+            'f' => Ok(Module::CpuFreq(CpuFreq::with_config(config))),
             'i' => Ok(Module::Mic(Mic::with_config(config))),
             'm' => Ok(Module::Memory(Memory::with_config(config))),
             's' => Ok(Module::Sound(Sound::with_config(config))),
@@ -69,6 +72,7 @@ impl<'a> Bar for Module<'a> {
             Module::Battery(m) => m.name(),
             Module::Brightness(m) => m.name(),
             Module::Cpu(m) => m.name(),
+            Module::CpuFreq(m) => m.name(),
             Module::DateTime(m) => m.name(),
             Module::Memory(m) => m.name(),
             Module::Mic(m) => m.name(),
@@ -84,6 +88,7 @@ impl<'a> Bar for Module<'a> {
             Module::Battery(m) => m.run_fn(),
             Module::Brightness(m) => m.run_fn(),
             Module::Cpu(m) => m.run_fn(),
+            Module::CpuFreq(m) => m.run_fn(),
             Module::DateTime(m) => m.run_fn(),
             Module::Memory(m) => m.run_fn(),
             Module::Mic(m) => m.run_fn(),
@@ -99,6 +104,7 @@ impl<'a> Bar for Module<'a> {
             Module::Battery(m) => m.placeholder(),
             Module::Brightness(m) => m.placeholder(),
             Module::Cpu(m) => m.placeholder(),
+            Module::CpuFreq(m) => m.placeholder(),
             Module::DateTime(m) => m.placeholder(),
             Module::Memory(m) => m.placeholder(),
             Module::Wired(m) => m.placeholder(),
@@ -114,6 +120,7 @@ impl<'a> Bar for Module<'a> {
             Module::Battery(m) => m.format(),
             Module::Brightness(m) => m.format(),
             Module::Cpu(m) => m.format(),
+            Module::CpuFreq(m) => m.format(),
             Module::DateTime(m) => m.format(),
             Module::Memory(m) => m.format(),
             Module::Wired(m) => m.format(),
