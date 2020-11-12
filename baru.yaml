@@ -22,6 +22,7 @@
 # c => cpu
 # d => datetime
 # e => wired
+# f => cpu frequency
 # m => memory
 # i => mic
 # s => sound
@@ -182,12 +183,6 @@ cpu:
   #
   placeholder: '-'
 
-  # proc_stat: String, default: /proc/stat
-  #
-  # /proc/stat path
-  #
-  proc_stat: /necessarily/proc/stat
-
   # high_level: u32, default: 90
   #
   # The percentage above which the cpu usage is considered high.
@@ -205,6 +200,73 @@ cpu:
   # The label printed when the cpu usage is above high level.
   #
   high_label: '!cp'
+
+  # format: String, default: %l:%v
+  #
+  # The module format.
+  #
+  format: '%l:%v'
+
+
+# # # # # # # # # # # # #
+# Cpu frequency module  #
+# # # # # # # # # # # # #
+
+cpu_freq:
+# Takes the following options:
+
+  # tick: u32, default: 100
+  #
+  # The refresh rate in millisecond of the module thread.
+  #
+  tick: 500
+
+  # placeholder: String, default: -
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
+  # cpufreq_path: String, default: /sys/devices/system/cpu/cpu0/cpufreq
+  #
+  # Path to cpufreq directory, in which cpuinfo_max_freq file must be present.
+  # The maximum cpu frequency will be read from this file.
+  #
+  cpufreq_path: /sys/devices/system/cpu/cpu1/cpufreq
+
+  # show_max_freq: bool, default: false
+  #
+  # Whether or not the maximum cpu frequency is printed.
+  #
+  max_freq: true
+
+  # unit: Unit, default: Smart
+  #
+  # enum Display { MHz, GHz, Smart }
+  #
+  # The unit of the frequency.
+  # Smart means if the frequency is less than 1000MHz it will be printed in MHz.
+  # Otherwise it will be printed in GHz.
+  #
+  unit: MHz
+
+  # high_level: u32, default: 80
+  #
+  # The percentage above which the cpu frequency is considered high.
+  #
+  high_level: 90
+
+  # label: String, default: fre
+  #
+  # The label printed when the cpu frequency is below high level.
+  #
+  label: fre
+
+  # high_label: String, default: !fr
+  #
+  # The label printed when the cpu frequency is above high level.
+  #
+  high_label: '!fr'
 
   # format: String, default: %l:%v
   #
@@ -269,12 +331,6 @@ memory:
   # Value to display when there is no data available yet.
   #
   placeholder: '-'
-
-  # meminfo: String, default: /proc/meminfo
-  #
-  # /proc/meminfo path
-  #
-  meminfo: /necessarily/proc/meminfo
 
   # display: Display, default: GiB
   #
@@ -419,7 +475,7 @@ temperature:
   # coretemp: String, default: /sys/devices/platform/coretemp.0/hwmon
   #
   # The path without the last directory level (because it varies on each kernel boot).
-  # Under this variant directory should be located the tempx_input files.
+  # Under this variant directory must be located the tempx_input files.
   # For example on my machine it can be /sys/devices/platform/coretemp.0/hwmon/hwmon7 or hwmon6 etc.
   # This last directory is resolved dynamically.
   #

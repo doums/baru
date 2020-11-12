@@ -26,7 +26,6 @@ const FORMAT: &str = "%l:%v";
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
-    proc_stat: Option<String>,
     high_level: Option<u32>,
     placeholder: Option<String>,
     label: Option<String>,
@@ -46,14 +45,10 @@ pub struct InternalConfig<'a> {
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut proc_stat = PROC_STAT;
         let mut high_level = HIGH_LEVEL;
         let mut label = LABEL;
         let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.cpu {
-            if let Some(f) = &c.proc_stat {
-                proc_stat = &f;
-            }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
@@ -69,7 +64,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         };
         InternalConfig {
             high_level,
-            proc_stat,
+            proc_stat: PROC_STAT,
             tick,
             label,
             high_label,

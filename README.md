@@ -23,7 +23,7 @@ A system monitor written in Rust and C.
 * wired (state)
 * audio sink and source (level, muted)
 * brightness
-* cpu usage and temperature
+* cpu usage, frequency and temperature
 * memory (percent or used/total in gigabyte/gibibyte)
 * dynamic and customizable labels
 * customizable format output
@@ -74,6 +74,12 @@ brightness:
   format: '%l %v'
 cpu:
   label: 'c'
+  high_label: '!'
+  format: '%v %l'
+cpu_freq:
+  tick: 100
+  high_level: 60
+  label: 'f'
   high_label: '!'
   format: '%v %l'
 memory:

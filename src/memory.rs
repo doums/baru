@@ -31,7 +31,6 @@ enum Display {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    meminfo: Option<String>,
     high_level: Option<u32>,
     display: Option<Display>,
     tick: Option<u32>,
@@ -53,16 +52,12 @@ pub struct InternalConfig<'a> {
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
-        let mut meminfo = MEMINFO;
         let mut high_level = HIGH_LEVEL;
         let mut display = DISPLAY;
         let mut tick = TICK_RATE;
         let mut label = LABEL;
         let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.memory {
-            if let Some(v) = &c.meminfo {
-                meminfo = v;
-            }
             if let Some(v) = &c.high_level {
                 high_level = *v;
             }
@@ -80,7 +75,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
             }
         };
         InternalConfig {
-            meminfo,
+            meminfo: MEMINFO,
             high_level,
             display,
             tick,

@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(100);
-const HIGH_LEVEL: u32 = 70;
+const HIGH_LEVEL: u32 = 80;
 const LABEL: &str = "fre";
 const HIGH_LABEL: &str = "!fr";
 const FORMAT: &str = "%l:%v";
@@ -27,14 +27,14 @@ const CPU_MAX_FREQ: &str = "cpuinfo_max_freq";
 const CPU_INFO: &str = "/proc/cpuinfo";
 const MHZ_KEY: &str = "cpu MHz";
 const UNIT: Unit = Unit::Smart;
-const SHOW_MAX_FREQ: bool = false;
+const MAX_FREQ: bool = false;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
-    cpu_freq: Option<String>,
+    cpufreq_path: Option<String>,
     unit: Option<Unit>,
-    show_max_freq: Option<bool>,
+    max_freq: Option<bool>,
     high_level: Option<u32>,
     placeholder: Option<String>,
     label: Option<String>,
@@ -66,13 +66,13 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
     fn try_from(config: &'a MainConfig) -> Result<Self, Self::Error> {
         let mut tick = TICK_RATE;
         let mut cpu_freq_path = CPU_FREQ;
-        let mut show_max_freq = SHOW_MAX_FREQ;
+        let mut show_max_freq = MAX_FREQ;
         let mut unit = UNIT;
         let mut high_level = HIGH_LEVEL;
         let mut label = LABEL;
         let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.cpu_freq {
-            if let Some(f) = &c.cpu_freq {
+            if let Some(f) = &c.cpufreq_path {
                 cpu_freq_path = &f;
             }
             if let Some(t) = c.tick {
@@ -81,7 +81,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             if let Some(c) = c.high_level {
                 high_level = c;
             }
-            if let Some(v) = c.show_max_freq {
+            if let Some(v) = c.max_freq {
                 show_max_freq = v;
             }
             if let Some(v) = c.unit {
@@ -178,14 +178,13 @@ pub fn run(
         }
         let mut avg: f32 = freqs.iter().sum();
         avg /= freqs.len() as f32;
-        let current_freq = humanize(avg, config.unit);
-        let mut value = current_freq;
-        if config.show_max_freq {
-            value = format!(
+        let value = match config.show_max_freq {
+            true => format!(
                 "{}/{}",
-                current_freq,
+                humanize(avg, config.unit),
                 humanize(config.max_freq as f32, config.unit)
-            );
+            ),
+            false => humanize(avg, config.unit),
         };
         let percentage = ((avg * 100f32) / config.max_freq).round() as u32;
         let label = if percentage >= config.high_level {
@@ -203,22 +202,15 @@ pub fn run(
 
 fn humanize(average: f32, unit: Unit) -> String {
     match unit {
-        Unit::GHz => gigahertz(average / 1000f32, 3),
+        Unit::GHz => format!("{:3.1}GHz", average / 1000f32),
         Unit::MHz => format!("{:4}MHz", average.round() as u32),
         Unit::Smart => {
-            if average < 1000f32 {
-                format!("{:4}MHz", average.round() as u32)
+            let rounded = average.round();
+            if rounded < 1000f32 {
+                format!("{:3}MHz", rounded as u32)
             } else {
-                gigahertz(average / 1000f32, 4)
+                format!("{:3.1}GHz", average / 1000f32)
             }
         }
-    }
-}
-
-fn gigahertz(average: f32, width: usize) -> String {
-    if average.fract() == 0.0 {
-        format!("{:w$.0}GHz", average, w = width)
-    } else {
-        format!("{:w$.1}GHz", average, w = width)
     }
 }
