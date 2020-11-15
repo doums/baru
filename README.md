@@ -29,7 +29,7 @@ A system monitor written in Rust and C.
 * customizable format output
 * configuration in YAML
 
-All the info is read directly from the kernel files (`/sys`, `/proc`). Except audio and network modules which use C libraries.\
+Baru gathers the information from `/sys` and `/proc` filesystems (filled by the kernel). Except audio and network modules which use C libraries.\
 There is no memory leak over time. All modules are threaded. Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at high refresh rate with a minimal processor footprint.
 
 The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
