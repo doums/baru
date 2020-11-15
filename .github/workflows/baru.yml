@@ -15,10 +15,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install libnl
+    - name: Install dependencies
       run: sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libpulse-dev
     - name: Lint
       run: cargo clippy
+    - name: Test
+      run: cargo test
     - name: Build
       run: cargo build --release
     - name: Create Release
