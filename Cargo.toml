@@ -1,6 +1,6 @@
 [package]
 name = "baru"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2018"
 links = "netlink,audio"

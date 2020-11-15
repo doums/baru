@@ -34,7 +34,7 @@
 #define EID_SSID 0
 #define NOISE_FLOOR_DBM (-90)
 #define SIGNAL_MAX_DBM (-20)
-#define PREFIX_ERROR "libnetlink error"
+#define PREFIX_ERROR "libnetlink"
 #define BUF_SIZE 1024
 #define ESSID_MAX_SIZE 1024
 

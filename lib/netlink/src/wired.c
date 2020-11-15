@@ -49,13 +49,13 @@ t_wired_data get_wired_data(char *interface) {
     int if_index;
 
     if ((sk = nl_socket_alloc()) == NULL) {
-        print_and_exit("nl_socket_alloc");
+        print_and_exit("nl_socket_alloc failed");
     }
     if (nl_connect(sk, NETLINK_ROUTE) != 0) {
-        print_and_exit("nl_connect");
+        print_and_exit("nl_connect failed");
     }
     if (rtnl_addr_alloc_cache(sk, &cache) != 0) {
-        print_and_exit("rtnl_addr_alloc_cache");
+        print_and_exit("rtnl_addr_alloc_cache failed");
     }
     if (rtnl_link_get_kernel(sk, 0, interface, &link) < 0) {
         print_and_exit("interface not found");

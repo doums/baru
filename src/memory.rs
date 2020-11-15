@@ -237,11 +237,7 @@ pub fn run(
 
 fn humanize<'a>(v1: f32, v2: f32, u1: &'a str, u2: &'a str) -> String {
     if v1 >= 1.0 {
-        if v1.fract() == 0.0 {
-            format!("{:4.0}{}", v1, u1)
-        } else {
-            format!("{:4.1}{}", v1, u1)
-        }
+        format!("{:4.1}{}", v1, u1)
     } else {
         format!("{:4.0}{}", v2, u2)
     }
