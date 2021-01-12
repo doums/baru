@@ -62,11 +62,12 @@ typedef struct  s_wired_data {
     bool        has_ip;
 }               t_wired_data;
 
-t_wireless_data get_wireless_data(char *interface);
-t_wired_data    get_wired_data(char *interface);
-void            free_essid(char *essid);
+t_wireless_data *get_wireless_data(char *interface);
+t_wired_data    *get_wired_data(char *interface);
+void            free_data(void *data);
 
 /* HELPER */
 void            print_and_exit(char *err);
+void            *alloc_mem(size_t size);
 
 #endif // NETLINK_H

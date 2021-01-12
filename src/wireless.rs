@@ -145,40 +145,41 @@ pub fn run(
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        let state = netlink::wireless_data(&config.interface);
         let label;
         let mut essid = "".to_owned();
         let mut signal = None;
-        if let WirelessState::Connected(data) = state {
-            label = config.label;
-            if let Some(strength) = data.signal {
-                signal = Some(strength);
-            };
-            if let Some(val) = data.essid {
-                essid = if val.chars().count() > config.max_essid_len {
-                    val[..config.max_essid_len].to_owned()
-                } else {
-                    val
+        if let Some(state) = netlink::wireless_data(&config.interface) {
+            if let WirelessState::Connected(data) = state {
+                label = config.label;
+                if let Some(strength) = data.signal {
+                    signal = Some(strength);
+                };
+                if let Some(val) = data.essid {
+                    essid = if val.chars().count() > config.max_essid_len {
+                        val[..config.max_essid_len].to_owned()
+                    } else {
+                        val
+                    }
                 }
+            } else {
+                label = config.disconnected_label;
             }
-        } else {
-            label = config.disconnected_label;
-        }
-        match config.display {
-            Display::Essid => tx.send(ModuleMsg(key, Some(essid), Some(label.to_string())))?,
-            Display::Signal => {
-                if let Some(s) = signal {
-                    tx.send(ModuleMsg(
-                        key,
-                        Some(format!("{:3}%", s)),
-                        Some(label.to_string()),
-                    ))?;
-                } else {
-                    tx.send(ModuleMsg(
-                        key,
-                        Some("  ?%".to_string()),
-                        Some(label.to_string()),
-                    ))?;
+            match config.display {
+                Display::Essid => tx.send(ModuleMsg(key, Some(essid), Some(label.to_string())))?,
+                Display::Signal => {
+                    if let Some(s) = signal {
+                        tx.send(ModuleMsg(
+                            key,
+                            Some(format!("{:3}%", s)),
+                            Some(label.to_string()),
+                        ))?;
+                    } else {
+                        tx.send(ModuleMsg(
+                            key,
+                            Some("  ?%".to_string()),
+                            Some(label.to_string()),
+                        ))?;
+                    }
                 }
             }
         }

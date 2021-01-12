@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::ffi::{CStr, CString};
+use std::ffi::{c_void, CStr, CString};
 use std::os::raw::{c_char, c_int};
 
 #[derive(Debug)]
@@ -39,32 +39,35 @@ pub struct WirelessData {
 
 #[link(name = "netlink", kind = "static")]
 extern "C" {
-    fn get_wireless_data(interface: *const c_char) -> NlWirelessData;
-    fn get_wired_data(interface: *const c_char) -> NlWiredData;
-    fn free_essid(essid: *const c_char);
+    fn get_wireless_data(interface: *const c_char) -> *const NlWirelessData;
+    fn get_wired_data(interface: *const c_char) -> *const NlWiredData;
+    fn free_data(data: *const c_void);
 }
 
-pub fn wireless_data(interface: &str) -> WirelessState {
+pub fn wireless_data(interface: &str) -> Option<WirelessState> {
     let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
         let nl_data = get_wireless_data(c_interface.as_ptr());
-        let signal_ptr = nl_data.signal;
-        let essid_ptr = nl_data.essid;
+        if nl_data.is_null() {
+            return None;
+        }
+        let signal_ptr = (*nl_data).signal;
+        let essid_ptr = (*nl_data).essid;
         let signal = if signal_ptr == -1 {
             None
         } else {
             Some(signal_ptr)
         };
-        let essid = if essid_ptr.is_null() {
-            None
-        } else {
-            Some(CStr::from_ptr(essid_ptr).to_string_lossy().into_owned())
+        let mut essid = None;
+        if !essid_ptr.is_null() {
+            essid = Some(CStr::from_ptr(essid_ptr).to_string_lossy().into_owned());
+            free_data(essid_ptr.cast());
         };
-        free_essid(essid_ptr);
+        free_data(nl_data.cast());
         if signal.is_none() && essid.is_none() {
-            WirelessState::Disconnected
+            Some(WirelessState::Disconnected)
         } else {
-            WirelessState::Connected(WirelessData { signal, essid })
+            Some(WirelessState::Connected(WirelessData { signal, essid }))
         }
     }
 }
@@ -73,9 +76,10 @@ pub fn wired_data(interface: &str) -> WiredState {
     let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
         let data = get_wired_data(c_interface.as_ptr());
-        let is_op = data.is_operational;
-        let is_carrying = data.is_carrying;
-        let has_ip = data.has_ip;
+        let is_op = (*data).is_operational;
+        let is_carrying = (*data).is_carrying;
+        let has_ip = (*data).has_ip;
+        free_data(data.cast());
         if is_carrying && is_op && has_ip {
             WiredState::Connected
         } else if is_carrying {

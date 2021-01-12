@@ -8,3 +8,13 @@ void print_and_exit(char *err) {
     fprintf(stderr, "%s: %s\n", PREFIX_ERROR, err);
     exit(EXIT_FAILURE);
 }
+
+void *alloc_mem(size_t i) {
+    void *p;
+
+    if ((p = malloc(i)) == NULL) {
+        print_and_exit("malloc failed");
+    }
+    memset(p, 0, i);
+    return p;
+}

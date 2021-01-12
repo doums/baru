@@ -42,10 +42,7 @@ void resolve_essid(t_wireless *wireless, struct nlattr *attr) {
         ssid_len = ESSID_MAX_SIZE;
     }
     if (ssid) {
-        if ((wireless->essid = malloc(sizeof(char) * (ssid_len + 1))) == NULL) {
-            print_and_exit("resolve_essid malloc fail");
-        }
-        memset(wireless->essid, 0, sizeof(char) * (ssid_len + 1));
+        wireless->essid = alloc_mem(sizeof(char) * (ssid_len + 1));
         wireless->essid_found = true;
         strncpy(wireless->essid, (char *) ssid, ssid_len);
     }
@@ -184,12 +181,10 @@ static int send_for_scan(t_wireless *wireless) {
     return 0;
 }
 
-t_wireless_data get_wireless_data(char *interface) {
+t_wireless_data *get_wireless_data(char *interface) {
     t_wireless wireless;
-    t_wireless_data data;
+    t_wireless_data *data;
 
-    data.essid = NULL;
-    data.signal = -1;
     wireless.essid_found = false;
     wireless.signal_found = false;
     memset(&wireless, 0, sizeof(t_wireless));
@@ -200,32 +195,36 @@ t_wireless_data get_wireless_data(char *interface) {
     }
     if (genl_connect(wireless.socket) != 0) {
         nl_socket_free(wireless.socket);
-        print_and_exit("genl_connect failed\n");
+        fprintf(stderr, "%s: genl_connect failed\n", PREFIX_ERROR);
+        return NULL;
     }
     if ((wireless.nl80211_id = genl_ctrl_resolve(wireless.socket, NL80211)) < 0) {
-        printf("genl_ctrl_resolve failed; %s\n", nl_geterror(wireless.nl80211_id));
+        fprintf(stderr, "%s: genl_ctrl_resolve failed; %s\n", PREFIX_ERROR, nl_geterror(wireless.nl80211_id));
         nl_socket_free(wireless.socket);
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     if ((wireless.if_index = if_nametoindex(wireless.if_name)) == 0) {
-        printf("if_nametoindex failed, %s\n", strerror(errno));
+        fprintf(stderr, "%s: if_nametoindex failed, %s\n", PREFIX_ERROR, strerror(errno));
         nl_socket_free(wireless.socket);
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     if (send_for_scan(&wireless) < 0 || send_for_station(&wireless) < 0) {
         nl_socket_free(wireless.socket);
-        exit(EXIT_FAILURE);
+        return NULL;
     }
+    data = alloc_mem(sizeof(t_wireless_data));
     if (wireless.signal_found == true) {
-        data.signal = wireless.signal;
+        data->signal = wireless.signal;
     }
     if (wireless.essid_found == true) {
-        data.essid = wireless.essid;
+        data->essid = wireless.essid;
     }
     nl_socket_free(wireless.socket);
     return data;
 }
 
-void free_essid(char *essid) {
-    free(essid);
+void free_data(void *data) {
+    if (data != NULL) {
+        free(data);
+    }
 }

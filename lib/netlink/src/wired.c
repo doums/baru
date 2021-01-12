@@ -41,8 +41,8 @@ bool has_ip(struct nl_cache *cache, int if_index) {
     return false;
 }
 
-t_wired_data get_wired_data(char *interface) {
-    t_wired_data data;
+t_wired_data *get_wired_data(char *interface) {
+    t_wired_data *data;
     struct nl_sock *sk;
     struct nl_cache *cache;
     struct rtnl_link *link;
@@ -52,18 +52,21 @@ t_wired_data get_wired_data(char *interface) {
         print_and_exit("nl_socket_alloc failed");
     }
     if (nl_connect(sk, NETLINK_ROUTE) != 0) {
-        print_and_exit("nl_connect failed");
+        fprintf(stderr, "%s: nl_connect failed\n", PREFIX_ERROR);
+        return NULL;
     }
     if (rtnl_addr_alloc_cache(sk, &cache) != 0) {
         print_and_exit("rtnl_addr_alloc_cache failed");
     }
     if (rtnl_link_get_kernel(sk, 0, interface, &link) < 0) {
-        print_and_exit("interface not found");
+        fprintf(stderr, "%s: interface not found\n", PREFIX_ERROR);
+        return NULL;
     }
+    data = alloc_mem(sizeof(t_wired_data));
     if_index = rtnl_link_get_ifindex(link);
-    data.is_carrying = rtnl_link_get_carrier(link);
-    data.is_operational = is_operational(link);
-    data.has_ip = has_ip(cache, if_index);
+    data->is_carrying = rtnl_link_get_carrier(link);
+    data->is_operational = is_operational(link);
+    data->has_ip = has_ip(cache, if_index);
     nl_socket_free(sk);
     nl_cache_free(cache);
     nl_object_free((struct nl_object *) link);
