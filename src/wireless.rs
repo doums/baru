@@ -26,7 +26,6 @@ const FORMAT: &str = "%l:%v";
 enum Display {
     Essid,
     Signal,
-    LabelOnly,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -166,7 +165,6 @@ pub fn run(
             label = config.disconnected_label;
         }
         match config.display {
-            Display::LabelOnly => tx.send(ModuleMsg(key, None, Some(label.to_string())))?,
             Display::Essid => tx.send(ModuleMsg(key, Some(essid), Some(label.to_string())))?,
             Display::Signal => {
                 if let Some(s) = signal {

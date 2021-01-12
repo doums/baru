@@ -593,9 +593,9 @@ wireless:
 
   # display: Display, default: Signal
   #
-  # enum Display { Essid, Signal, LabelOnly }
+  # enum Display { Essid, Signal }
   #
-  # Print the essid name, the signal strength in percentage or just the label.
+  # Print the essid name or the signal strength in percentage.
   #
   display: Essid
 
