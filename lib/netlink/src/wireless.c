@@ -213,6 +213,7 @@ t_wireless_data *get_wireless_data(char *interface) {
         return NULL;
     }
     data = alloc_mem(sizeof(t_wireless_data));
+    data->signal = -1;
     if (wireless.signal_found == true) {
         data->signal = wireless.signal;
     }

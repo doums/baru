@@ -72,20 +72,23 @@ pub fn wireless_data(interface: &str) -> Option<WirelessState> {
     }
 }
 
-pub fn wired_data(interface: &str) -> WiredState {
+pub fn wired_data(interface: &str) -> Option<WiredState> {
     let c_interface = CString::new(interface).expect("CString::new failed");
     unsafe {
         let data = get_wired_data(c_interface.as_ptr());
+        if data.is_null() {
+            return None;
+        }
         let is_op = (*data).is_operational;
         let is_carrying = (*data).is_carrying;
         let has_ip = (*data).has_ip;
         free_data(data.cast());
         if is_carrying && is_op && has_ip {
-            WiredState::Connected
+            Some(WiredState::Connected)
         } else if is_carrying {
-            WiredState::Disconnected
+            Some(WiredState::Disconnected)
         } else {
-            WiredState::NotPlugged
+            Some(WiredState::NotPlugged)
         }
     }
 }

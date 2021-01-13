@@ -131,16 +131,18 @@ pub fn run(
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        if let WiredState::Connected = netlink::wired_data(&config.interface) {
-            tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
-        } else if config.discrete {
-            tx.send(ModuleMsg(key, None, None))?;
-        } else {
-            tx.send(ModuleMsg(
-                key,
-                None,
-                Some(config.disconnected_label.to_string()),
-            ))?;
+        if let Some(state) = netlink::wired_data(&config.interface) {
+            if let WiredState::Connected = state {
+                tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
+            } else if config.discrete {
+                tx.send(ModuleMsg(key, None, None))?;
+            } else {
+                tx.send(ModuleMsg(
+                    key,
+                    None,
+                    Some(config.disconnected_label.to_string()),
+                ))?;
+            }
         }
         iteration_end = iteration_start.elapsed();
         if iteration_end < config.tick {
