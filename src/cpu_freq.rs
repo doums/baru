@@ -7,14 +7,14 @@ use crate::module::{Bar, RunPtr};
 use crate::Pulse;
 use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
-use std::fs::File;
+use std::fs::{read_dir, DirEntry, File};
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use std::{convert::TryFrom, path::Path};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(100);
@@ -22,8 +22,11 @@ const HIGH_LEVEL: u32 = 80;
 const LABEL: &str = "fre";
 const HIGH_LABEL: &str = "!fr";
 const FORMAT: &str = "%l:%v";
-const CPU_FREQ: &str = "/sys/devices/system/cpu/cpu0/cpufreq";
-const CPU_MAX_FREQ: &str = "cpuinfo_max_freq";
+const SYSFS_CPUFREQ: &str = "/sys/devices/system/cpu/cpufreq";
+const CPUINFO_MAX_FREQ: &str = "cpuinfo_max_freq";
+const SCALING_MAX_FREQ: &str = "scaling_max_freq";
+const CPUINFO_CUR_FREQ: &str = "cpuinfo_cur_freq";
+const SCALING_CUR_FREQ: &str = "scaling_cur_freq";
 const CPU_INFO: &str = "/proc/cpuinfo";
 const MHZ_KEY: &str = "cpu MHz";
 const UNIT: Unit = Unit::Smart;
@@ -58,6 +61,7 @@ pub struct InternalConfig<'a> {
     show_max_freq: bool,
     label: &'a str,
     high_label: &'a str,
+    use_sclaing_freq: bool,
 }
 
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
@@ -65,16 +69,12 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
 
     fn try_from(config: &'a MainConfig) -> Result<Self, Self::Error> {
         let mut tick = TICK_RATE;
-        let mut cpu_freq_path = CPU_FREQ;
         let mut show_max_freq = MAX_FREQ;
         let mut unit = UNIT;
         let mut high_level = HIGH_LEVEL;
         let mut label = LABEL;
         let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.cpu_freq {
-            if let Some(f) = &c.cpufreq_path {
-                cpu_freq_path = &f;
-            }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
@@ -94,7 +94,33 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
                 high_label = v;
             }
         };
-        let max_freq = read_and_parse(&format!("{}/{}", cpu_freq_path, CPU_MAX_FREQ))? as u32;
+        let policy_path = format!("{}/policy0", SYSFS_CPUFREQ);
+        let entries: Vec<DirEntry> = read_dir(Path::new(&policy_path))?
+            .filter_map(|entry| entry.ok())
+            .collect();
+        let cpuinfo_max_freq = entries
+            .iter()
+            .find(|&entry| entry.file_name().to_str() == Some(CPUINFO_MAX_FREQ));
+        let scaling_max_freq = entries
+            .iter()
+            .find(|&entry| entry.file_name().to_str() == Some(SCALING_MAX_FREQ));
+        let cpuinfo_cur_freq = entries
+            .iter()
+            .find(|&entry| entry.file_name().to_str() == Some(CPUINFO_CUR_FREQ));
+        let scaling_cur_freq = entries
+            .iter()
+            .find(|&entry| entry.file_name().to_str() == Some(SCALING_CUR_FREQ));
+        if cpuinfo_cur_freq.is_none() && scaling_cur_freq.is_none() {
+            return Err(Error::new("fail to find current cpu freq"));
+        }
+        let use_sclaing_freq = scaling_cur_freq.is_some();
+        let max_freq = if let Some(entry) = scaling_max_freq {
+            read_and_parse(entry.path().to_str().unwrap())? as u32
+        } else if let Some(entry) = cpuinfo_max_freq {
+            read_and_parse(entry.path().to_str().unwrap())? as u32
+        } else {
+            return Err(Error::new("fail to find max cpu freq"));
+        };
         Ok(InternalConfig {
             high_level,
             tick,
@@ -103,6 +129,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             unit,
             label,
             high_label,
+            use_sclaing_freq,
         })
     }
 }
@@ -164,6 +191,13 @@ pub fn run(
     loop {
         iteration_start = Instant::now();
         let mut freqs = vec![];
+
+        let entries: Vec<&str> = read_dir(Path::new(SYSFS_CPUFREQ))?
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.file_name().to_str().unwrap())
+            .collect();
+        println!("{:#?}", entries);
+
         let file = File::open(&CPU_INFO)?;
         let f = BufReader::new(file);
         for line in f.lines() {
