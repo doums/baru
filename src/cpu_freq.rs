@@ -7,9 +7,7 @@ use crate::module::{Bar, RunPtr};
 use crate::Pulse;
 use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
-use std::fs::{read_dir, DirEntry, File};
-use std::io::prelude::*;
-use std::io::BufReader;
+use std::fs::{read_dir, DirEntry};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -27,15 +25,12 @@ const CPUINFO_MAX_FREQ: &str = "cpuinfo_max_freq";
 const SCALING_MAX_FREQ: &str = "scaling_max_freq";
 const CPUINFO_CUR_FREQ: &str = "cpuinfo_cur_freq";
 const SCALING_CUR_FREQ: &str = "scaling_cur_freq";
-const CPU_INFO: &str = "/proc/cpuinfo";
-const MHZ_KEY: &str = "cpu MHz";
 const UNIT: Unit = Unit::Smart;
 const MAX_FREQ: bool = false;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
-    cpufreq_path: Option<String>,
     unit: Option<Unit>,
     max_freq: Option<bool>,
     high_level: Option<u32>,
@@ -61,7 +56,7 @@ pub struct InternalConfig<'a> {
     show_max_freq: bool,
     label: &'a str,
     high_label: &'a str,
-    use_sclaing_freq: bool,
+    cur_freq_attribute: &'a str,
 }
 
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
@@ -106,14 +101,18 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             .find(|&entry| entry.file_name().to_str() == Some(SCALING_MAX_FREQ));
         let cpuinfo_cur_freq = entries
             .iter()
-            .find(|&entry| entry.file_name().to_str() == Some(CPUINFO_CUR_FREQ));
+            .any(|entry| entry.file_name().to_str() == Some(CPUINFO_CUR_FREQ));
         let scaling_cur_freq = entries
             .iter()
-            .find(|&entry| entry.file_name().to_str() == Some(SCALING_CUR_FREQ));
-        if cpuinfo_cur_freq.is_none() && scaling_cur_freq.is_none() {
+            .any(|entry| entry.file_name().to_str() == Some(SCALING_CUR_FREQ));
+        if !cpuinfo_cur_freq && !scaling_cur_freq {
             return Err(Error::new("fail to find current cpu freq"));
         }
-        let use_sclaing_freq = scaling_cur_freq.is_some();
+        let cur_freq_attribute = if scaling_cur_freq {
+            SCALING_CUR_FREQ
+        } else {
+            CPUINFO_CUR_FREQ
+        };
         let max_freq = if let Some(entry) = scaling_max_freq {
             read_and_parse(entry.path().to_str().unwrap())? as u32
         } else if let Some(entry) = cpuinfo_max_freq {
@@ -129,7 +128,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             unit,
             label,
             high_label,
-            use_sclaing_freq,
+            cur_freq_attribute,
         })
     }
 }
@@ -190,28 +189,18 @@ pub fn run(
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        let mut freqs = vec![];
-
-        let entries: Vec<&str> = read_dir(Path::new(SYSFS_CPUFREQ))?
+        let freqs: Vec<f32> = read_dir(Path::new(SYSFS_CPUFREQ))?
             .filter_map(|entry| entry.ok())
-            .map(|entry| entry.file_name().to_str().unwrap())
-            .collect();
-        println!("{:#?}", entries);
-
-        let file = File::open(&CPU_INFO)?;
-        let f = BufReader::new(file);
-        for line in f.lines() {
-            if let Ok(l) = line {
-                if l.starts_with(&MHZ_KEY) {
-                    let value = l.split_ascii_whitespace().last();
-                    if let Some(v) = value {
-                        freqs.push(v.parse::<f32>()?);
-                    }
+            .filter_map(|entry| {
+                if let Some(value) = entry.path().to_str() {
+                    read_and_parse(format!("{}/{}", value, config.cur_freq_attribute).as_str()).ok()
+                } else {
+                    None
                 }
-            }
-        }
-        let mut avg: f32 = freqs.iter().sum();
-        avg /= freqs.len() as f32;
+            })
+            .map(|freq| freq as f32 / 1000f32)
+            .collect();
+        let avg = freqs.iter().sum::<f32>() / freqs.len() as f32;
         let value = match config.show_max_freq {
             true => format!(
                 "{}/{}",

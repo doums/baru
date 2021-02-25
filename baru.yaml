@@ -227,13 +227,6 @@ cpu_freq:
   #
   placeholder: '-'
 
-  # cpufreq_path: String, default: /sys/devices/system/cpu/cpu0/cpufreq
-  #
-  # Path to cpufreq directory, in which cpuinfo_max_freq file must be present.
-  # The maximum cpu frequency will be read from this file.
-  #
-  cpufreq_path: /sys/devices/system/cpu/cpu1/cpufreq
-
   # show_max_freq: bool, default: false
   #
   # Whether or not the maximum cpu frequency is printed.
