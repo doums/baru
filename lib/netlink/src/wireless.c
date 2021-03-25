@@ -7,8 +7,7 @@
 #include "../include/netlink.h"
 
 // Based on NetworkManager/src/platform/wifi/wifi-utils-nl80211.c
-static uint32_t nl80211_xbm_to_percent(int32_t xbm, int32_t divisor) {
-    xbm /= divisor;
+static uint32_t nl80211_xbm_to_percent(int32_t xbm) {
     if (xbm < NOISE_FLOOR_DBM) {
         xbm = NOISE_FLOOR_DBM;
     }
@@ -56,7 +55,7 @@ static int station_cb(struct nl_msg *msg, void *data) {
     int attrlen = genlmsg_attrlen(gnlh, 0);
     struct nlattr *s_info[NL80211_STA_INFO_MAX + 1];
     static struct nla_policy stats_policy[NL80211_STA_INFO_MAX + 1];
-    uint8_t signal;
+    int8_t signal;
 
     if (nla_parse(tb, NL80211_ATTR_MAX, attr, attrlen, NULL) < 0) {
         return NL_SKIP;
@@ -70,7 +69,7 @@ static int station_cb(struct nl_msg *msg, void *data) {
     if (s_info[NL80211_STA_INFO_SIGNAL] != NULL) {
         wireless->signal_found = true;
         signal = nla_get_u8(s_info[NL80211_STA_INFO_SIGNAL]);
-        wireless->signal = nl80211_xbm_to_percent(signal, 1);
+        wireless->signal = nl80211_xbm_to_percent(signal);
     }
     return NL_SKIP;
 }
