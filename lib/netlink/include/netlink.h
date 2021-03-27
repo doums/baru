@@ -37,6 +37,8 @@
 #define PREFIX_ERROR "libnetlink"
 #define BUF_SIZE 1024
 #define ESSID_MAX_SIZE 1024
+#define CLAMP(x, l, h) x < l ? l : \
+                        x > h ? h : x
 
 typedef struct      s_wireless {
     bool            essid_found;

@@ -244,13 +244,12 @@ fn humanize<'a>(v1: f32, v2: f32, u1: &'a str, u2: &'a str) -> String {
 }
 
 fn find_meminfo<'a>(regex: &Regex, meminfo: &'a str, error: &'a str) -> Result<i32, String> {
-    let matched = regex
+    regex
         .captures(&meminfo)
         .ok_or_else(|| error.to_string())?
         .get(1)
         .ok_or_else(|| error.to_string())?
-        .as_str();
-    Ok(matched
+        .as_str()
         .parse::<i32>()
-        .map_err(|err| format!("error while parsing meminfo: {}", err))?)
+        .map_err(|err| format!("error while parsing meminfo: {}", err))
 }
