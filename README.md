@@ -88,12 +88,10 @@ memory:
   high_label: '!'
   format: '%v %l'
 mic:
-  index: 1
   label: 'i'
   mute_label: '.'
   format: '%v %l'
 sound:
-  index: 0
   label: 's'
   mute_label: '.'
   format: '%v %l'
