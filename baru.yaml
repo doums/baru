@@ -377,11 +377,12 @@ mic:
   #
   placeholder: '-'
 
-  # index: u32, default: 0
+  # source_name: String, default: None
   #
-  # The source index.
+  # If not provided, the default source will be used automatically.
+  # You can get it with `pactl list sources` command.
   #
-  index: 1
+  source_name: "some_name"
 
   # label: String, default: mic
   #
@@ -421,11 +422,12 @@ sound:
   #
   placeholder: '-'
 
-  # index: u32, default: 0
+  # sink_name: String, default: None
   #
-  # The sink index.
+  # If not provided, the default sink will be used automatically.
+  # You can get it with `pactl list sinks` command.
   #
-  index: 1
+  sink_name: "some_name"
 
   # label: String, default: sou
   #

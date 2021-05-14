@@ -32,34 +32,41 @@
 static bool alive = true;
 
 typedef struct timespec
-                        t_timespec;
+        t_timespec;
 
-typedef struct          volume {
-    uint32_t            volume;
-    bool                mute;
-}                       t_volume;
+typedef struct volume {
+    uint32_t volume;
+    bool mute;
+} t_volume;
 
-typedef void(* send_sink_cb)(void *, uint32_t, bool);
-typedef void(* send_source_cb)(void *, uint32_t, bool);
+typedef void(*send_cb)(void *, uint32_t, bool);
 
-typedef struct          data {
-    uint32_t            tick;
-    uint32_t            sink_index;
-    uint32_t            source_index;
-    bool                connected;
-    pa_context          *context;
-    pa_mainloop         *mainloop;
-    pa_mainloop_api     *api;
-    t_volume            sink_volume;
-    t_volume            source_volume;
-    void                *cb_context;
-    send_sink_cb        sink_cb;
-    send_source_cb      source_cb;
-    t_timespec          start;
-    pa_operation        *sink_op;
-    pa_operation        *source_op;
-}                       t_data;
+typedef struct data {
+    const char *name;
+    bool use_default;
+    t_volume volume;
+    send_cb cb;
+    pa_operation *op;
+} t_data;
 
-void run(uint32_t tick, uint32_t sink_index, uint32_t source_index, void *, send_sink_cb, send_source_cb);
+typedef struct main {
+    uint32_t tick;
+    bool connected;
+    pa_context *context;
+    pa_mainloop *mainloop;
+    pa_mainloop_api *api;
+    void *cb_context;
+    t_timespec start;
+    pa_operation *server_op;
+    t_data *sink;
+    t_data *source;
+} t_main;
+
+void run(uint32_t tick,
+         const char *sink_name,
+         const char *source_name,
+         void *cb_context,
+         send_cb,
+         send_cb);
 
 #endif //AUDIO_H

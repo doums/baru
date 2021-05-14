@@ -4,12 +4,12 @@
 
 use crate::error::Error;
 use crate::Config;
+use std::os::raw::c_char;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
+use std::{ffi::CString, ptr};
 
 const PULSE_RATE: u32 = 50_000_000; // in nanosecond
-const SINK_INDEX: u32 = 0;
-const SOURCE_INDEX: u32 = 0;
 
 pub type Callback = extern "C" fn(*const CallbackContext, u32, bool);
 
@@ -34,25 +34,21 @@ impl Pulse {
             Some(val) => val * 1e6 as u32,
             None => PULSE_RATE,
         };
-        let mut sink_index = SINK_INDEX;
-        let mut source_index = SOURCE_INDEX;
+        let mut sink_name = None;
+        let mut source_name = None;
         if let Some(c) = &config.sound {
-            if let Some(v) = c.index {
-                sink_index = v;
-            }
+            sink_name = c.sink_name.clone();
         }
         if let Some(c) = &config.mic {
-            if let Some(v) = c.index {
-                source_index = v;
-            }
+            source_name = c.source_name.clone();
         }
         let builder = thread::Builder::new().name("pulse_mod".into());
         let handle = builder.spawn(move || -> Result<(), Error> {
             let cb_context = CallbackContext(sink_tx, source_tx);
             pulse_run(
                 tick,
-                sink_index,
-                source_index,
+                sink_name,
+                source_name,
                 &cb_context,
                 sink_cb,
                 source_cb,
@@ -93,8 +89,8 @@ extern "C" fn source_cb(context: *const CallbackContext, volume: u32, mute: bool
 extern "C" {
     fn run(
         tick: u32,
-        sink_index: u32,
-        source_index: u32,
+        sink_name: *const c_char,
+        source_name: *const c_char,
         cb_context: *const CallbackContext,
         sink_cb: Callback,
         source_cb: Callback,
@@ -103,21 +99,26 @@ extern "C" {
 
 pub fn pulse_run(
     tick: u32,
-    sink_index: u32,
-    source_index: u32,
+    sink_name: Option<String>,
+    source_name: Option<String>,
     callback_context: &CallbackContext,
     sink_cb: Callback,
     source_cb: Callback,
 ) {
     let context_ptr: *const CallbackContext = callback_context;
+    let mut ptr_sink = ptr::null();
+    let mut ptr_source = ptr::null();
+    let c_string_sink;
+    let c_string_source;
+    if let Some(s) = sink_name {
+        c_string_sink = CString::new(s).expect("CString::new failed");
+        ptr_sink = c_string_sink.as_ptr();
+    };
+    if let Some(s) = source_name {
+        c_string_source = CString::new(s).expect("CString::new failed");
+        ptr_source = c_string_source.as_ptr();
+    };
     unsafe {
-        run(
-            tick,
-            sink_index,
-            source_index,
-            context_ptr,
-            sink_cb,
-            source_cb,
-        );
+        run(tick, ptr_sink, ptr_source, context_ptr, sink_cb, source_cb);
     }
 }

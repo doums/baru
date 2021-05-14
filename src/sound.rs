@@ -20,7 +20,7 @@ const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    pub index: Option<u32>,
+    pub sink_name: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
     label: Option<String>,
