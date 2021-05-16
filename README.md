@@ -1,5 +1,5 @@
 [![baru](https://img.shields.io/github/workflow/status/doums/baru/Baru?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/baru/actions?query=workflow%3ABaru)
-[![baru](https://img.shields.io/aur/version/baru-bin?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=arch-linux&style=for-the-badge)](https://aur.archlinux.org/packages/baru-bin/)
+[![baru](https://img.shields.io/aur/version/baru?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=arch-linux&style=for-the-badge)](https://aur.archlinux.org/packages/baru/)
 
 ## baru
 
@@ -46,9 +46,9 @@ Baru is modular. This means that only the modules you want to see are instantiat
 ### install
 
 Rust is a language that compiles to native code and by default statically links all dependencies.\
-Simply download the latest [release](https://github.com/doums/baru/releases) of the compiled binary and use it! (do not forget to make it executable `chmod +x baru`)
+Simply download the latest [release](https://github.com/doums/baru/releases) of the compiled binary and use it (do not forget to make it executable `chmod +x baru`).
 
-For Arch Linux users, baru is present as a [package](https://aur.archlinux.org/packages/baru-bin) in the Arch User Repository.
+For Arch Linux users, baru is present as a [package](https://aur.archlinux.org/packages/baru) in the Arch User Repository.
 
 ### configuration
 
