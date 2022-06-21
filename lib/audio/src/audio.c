@@ -140,6 +140,7 @@ void abs_time_tick(t_timespec *start, t_timespec *end, uint32_t tick) {
 
 void iterate(t_main *main) {
     t_timespec tick;
+    int res;
 
     // get the time at the start of an iteration
     if (clock_gettime(CLOCK_REALTIME, &main->start) == -1) {
@@ -149,7 +150,8 @@ void iterate(t_main *main) {
     abs_time_tick(&main->start, &tick, main->tick);
 
     // iterate the main loop
-    if (pa_mainloop_iterate(main->mainloop, 0, NULL) < 0) {
+    while ((res = pa_mainloop_iterate(main->mainloop, 0, NULL)) > 0) {}
+    if (res < 0) {
         printe("pa_mainloop_iterate failed");
     }
 
