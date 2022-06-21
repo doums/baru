@@ -32,7 +32,7 @@ A system monitor written in Rust and C.
 Baru gathers the information from `/sys` and `/proc` filesystems (filled by the kernel). Except audio and network modules which use C libraries.\
 There is no memory leak over time. All modules are threaded. Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at high refresh rate with a minimal processor footprint.
 
-The audio module communicates with the [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through the [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
+The audio module communicates with the [PipeWire](https://pipewire.org/)/[PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
 Wireless and wired modules use the netlink interface with the help of [libnl](https://www.infradead.org/~tgr/libnl/) to talk directly to kernel and retrieve their data.\
 In addition, wireless module uses the [802.11](https://github.com/torvalds/linux/blob/master/include/uapi/linux/nl80211.h) API.
 
