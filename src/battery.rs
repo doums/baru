@@ -53,9 +53,7 @@ pub struct Config {
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
-    name: &'a str,
     low_level: u32,
-    full_design: bool,
     tick: Duration,
     uevent: String,
     now_attribute: String,
@@ -118,9 +116,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let uevent = format!("{}{}/{}", SYS_PATH, &name, UEVENT);
         let attribute_prefix = find_attribute_prefix(&uevent)?;
         Ok(InternalConfig {
-            name,
             low_level,
-            full_design,
             tick,
             uevent,
             now_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, NOW_ATTRIBUTE),
@@ -137,7 +133,6 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Battery<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -154,7 +149,6 @@ impl<'a> Battery<'a> {
             }
         }
         Battery {
-            config,
             format,
             placeholder,
         }
@@ -234,10 +228,10 @@ fn parse_attributes(
     let mut status = None;
     for line in f.lines() {
         if now.is_none() {
-            now = parse_attribute(&line, &now_attribute);
+            now = parse_attribute(&line, now_attribute);
         }
         if full.is_none() {
-            full = parse_attribute(&line, &full_attribute);
+            full = parse_attribute(&line, full_attribute);
         }
         if status.is_none() {
             status = parse_status(&line);

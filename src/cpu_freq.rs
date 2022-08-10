@@ -136,7 +136,6 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct CpuFreq<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -154,7 +153,6 @@ impl<'a> CpuFreq<'a> {
         }
         CpuFreq {
             placeholder,
-            config,
             format,
         }
     }

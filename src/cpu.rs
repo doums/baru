@@ -75,7 +75,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Cpu<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -93,7 +92,6 @@ impl<'a> Cpu<'a> {
         }
         Cpu {
             placeholder,
-            config,
             format,
         }
     }

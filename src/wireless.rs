@@ -92,7 +92,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Wireless<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -110,7 +109,6 @@ impl<'a> Wireless<'a> {
         }
         Wireless {
             placeholder,
-            config,
             format,
         }
     }
@@ -148,7 +146,7 @@ pub fn run(
         let label;
         let mut essid = "".to_owned();
         let mut signal = None;
-        if let Some(state) = netlink::wireless_data(&config.interface) {
+        if let Some(state) = netlink::wireless_data(config.interface) {
             if let WirelessState::Connected(data) = state {
                 label = config.label;
                 if let Some(strength) = data.signal {

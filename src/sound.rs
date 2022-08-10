@@ -62,7 +62,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Sound<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -80,7 +79,6 @@ impl<'a> Sound<'a> {
         }
         Sound {
             placeholder,
-            config,
             format,
         }
     }

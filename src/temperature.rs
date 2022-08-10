@@ -60,7 +60,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let mut high_label = HIGH_LABEL;
         if let Some(c) = &config.temperature {
             if let Some(v) = &c.coretemp {
-                coretemp = &v;
+                coretemp = v;
             }
             if let Some(v) = c.high_level {
                 high_level = v;
@@ -108,7 +108,6 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Temperature<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -126,7 +125,6 @@ impl<'a> Temperature<'a> {
         }
         Temperature {
             placeholder,
-            config,
             format,
         }
     }

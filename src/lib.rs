@@ -165,31 +165,31 @@ mod tests {
     #[test]
     fn parse_empty_format() {
         let result = parse_format("");
-        assert_eq!(result.is_empty(), true);
+        assert!(result.is_empty());
     }
 
     #[test]
     fn parse_one_char() {
         let result = parse_format("a");
-        assert_eq!(result.is_empty(), true);
+        assert!(result.is_empty());
     }
 
     #[test]
     fn parse_one_percent() {
         let result = parse_format("%");
-        assert_eq!(result.is_empty(), true);
+        assert!(result.is_empty());
     }
 
     #[test]
     fn parse_one_escaped_percent_i() {
         let result = parse_format("\\%");
-        assert_eq!(result.is_empty(), true);
+        assert!(result.is_empty());
     }
 
     #[test]
     fn parse_one_escaped_percent_ii() {
         let result = parse_format("\\%%");
-        assert_eq!(result.is_empty(), true);
+        assert!(result.is_empty());
     }
 
     #[test]

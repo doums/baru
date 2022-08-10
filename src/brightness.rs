@@ -41,7 +41,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut label = LABEL;
         if let Some(c) = &config.brightness {
             if let Some(v) = &c.sys_path {
-                sys_path = &v;
+                sys_path = v;
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -61,7 +61,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Brightness<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -79,7 +78,6 @@ impl<'a> Brightness<'a> {
         }
         Brightness {
             placeholder,
-            config,
             format,
         }
     }

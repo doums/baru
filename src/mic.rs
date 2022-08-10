@@ -62,7 +62,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Mic<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -80,7 +79,6 @@ impl<'a> Mic<'a> {
         }
         Mic {
             placeholder,
-            config,
             format,
         }
     }

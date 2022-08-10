@@ -78,7 +78,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Wired<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -96,7 +95,6 @@ impl<'a> Wired<'a> {
         }
         Wired {
             placeholder,
-            config,
             format,
         }
     }
@@ -131,7 +129,7 @@ pub fn run(
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        if let Some(state) = netlink::wired_data(&config.interface) {
+        if let Some(state) = netlink::wired_data(config.interface) {
             if let WiredState::Connected = state {
                 tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
             } else if config.discrete {

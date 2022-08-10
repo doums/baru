@@ -88,7 +88,6 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 #[derive(Debug)]
 pub struct Memory<'a> {
     placeholder: &'a str,
-    config: &'a MainConfig,
     format: &'a str,
 }
 
@@ -106,7 +105,6 @@ impl<'a> Memory<'a> {
         }
         Memory {
             placeholder,
-            config,
             format,
         }
     }
@@ -245,7 +243,7 @@ fn humanize<'a>(v1: f32, v2: f32, u1: &'a str, u2: &'a str) -> String {
 
 fn find_meminfo<'a>(regex: &Regex, meminfo: &'a str, error: &'a str) -> Result<i32, String> {
     regex
-        .captures(&meminfo)
+        .captures(meminfo)
         .ok_or_else(|| error.to_string())?
         .get(1)
         .ok_or_else(|| error.to_string())?

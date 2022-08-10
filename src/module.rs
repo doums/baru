@@ -151,11 +151,11 @@ impl<'a> ModuleData<'a> {
     pub fn new_data(&mut self, value: Option<&str>, label: Option<&str>) {
         let mut module_format = self.module.format().to_string();
         module_format = match value {
-            Some(v) => module_format.replace("%v", &v),
+            Some(v) => module_format.replace("%v", v),
             None => module_format.replace("%v", ""),
         };
         module_format = match label {
-            Some(l) => module_format.replace("%l", &l),
+            Some(l) => module_format.replace("%l", l),
             None => module_format.replace("%l", ""),
         };
         self.data = Some(module_format);
