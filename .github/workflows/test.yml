@@ -1,6 +1,11 @@
 name: Test
 
-on: [push, workflow_call, pull_request]
+on:
+  workflow_call:
+  push:
+    branches:
+      - main
+  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
