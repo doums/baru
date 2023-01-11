@@ -128,7 +128,7 @@ pub fn run(
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        let proc_stat = File::open(&config.proc_stat)?;
+        let proc_stat = File::open(config.proc_stat)?;
         let mut reader = BufReader::new(proc_stat);
         let mut buf = String::new();
         reader.read_line(&mut buf)?;

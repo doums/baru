@@ -1,0 +1,76 @@
+name: Deployment
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Install dependencies
+        run: sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libpulse-dev
+      - name: Build
+        run: cargo build --release --locked
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: baru
+          path: ./target/release/baru
+
+  gh-release:
+    name: Publish Github Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download binary artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: baru
+          path: ./target/release/
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/release/baru
+
+  aur-packaging:
+    name: Publish AUR package
+    needs: gh-release
+    runs-on: ubuntu-latest
+    env:
+      PKG_NAME: baru
+      PKGBUILD: ./.pkg/aur/PKGBUILD
+      RELEASE_TAG: ${{ github.ref_name }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download sources
+        run: curl -LfsSo "$PKG_NAME-$RELEASE_TAG".tar.gz "https://github.com/$REPOSITORY/archive/refs/tags/$RELEASE_TAG.tar.gz"
+      - name: Update PKGBUILD
+        run: ./.pkg/aur/update.sh
+      - name: Show PKGBUILD
+        run: cat "$PKGBUILD"
+      - name: Publish
+        uses: KSXGitHub/github-actions-deploy-aur@v2.6.0
+        with:
+          pkgname: ${{ env.PKG_NAME }}
+          pkgbuild: ${{ env.PKGBUILD }}
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          commit_message: ${{ github.ref_name }}

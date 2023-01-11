@@ -221,7 +221,7 @@ fn parse_attributes(
     now_attribute: &str,
     full_attribute: &str,
 ) -> Result<(i32, i32, String), Error> {
-    let file = File::open(&uevent)?;
+    let file = File::open(uevent)?;
     let f = BufReader::new(file);
     let mut now = None;
     let mut full = None;
@@ -248,7 +248,7 @@ fn parse_attributes(
 
 fn parse_attribute(line: &io::Result<String>, attribute: &str) -> Option<i32> {
     if let Ok(l) = line {
-        if l.starts_with(&attribute) {
+        if l.starts_with(attribute) {
             let s = l.split('=').nth(1);
             if let Some(v) = s {
                 return v.parse::<i32>().ok();
@@ -260,7 +260,7 @@ fn parse_attribute(line: &io::Result<String>, attribute: &str) -> Option<i32> {
 
 fn parse_status(line: &io::Result<String>) -> Option<String> {
     if let Ok(l) = line {
-        if l.starts_with(&STATUS_ATTRIBUTE) {
+        if l.starts_with(STATUS_ATTRIBUTE) {
             return l.split('=').nth(1).map(|s| s.to_string());
         }
     }
