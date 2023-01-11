@@ -1,4 +1,4 @@
-[![baru](https://img.shields.io/github/actions/workflow/status/doums/baru/test.yml?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/baru/actions?query=workflow%3ABaru)
+[![baru](https://img.shields.io/github/actions/workflow/status/doums/baru/test.yml?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/baru/actions?query=workflow%3ATest)
 [![baru](https://img.shields.io/aur/version/baru?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=arch-linux&style=for-the-badge)](https://aur.archlinux.org/packages/baru/)
 
 ## baru
