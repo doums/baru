@@ -83,7 +83,6 @@ cpu_freq:
   high_label: '!'
   format: '%v %l'
 memory:
-  core_inputs: 2..5
   label: 'm'
   high_label: '!'
   format: '%v %l'
