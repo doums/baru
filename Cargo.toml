@@ -1,13 +1,13 @@
 [package]
 name = "baru"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2021"
 links = "netlink,audio"
 build = "build.rs"
 
 [dependencies]
-chrono= "0.4"
+chrono = "0.4"
 regex = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
@@ -16,6 +16,7 @@ serde_yaml = "0.9"
 cmake = "0.1"
 
 [profile.release]
+codegen-units = 1
 strip = true
 opt-level = "s"
 lto = true
