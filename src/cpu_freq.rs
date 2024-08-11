@@ -203,7 +203,7 @@ pub fn run(
             true => format!(
                 "{}/{}",
                 humanize(avg, config.unit),
-                humanize(config.max_freq as f32, config.unit)
+                humanize(config.max_freq, config.unit)
             ),
             false => humanize(avg, config.unit),
         };

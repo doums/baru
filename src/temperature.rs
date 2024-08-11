@@ -25,10 +25,18 @@ const HIGH_LABEL: &str = "!te";
 const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+enum CoreInputs {
+    Single(u32),
+    Range(String),
+    List(Vec<u32>),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     coretemp: Option<String>,
     high_level: Option<u32>,
-    core_inputs: Option<String>,
+    core_inputs: Option<CoreInputs>,
     tick: Option<u32>,
     placeholder: Option<String>,
     label: Option<String>,
@@ -75,19 +83,23 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
                 high_label = v;
             }
             if let Some(i) = &c.core_inputs {
-                if let Ok(v) = i.parse::<u32>() {
-                    inputs.push(v);
-                } else if let Some(caps) = re.captures(i) {
-                    let start = caps.get(1).unwrap().as_str().parse::<u32>().unwrap();
-                    let end = caps.get(2).unwrap().as_str().parse::<u32>().unwrap();
-                    if start > end {
-                        return Err(Error::new(error));
+                match i {
+                    CoreInputs::Single(n) => inputs.push(*n),
+                    CoreInputs::Range(range) => {
+                        if let Some(captured) = re.captures(range) {
+                            let start = captured.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                            let end = captured.get(2).unwrap().as_str().parse::<u32>().unwrap();
+                            if start > end {
+                                return Err(Error::new(error));
+                            }
+                            for i in start..end + 1 {
+                                inputs.push(i)
+                            }
+                        } else {
+                            return Err(Error::new(error));
+                        }
                     }
-                    for i in start..end + 1 {
-                        inputs.push(i)
-                    }
-                } else {
-                    return Err(Error::new(error));
+                    CoreInputs::List(list) => inputs = list.clone(),
                 }
             }
         }

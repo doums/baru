@@ -267,7 +267,7 @@ fn parse_status(line: &io::Result<String>) -> Option<String> {
     None
 }
 
-fn find_attribute_prefix<'a, 'b>(path: &'a str) -> Result<&'b str, Error> {
+fn find_attribute_prefix<'e>(path: &str) -> Result<&'e str, Error> {
     let content = fs::read_to_string(path)?;
     let mut unit = None;
     if content.contains(&format!(

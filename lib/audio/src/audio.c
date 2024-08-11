@@ -120,6 +120,7 @@ void subscription_cb(pa_context *context, pa_subscription_event_type_t t, uint32
             try_free_op(&m->server_op);
             m->server_op = pa_context_get_server_info(m->context, server_info_cb, main);
             break;
+        default:;
     }
 }
 

@@ -470,27 +470,33 @@ temperature:
   # coretemp: String, default: /sys/devices/platform/coretemp.0/hwmon
   #
   # The path without the last directory level (because it varies on each kernel boot).
-  # Under this variant directory must be located the tempx_input files.
+  # Under this variable directory are located the input files (see below).
   # For example on my machine it can be /sys/devices/platform/coretemp.0/hwmon/hwmon7 or hwmon6 etc.
-  # This last directory is resolved dynamically.
+  # The variable directory is resolved dynamically.
   #
-  coretemp: /sys/devices/platform/coretemp.1/hwmon
+  coretemp: /sys/devices/platform/coretemp.0/hwmon
 
-  # core_inputs: String, default: 1
+  # core_inputs: u32 | List of u32 | String, default: 1
   #
-  # The average temperature is calculated with one or several tempx_input files.
-  # tempx_input files can contain the temperature of a cpu core.
-  # Based on his cpu (and number of cores), the user must find the correct file(s).
+  # The average temperature is calculated from one or several input files.
+  # Input files are files named `tempx_input` where x is a number.
+  # e.g. temp1_input temp2_input
+  # You can list them using `ls -l /sys/devices/platform/coretemp.0/hwmon/* `
+  # Input files can contain the temperature of a cpu core.
+  # Based on the cpu and its number of cores you want to provide
+  # the corresponding input file number(s).
+  # Tips: see the label files, e.g. `temp1_label`, to identify
+  # which input files reports cpu core temperature.
   #
-  # Can be a number to select one file. eg. 1 for temp1_input.
-  # Can be a inclusive range to select several files, for example:
-  # 1..4
-  # temp1_input
-  # temp2_input
-  # temp3_input
-  # temp4_input
+  # Can be a number to select one input file, eg. 1 for temp1_input.
+  # Can be a list of number to select multiple input files, eg.
+  # core_inputs: [ 2, 6 ]
+  # to select temp2_input and temp6_input
+  # Can be a inclusive range to select multiple input files, eg.
+  # core_inputs: 2..3
+  # to select temp1_input temp2_input and temp3_input
   #
-  core_inputs: 2..5
+  core_inputs: 1
 
   # high_level: u32, default: 75
   #
