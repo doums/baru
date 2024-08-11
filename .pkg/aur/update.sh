@@ -14,8 +14,8 @@ if [ -z "$PKGBUILD" ]; then
   exit 1
 fi
 
-if [ -z "$PKG_NAME" ]; then
-  >&2 printf "  %b%b✕%b PKG_NAME not set\n" "$red" "$bold" "$reset"
+if [ -z "$PKGNAME" ]; then
+  >&2 printf "  %b%b✕%b PKGNAME not set\n" "$red" "$bold" "$reset"
   exit 1
 fi
 
@@ -35,7 +35,7 @@ if ! [[ "$RELEASE_TAG" =~ ^v.*? ]]; then
 fi
 
 pkgver="${RELEASE_TAG#v}"
-tarball="$PKG_NAME-$RELEASE_TAG".tar.gz
+tarball="$PKGNAME-$RELEASE_TAG".tar.gz
 
 if ! [ -a "$tarball" ]; then
   >&2 printf "  %b%b✕%b no such file $tarball\n" "$red" "$bold" "$reset"

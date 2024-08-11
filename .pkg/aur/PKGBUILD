@@ -11,6 +11,7 @@ depends=('libpulse')
 makedepends=('rust' 'cargo')
 provides=('baru')
 conflicts=('baru')
+options=(!debug)
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('xxx')
 
