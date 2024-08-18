@@ -4,71 +4,73 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::Pulse;
-use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
+use crate::pulse::Pulse;
+use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
+use tracing::{debug, instrument};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
 const PLACEHOLDER: &str = "-";
-const SYS_PATH: &str = "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
 const TICK_RATE: Duration = Duration::from_millis(50);
-const LABEL: &str = "bri";
+const MUTE_LABEL: &str = ".so";
+const LABEL: &str = "sou";
 const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    placeholder: Option<String>,
-    sys_path: Option<String>,
+    pub sink_name: Option<String>,
     tick: Option<u32>,
+    placeholder: Option<String>,
     label: Option<String>,
+    mute_label: Option<String>,
     format: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct InternalConfig<'a> {
-    sys_path: &'a str,
     tick: Duration,
     label: &'a str,
+    mute_label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
-        let mut sys_path = SYS_PATH;
         let mut tick = TICK_RATE;
         let mut label = LABEL;
-        if let Some(c) = &config.brightness {
-            if let Some(v) = &c.sys_path {
-                sys_path = v;
-            }
+        let mut mute_label = MUTE_LABEL;
+        if let Some(c) = &config.sound {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
             if let Some(v) = &c.label {
                 label = v;
             }
+            if let Some(v) = &c.mute_label {
+                mute_label = v;
+            }
         }
         InternalConfig {
-            sys_path,
             tick,
             label,
+            mute_label,
         }
     }
 }
 
 #[derive(Debug)]
-pub struct Brightness<'a> {
+pub struct Sound<'a> {
     placeholder: &'a str,
     format: &'a str,
 }
 
-impl<'a> Brightness<'a> {
+impl<'a> Sound<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
         let mut format = FORMAT;
-        if let Some(c) = &config.brightness {
+        if let Some(c) = &config.sound {
             if let Some(p) = &c.placeholder {
                 placeholder = p
             }
@@ -76,16 +78,16 @@ impl<'a> Brightness<'a> {
                 format = v;
             }
         }
-        Brightness {
+        Sound {
             placeholder,
             format,
         }
     }
 }
 
-impl<'a> Bar for Brightness<'a> {
+impl<'a> Bar for Sound<'a> {
     fn name(&self) -> &str {
-        "brightness"
+        "sound"
     }
 
     fn run_fn(&self) -> RunPtr {
@@ -101,25 +103,30 @@ impl<'a> Bar for Brightness<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
-    _: Arc<Mutex<Pulse>>,
+    pulse: Arc<Mutex<Pulse>>,
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        let brightness = read_and_parse(&format!("{}/actual_brightness", config.sys_path))?;
-        let max_brightness = read_and_parse(&format!("{}/max_brightness", config.sys_path))?;
-        let percentage = 100 * brightness / max_brightness;
-        tx.send(ModuleMsg(
-            key,
-            Some(format!("{:3}%", percentage)),
-            Some(config.label.to_string()),
-        ))?;
+        if let Some(data) = pulse.lock().unwrap().sink_data() {
+            let label = match data.1 {
+                true => config.mute_label,
+                false => config.label,
+            };
+            tx.send(ModuleMsg(
+                key,
+                Some(format!("{:3}%", data.0)),
+                Some(label.to_string()),
+            ))?;
+        }
         iteration_end = iteration_start.elapsed();
         if iteration_end < config.tick {
             thread::sleep(config.tick - iteration_end);

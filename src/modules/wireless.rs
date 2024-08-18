@@ -12,6 +12,7 @@ use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(500);
@@ -132,6 +133,7 @@ impl<'a> Bar for Wireless<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
@@ -139,6 +141,7 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {

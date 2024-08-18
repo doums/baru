@@ -5,15 +5,17 @@
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::pulse::Pulse;
-use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
+use crate::util::read_and_parse;
+use crate::{Config as MainConfig, ModuleMsg};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use std::fs;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use std::{fs, io};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
 const CORETEMP: &str = "/sys/devices/platform/coretemp.0/hwmon";
@@ -46,7 +48,7 @@ pub struct Config {
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
-    coretemp: String,
+    coretemp: &'a str,
     high_level: u32,
     tick: Duration,
     inputs: Vec<u32>,
@@ -54,66 +56,111 @@ pub struct InternalConfig<'a> {
     high_label: &'a str,
 }
 
+impl<'a> Default for InternalConfig<'a> {
+    fn default() -> Self {
+        InternalConfig {
+            coretemp: CORETEMP,
+            high_level: HIGH_LEVEL,
+            tick: TICK_RATE,
+            inputs: vec![INPUT],
+            label: LABEL,
+            high_label: HIGH_LABEL,
+        }
+    }
+}
+
+fn check_input_file(path: &str, n: u32) -> bool {
+    fs::metadata(format!("{path}/temp{n}_input"))
+        .map(|m| m.is_file())
+        .inspect_err(|_e| {
+            // TODO log error
+        })
+        .unwrap_or(false)
+}
+
+fn check_dir(path: &str) -> Result<bool, io::Error> {
+    let meta = fs::metadata(path)?;
+    Ok(meta.is_dir())
+}
+
+fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
+    let re = Regex::new(r"^(\d+)\.\.(\d+)$").unwrap();
+
+    match core_inputs {
+        CoreInputs::Single(n) => {
+            if check_input_file(temp_dir, *n) {
+                Some(vec![*n])
+            } else {
+                None
+            }
+        }
+        CoreInputs::Range(range) => {
+            if let Some(captured) = re.captures(range) {
+                let start = captured.get(1).unwrap().as_str().parse::<u32>().unwrap();
+                let end = captured.get(2).unwrap().as_str().parse::<u32>().unwrap();
+                if (start..end).is_empty() {
+                    // TODO log error on wrong range values
+                    return None;
+                }
+                let inputs = (start..end + 1)
+                    .filter(|i| check_input_file(temp_dir, *i))
+                    .collect();
+                return Some(inputs);
+            }
+            // TODO log error wrong range format
+            None
+        }
+        CoreInputs::List(list) => Some(
+            list.iter()
+                .filter(|i| check_input_file(temp_dir, **i))
+                .copied()
+                .collect(),
+        ),
+    }
+}
+
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
     type Error = Error;
 
     fn try_from(config: &'a MainConfig) -> Result<Self, Self::Error> {
-        let mut tick = TICK_RATE;
-        let mut coretemp = CORETEMP;
-        let mut high_level = HIGH_LEVEL;
-        let mut inputs = vec![];
-        let error = "error when parsing temperature config, wrong core_inputs option, a digit or an inclusive range (eg. 2..4) expected";
-        let re = Regex::new(r"^(\d+)\.\.(\d+)$").unwrap();
-        let mut label = LABEL;
-        let mut high_label = HIGH_LABEL;
-        if let Some(c) = &config.temperature {
-            if let Some(v) = &c.coretemp {
-                coretemp = v;
-            }
-            if let Some(v) = c.high_level {
-                high_level = v;
-            }
-            if let Some(t) = c.tick {
-                tick = Duration::from_millis(t as u64)
-            }
-            if let Some(v) = &c.label {
-                label = v;
-            }
-            if let Some(v) = &c.high_label {
-                high_label = v;
-            }
-            if let Some(i) = &c.core_inputs {
-                match i {
-                    CoreInputs::Single(n) => inputs.push(*n),
-                    CoreInputs::Range(range) => {
-                        if let Some(captured) = re.captures(range) {
-                            let start = captured.get(1).unwrap().as_str().parse::<u32>().unwrap();
-                            let end = captured.get(2).unwrap().as_str().parse::<u32>().unwrap();
-                            if start > end {
-                                return Err(Error::new(error));
-                            }
-                            for i in start..end + 1 {
-                                inputs.push(i)
-                            }
-                        } else {
-                            return Err(Error::new(error));
+        let coretemp = config
+            .temperature
+            .as_ref()
+            .and_then(|c| c.coretemp.as_deref())
+            .unwrap_or(CORETEMP);
+        check_dir(coretemp)?;
+        let temp_dir = find_temp_dir(coretemp)?;
+
+        let internal_cfg = config
+            .temperature
+            .as_ref()
+            .map(|c| {
+                let inputs = c
+                    .core_inputs
+                    .as_ref()
+                    .and_then(|i| get_inputs(i, &temp_dir))
+                    .map(|mut i| {
+                        if i.is_empty() {
+                            i.push(INPUT);
                         }
-                    }
-                    CoreInputs::List(list) => inputs = list.clone(),
+                        i
+                    })
+                    .unwrap_or(vec![INPUT]);
+
+                InternalConfig {
+                    coretemp,
+                    high_level: c.high_level.unwrap_or(HIGH_LEVEL),
+                    tick: c
+                        .tick
+                        .map_or(TICK_RATE, |t| Duration::from_millis(t as u64)),
+                    inputs,
+                    label: c.label.as_deref().unwrap_or(LABEL),
+                    high_label: c.high_label.as_deref().unwrap_or(HIGH_LABEL),
                 }
-            }
-        }
-        if inputs.is_empty() {
-            inputs.push(INPUT);
-        }
-        Ok(InternalConfig {
-            coretemp: find_temp_dir(coretemp)?,
-            high_level,
-            inputs,
-            tick,
-            label,
-            high_label,
-        })
+            })
+            .unwrap_or_default();
+
+        Ok(internal_cfg)
     }
 }
 
@@ -160,6 +207,7 @@ impl<'a> Bar for Temperature<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
@@ -167,16 +215,15 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::try_from(&main_config)?;
+    debug!("{:#?}", config);
+    let temp_dir = find_temp_dir(config.coretemp)?;
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
         let mut inputs = vec![];
         for i in &config.inputs {
-            inputs.push(read_and_parse(&format!(
-                "{}/temp{}_input",
-                config.coretemp, i
-            ))?)
+            inputs.push(read_and_parse(&format!("{}/temp{}_input", temp_dir, i))?)
         }
         let sum: i32 = inputs.iter().sum();
         let average = ((sum as f32 / inputs.len() as f32) / 1000_f32).round() as i32;

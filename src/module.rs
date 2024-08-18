@@ -2,18 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::battery::Battery;
-use crate::brightness::Brightness;
-use crate::cpu::Cpu;
-use crate::cpu_freq::CpuFreq;
-use crate::date_time::DateTime;
 use crate::error::Error;
-use crate::memory::Memory;
-use crate::mic::Mic;
-use crate::sound::Sound;
-use crate::temperature::Temperature;
-use crate::wired::Wired;
-use crate::wireless::Wireless;
+use crate::modules::battery::Battery;
+use crate::modules::brightness::Brightness;
+use crate::modules::cpu::Cpu;
+use crate::modules::cpu_freq::CpuFreq;
+use crate::modules::date_time::DateTime;
+use crate::modules::memory::Memory;
+use crate::modules::mic::Mic;
+use crate::modules::sound::Sound;
+use crate::modules::temperature::Temperature;
+use crate::modules::wired::Wired;
+use crate::modules::wireless::Wireless;
 use crate::Config;
 use crate::ModuleMsg;
 use crate::Pulse;

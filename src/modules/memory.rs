@@ -5,13 +5,15 @@
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::pulse::Pulse;
-use crate::{read_and_trim, Config as MainConfig, ModuleMsg};
+use crate::util::read_and_trim;
+use crate::{Config as MainConfig, ModuleMsg};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
 const MEMINFO: &str = "/proc/meminfo";
@@ -149,6 +151,7 @@ impl MemRegex {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
@@ -156,6 +159,7 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    debug!("{:#?}", config);
     let mem_regex = MemRegex::new();
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;

@@ -4,52 +4,56 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
+use crate::util::read_and_parse;
 use crate::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
-use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
-const DATE_FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
-const TICK_RATE: Duration = Duration::from_millis(500);
-const FORMAT: &str = "%v";
+const SYS_PATH: &str = "/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-eDP-1/intel_backlight";
+const TICK_RATE: Duration = Duration::from_millis(50);
+const LABEL: &str = "bri";
+const FORMAT: &str = "%l:%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    date_format: Option<String>,
-    tick: Option<u32>,
     placeholder: Option<String>,
+    sys_path: Option<String>,
+    tick: Option<u32>,
     label: Option<String>,
     format: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InternalConfig<'a> {
-    date_format: &'a str,
+    sys_path: &'a str,
     tick: Duration,
-    label: Option<&'a str>,
+    label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
+        let mut sys_path = SYS_PATH;
         let mut tick = TICK_RATE;
-        let mut date_format = DATE_FORMAT;
-        let mut label = None;
-        if let Some(c) = &config.date_time {
-            if let Some(d) = &c.date_format {
-                date_format = d;
+        let mut label = LABEL;
+        if let Some(c) = &config.brightness {
+            if let Some(v) = &c.sys_path {
+                sys_path = v;
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            label = c.label.as_deref();
+            if let Some(v) = &c.label {
+                label = v;
+            }
         }
         InternalConfig {
-            date_format,
+            sys_path,
             tick,
             label,
         }
@@ -57,16 +61,16 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 }
 
 #[derive(Debug)]
-pub struct DateTime<'a> {
+pub struct Brightness<'a> {
     placeholder: &'a str,
     format: &'a str,
 }
 
-impl<'a> DateTime<'a> {
+impl<'a> Brightness<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
         let mut format = FORMAT;
-        if let Some(c) = &config.date_time {
+        if let Some(c) = &config.brightness {
             if let Some(p) = &c.placeholder {
                 placeholder = p
             }
@@ -74,16 +78,16 @@ impl<'a> DateTime<'a> {
                 format = v;
             }
         }
-        DateTime {
+        Brightness {
             placeholder,
             format,
         }
     }
 }
 
-impl<'a> Bar for DateTime<'a> {
+impl<'a> Bar for Brightness<'a> {
     fn name(&self) -> &str {
-        "date_time"
+        "brightness"
     }
 
     fn run_fn(&self) -> RunPtr {
@@ -99,6 +103,7 @@ impl<'a> Bar for DateTime<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
@@ -106,14 +111,18 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
+        let brightness = read_and_parse(&format!("{}/actual_brightness", config.sys_path))?;
+        let max_brightness = read_and_parse(&format!("{}/max_brightness", config.sys_path))?;
+        let percentage = 100 * brightness / max_brightness;
         tx.send(ModuleMsg(
             key,
-            Some(Local::now().format(config.date_format).to_string()),
-            config.label.map(|v| v.to_string()),
+            Some(format!("{:3}%", percentage)),
+            Some(config.label.to_string()),
         ))?;
         iteration_end = iteration_start.elapsed();
         if iteration_end < config.tick {

@@ -4,72 +4,89 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::pulse::Pulse;
+use crate::netlink::{self, WiredState};
+use crate::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
-const TICK_RATE: Duration = Duration::from_millis(50);
-const MUTE_LABEL: &str = ".mi";
-const LABEL: &str = "mic";
-const FORMAT: &str = "%l:%v";
+const TICK_RATE: Duration = Duration::from_millis(1000);
+const INTERFACE: &str = "enp0s31f6";
+const DISCRETE: bool = false;
+const LABEL: &str = "eth";
+const DISCONNECTED_LABEL: &str = ".et";
+const FORMAT: &str = "%l";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    pub source_name: Option<String>,
     tick: Option<u32>,
+    interface: Option<String>,
+    discrete: Option<bool>,
     placeholder: Option<String>,
     label: Option<String>,
-    mute_label: Option<String>,
+    disconnected_label: Option<String>,
     format: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
+    interface: &'a str,
+    discrete: bool,
     tick: Duration,
     label: &'a str,
-    mute_label: &'a str,
+    disconnected_label: &'a str,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
+        let mut interface = INTERFACE;
+        let mut discrete = DISCRETE;
         let mut label = LABEL;
-        let mut mute_label = MUTE_LABEL;
-        if let Some(c) = &config.mic {
+        let mut disconnected_label = DISCONNECTED_LABEL;
+        if let Some(c) = &config.wired {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
+            }
+            if let Some(i) = &c.interface {
+                interface = i
+            }
+            if let Some(b) = c.discrete {
+                discrete = b;
             }
             if let Some(v) = &c.label {
                 label = v;
             }
-            if let Some(v) = &c.mute_label {
-                mute_label = v;
+            if let Some(v) = &c.disconnected_label {
+                disconnected_label = v;
             }
-        }
+        };
         InternalConfig {
+            interface,
+            discrete,
             tick,
             label,
-            mute_label,
+            disconnected_label,
         }
     }
 }
 
 #[derive(Debug)]
-pub struct Mic<'a> {
+pub struct Wired<'a> {
     placeholder: &'a str,
     format: &'a str,
 }
 
-impl<'a> Mic<'a> {
+impl<'a> Wired<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
         let mut format = FORMAT;
-        if let Some(c) = &config.mic {
+        if let Some(c) = &config.wired {
             if let Some(p) = &c.placeholder {
                 placeholder = p
             }
@@ -77,16 +94,16 @@ impl<'a> Mic<'a> {
                 format = v;
             }
         }
-        Mic {
+        Wired {
             placeholder,
             format,
         }
     }
 }
 
-impl<'a> Bar for Mic<'a> {
+impl<'a> Bar for Wired<'a> {
     fn name(&self) -> &str {
-        "mic"
+        "wired"
     }
 
     fn run_fn(&self) -> RunPtr {
@@ -102,27 +119,31 @@ impl<'a> Bar for Mic<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
-    pulse: Arc<Mutex<Pulse>>,
+    _: Arc<Mutex<Pulse>>,
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        if let Some(data) = pulse.lock().unwrap().source_data() {
-            let label = match data.1 {
-                true => config.mute_label,
-                false => config.label,
-            };
-            tx.send(ModuleMsg(
-                key,
-                Some(format!("{:3}%", data.0)),
-                Some(label.to_string()),
-            ))?;
+        if let Some(state) = netlink::wired_data(config.interface) {
+            if let WiredState::Connected = state {
+                tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
+            } else if config.discrete {
+                tx.send(ModuleMsg(key, None, None))?;
+            } else {
+                tx.send(ModuleMsg(
+                    key,
+                    None,
+                    Some(config.disconnected_label.to_string()),
+                ))?;
+            }
         }
         iteration_end = iteration_start.elapsed();
         if iteration_end < config.tick {

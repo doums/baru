@@ -479,22 +479,21 @@ temperature:
   # core_inputs: u32 | List of u32 | String, default: 1
   #
   # The average temperature is calculated from one or several input files.
-  # Input files are files named `tempx_input` where x is a number.
+  # Input files are located in the directory /sys/devices/platform/coretemp.0/hwmon/*
+  # and are named `tempn_input` where n is a number.
   # e.g. temp1_input temp2_input
-  # You can list them using `ls -l /sys/devices/platform/coretemp.0/hwmon/* `
   # Input files can contain the temperature of a cpu core.
   # Based on the cpu and its number of cores you want to provide
   # the corresponding input file number(s).
   # Tips: see the label files, e.g. `temp1_label`, to identify
   # which input files reports cpu core temperature.
   #
-  # Can be a number to select one input file, eg. 1 for temp1_input.
-  # Can be a list of number to select multiple input files, eg.
-  # core_inputs: [ 2, 6 ]
-  # to select temp2_input and temp6_input
-  # Can be a inclusive range to select multiple input files, eg.
-  # core_inputs: 2..3
-  # to select temp1_input temp2_input and temp3_input
+  # This option can be set either to:
+  # A number to select one input file, eg. 1 for temp1_input.
+  # A list of number to select multiple input files, eg.
+  # core_inputs: [ 2, 6 ] to select temp2_input and temp6_input
+  # A inclusive range to select multiple input files, eg.
+  # core_inputs: 2..3 to select temp1_input temp2_input and temp3_input
   #
   core_inputs: 1
 

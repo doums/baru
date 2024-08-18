@@ -4,8 +4,9 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
+use crate::util::read_and_parse;
 use crate::Pulse;
-use crate::{read_and_parse, Config as MainConfig, ModuleMsg};
+use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::fs::{read_dir, DirEntry};
 use std::sync::mpsc::Sender;
@@ -13,6 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{convert::TryFrom, path::Path};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(100);
@@ -176,6 +178,7 @@ impl<'a> Bar for CpuFreq<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
@@ -183,6 +186,7 @@ pub fn run(
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::try_from(&main_config)?;
+    debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {

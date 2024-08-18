@@ -4,72 +4,70 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::pulse::Pulse;
+use crate::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
+use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
-const TICK_RATE: Duration = Duration::from_millis(50);
-const MUTE_LABEL: &str = ".so";
-const LABEL: &str = "sou";
-const FORMAT: &str = "%l:%v";
+const DATE_FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
+const TICK_RATE: Duration = Duration::from_millis(500);
+const FORMAT: &str = "%v";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    pub sink_name: Option<String>,
+    date_format: Option<String>,
     tick: Option<u32>,
     placeholder: Option<String>,
     label: Option<String>,
-    mute_label: Option<String>,
     format: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct InternalConfig<'a> {
+    date_format: &'a str,
     tick: Duration,
-    label: &'a str,
-    mute_label: &'a str,
+    label: Option<&'a str>,
 }
 
 impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
     fn from(config: &'a MainConfig) -> Self {
         let mut tick = TICK_RATE;
-        let mut label = LABEL;
-        let mut mute_label = MUTE_LABEL;
-        if let Some(c) = &config.sound {
+        let mut date_format = DATE_FORMAT;
+        let mut label = None;
+        if let Some(c) = &config.date_time {
+            if let Some(d) = &c.date_format {
+                date_format = d;
+            }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
-            if let Some(v) = &c.label {
-                label = v;
-            }
-            if let Some(v) = &c.mute_label {
-                mute_label = v;
-            }
+            label = c.label.as_deref();
         }
         InternalConfig {
+            date_format,
             tick,
             label,
-            mute_label,
         }
     }
 }
 
 #[derive(Debug)]
-pub struct Sound<'a> {
+pub struct DateTime<'a> {
     placeholder: &'a str,
     format: &'a str,
 }
 
-impl<'a> Sound<'a> {
+impl<'a> DateTime<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
         let mut format = FORMAT;
-        if let Some(c) = &config.sound {
+        if let Some(c) = &config.date_time {
             if let Some(p) = &c.placeholder {
                 placeholder = p
             }
@@ -77,16 +75,16 @@ impl<'a> Sound<'a> {
                 format = v;
             }
         }
-        Sound {
+        DateTime {
             placeholder,
             format,
         }
     }
 }
 
-impl<'a> Bar for Sound<'a> {
+impl<'a> Bar for DateTime<'a> {
     fn name(&self) -> &str {
-        "sound"
+        "date_time"
     }
 
     fn run_fn(&self) -> RunPtr {
@@ -102,28 +100,24 @@ impl<'a> Bar for Sound<'a> {
     }
 }
 
+#[instrument(skip_all)]
 pub fn run(
     key: char,
     main_config: MainConfig,
-    pulse: Arc<Mutex<Pulse>>,
+    _: Arc<Mutex<Pulse>>,
     tx: Sender<ModuleMsg>,
 ) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
+    debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     loop {
         iteration_start = Instant::now();
-        if let Some(data) = pulse.lock().unwrap().sink_data() {
-            let label = match data.1 {
-                true => config.mute_label,
-                false => config.label,
-            };
-            tx.send(ModuleMsg(
-                key,
-                Some(format!("{:3}%", data.0)),
-                Some(label.to_string()),
-            ))?;
-        }
+        tx.send(ModuleMsg(
+            key,
+            Some(Local::now().format(config.date_format).to_string()),
+            config.label.map(|v| v.to_string()),
+        ))?;
         iteration_end = iteration_start.elapsed();
         if iteration_end < config.tick {
             thread::sleep(config.tick - iteration_end);

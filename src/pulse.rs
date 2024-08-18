@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use tracing::instrument;
+
 use crate::error::Error;
 use crate::Config;
 use std::os::raw::c_char;
@@ -27,6 +29,7 @@ pub struct Pulse(
 );
 
 impl Pulse {
+    #[instrument(skip_all)]
     pub fn new(config: &Config) -> Result<Self, Error> {
         let (sink_tx, sink_rx) = mpsc::channel();
         let (source_tx, source_rx) = mpsc::channel();

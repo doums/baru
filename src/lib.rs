@@ -2,40 +2,33 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-mod battery;
-mod brightness;
-mod cpu;
-mod cpu_freq;
-mod date_time;
+pub mod cli;
 mod error;
-mod memory;
-mod mic;
 mod module;
+mod modules;
 mod netlink;
 pub mod pulse;
-mod sound;
-mod temperature;
-mod wired;
-mod wireless;
-use battery::Config as BatteryConfig;
-use brightness::Config as BrightnessConfig;
-use cpu::Config as CpuConfig;
-use cpu_freq::Config as CpuFreqConfig;
-use date_time::Config as DateTimeConfig;
+pub mod trace;
+pub mod util;
+
 use error::Error;
-use memory::Config as MemoryConfig;
-use mic::Config as MicConfig;
 use module::{Bar, ModuleData};
+use modules::battery::Config as BatteryConfig;
+use modules::brightness::Config as BrightnessConfig;
+use modules::cpu::Config as CpuConfig;
+use modules::cpu_freq::Config as CpuFreqConfig;
+use modules::date_time::Config as DateTimeConfig;
+use modules::memory::Config as MemoryConfig;
+use modules::mic::Config as MicConfig;
+use modules::sound::Config as SoundConfig;
+use modules::temperature::Config as TemperatureConfig;
+use modules::wired::Config as WiredConfig;
+use modules::wireless::Config as WirelessConfig;
 use pulse::Pulse;
 use serde::{Deserialize, Serialize};
-use sound::Config as SoundConfig;
-use std::fs;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use temperature::Config as TemperatureConfig;
-use wired::Config as WiredConfig;
-use wireless::Config as WirelessConfig;
 
 #[derive(Debug)]
 pub struct ModuleMsg(char, Option<String>, Option<String>);
@@ -129,6 +122,10 @@ impl<'a> Baru<'a> {
         println!("{}", output);
         Ok(())
     }
+
+    pub fn modules(&self) -> Vec<&str> {
+        self.modules.iter().map(|m| m.module.name()).collect()
+    }
 }
 
 fn parse_format(format: &str) -> Vec<MarkupMatch> {
@@ -142,20 +139,6 @@ fn parse_format(format: &str) -> Vec<MarkupMatch> {
         }
     }
     matches
-}
-
-fn read_and_trim(file: &str) -> Result<String, Error> {
-    let content = fs::read_to_string(file)
-        .map_err(|err| format!("error while reading the file \"{}\": {}", file, err))?;
-    Ok(content.trim().to_string())
-}
-
-fn read_and_parse(file: &str) -> Result<i32, Error> {
-    let content = read_and_trim(file)?;
-    let data = content
-        .parse::<i32>()
-        .map_err(|err| format!("error while parsing the file \"{}\": {}", file, err))?;
-    Ok(data)
 }
 
 #[cfg(test)]

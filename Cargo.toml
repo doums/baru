@@ -1,16 +1,25 @@
 [package]
 name = "baru"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2021"
 links = "netlink,audio"
 build = "build.rs"
 
 [dependencies]
-chrono = "0.4"
-regex = "1"
+anyhow = "1.0.86"
+thiserror = "1.0"
+clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.1", features = [
+    "tracing-log",
+    "env-filter",
+] }
+tracing-appender = "0.2"
+chrono = "0.4"
+regex = "1"
 
 [build-dependencies]
 cmake = "0.1"
