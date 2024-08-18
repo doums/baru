@@ -13,7 +13,7 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{fs, io};
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, warn};
 
 const PLACEHOLDER: &str = "-";
 const CORETEMP: &str = "/sys/devices/platform/coretemp.0/hwmon";
@@ -67,11 +67,12 @@ impl<'a> Default for InternalConfig<'a> {
     }
 }
 
+#[instrument]
 fn check_input_file(path: &str, n: u32) -> bool {
     fs::metadata(format!("{path}/temp{n}_input"))
         .map(|m| m.is_file())
         .inspect_err(|_e| {
-            // TODO log error
+            warn!("input file not found: temp{n}_input");
         })
         .unwrap_or(false)
 }
@@ -81,6 +82,7 @@ fn check_dir(path: &str) -> Result<bool, io::Error> {
     Ok(meta.is_dir())
 }
 
+#[instrument]
 fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
     let re = Regex::new(r"^(\d+)\.\.(\d+)$").unwrap();
 
@@ -97,7 +99,7 @@ fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
                 let start = captured.get(1).unwrap().as_str().parse::<u32>().unwrap();
                 let end = captured.get(2).unwrap().as_str().parse::<u32>().unwrap();
                 if (start..end).is_empty() {
-                    // TODO log error on wrong range values
+                    warn!("invalid range: start must be less than end");
                     return None;
                 }
                 let inputs = (start..end + 1)
@@ -105,7 +107,7 @@ fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
                     .collect();
                 return Some(inputs);
             }
-            // TODO log error wrong range format
+            warn!("invalid range format: expected \"start..end\"");
             None
         }
         CoreInputs::List(list) => Some(
@@ -139,6 +141,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
                     .and_then(|i| get_inputs(i, &temp_dir))
                     .map(|mut i| {
                         if i.is_empty() {
+                            warn!("no input files found, using default input {}", INPUT);
                             i.push(INPUT);
                         }
                         i

@@ -3,9 +3,17 @@
 
 ## baru
 
-A system monitor written in Rust and C.
+A simple system monitor for WM statusbars
 
 ![baru](https://raw.githubusercontent.com/doums/baru/master/public/baru.png)
+
+Baru is a lightweight system monitor for WM status-bars.\
+It can be used as a provider with any status-bar that can read from `stdout`.\
+Like [xmobar](https://codeberg.org/xmobar/xmobar),
+[lemonbar](https://github.com/LemonBoy/bar),
+[dwm](https://dwm.suckless.org/status_monitor/) etc…
+
+---
 
 - [features](#features)
 - [prerequisite](#prerequisite)
@@ -29,34 +37,34 @@ A system monitor written in Rust and C.
 * customizable format output
 * configuration in YAML
 
-Baru gathers the information from `/sys` and `/proc` filesystems (filled by the kernel). Except audio and network modules which use C libraries.\
-There is no memory leak over time. All modules are threaded. Thanks to this design (as well Rust and C), baru is lightweight and efficient. It can run at high refresh rate with a minimal processor footprint.
-
-The audio module communicates with the [PipeWire](https://pipewire.org/)/[PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/) server through [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to retrieve its data.\
-Wireless and wired modules use the netlink interface with the help of [libnl](https://www.infradead.org/~tgr/libnl/) to talk directly to kernel and retrieve their data.\
-In addition, wireless module uses the [802.11](https://github.com/torvalds/linux/blob/master/include/uapi/linux/nl80211.h) API.
-
-Baru is modular. This means that only the modules you want to see are instantiated and executed.
-
 ### prerequisite
+
+The following system libraries are required:
 
 - libnl (for wired and wireless modules)
 - libpulse (for sound and mic modules)
 
 ### install
 
-Rust is a language that compiles to native code and by default statically links all dependencies.\
-Simply download the latest [release](https://github.com/doums/baru/releases) of the compiled binary and use it (do not forget to make it executable `chmod +x baru`).
-
-For Arch Linux users, baru is present as a [package](https://aur.archlinux.org/packages/baru) in the Arch User Repository.
+- Arch Linux (AUR) [package](https://aur.archlinux.org/packages/baru)
+- latest [release](https://github.com/doums/baru/releases)
 
 ### configuration
 
-The binary looks for the config file `baru.yaml` located in `$XDG_CONFIG_HOME/baru/` (default to `$HOME/.config/baru/`).\
+The binary looks for the config file `baru.yaml` located
+in `$XDG_CONFIG_HOME/baru/` (default to `$HOME/.config/baru/`).\
 If the config file is not found, baru prints an error and exits.\
-All options are detailed [here](https://github.com/doums/baru/blob/master/baru.yaml).
+All options are
+detailed [here](https://github.com/doums/baru/blob/master/baru.yaml).
 
-Example:
+TIPS: To test and debug your config run baru from the terminal like this:
+
+```shell
+RUST_LOG=debug baru -l stdout
+```
+
+#### Config example
+
 ```yaml
 format: '%m  %f  %c  %t  %b  %i  %s   %w%e  %a    %d'
 tick: 50
@@ -114,13 +122,57 @@ wireless:
 ```
 
 ### usage
+
+```shell
+baru -h
 ```
-$ baru
+
+When spawning baru from your WM/status-bar you can pass the `-l file` flag\
+if you want baru to log into a file (useful for debugging).\
+Logs are written to the directory `$XDG_CACHE_HOME/baru/` (default to `$HOME/.cache/baru/`).
+
+```shell
+baru -l file
+```
+
+### implementation details
+
+Baru gathers the information from `/sys` and `/proc` filesystems\
+(filled by the kernel). Except audio and network modules which use C libraries.\
+All modules are threaded and loaded on-demand.\
+Thanks to this modular design (as well Rust and C), baru is lightweight and
+efficient.\
+It can run at high refresh rate with a minimal cpu footprint.
+
+The audio module communicates with
+the [PipeWire](https://pipewire.org/)/[PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/)\
+server
+through [client API](https://freedesktop.org/software/pulseaudio/doxygen/) to
+retrieve its data. Wireless and wired\
+modules use the netlink interface with the help
+of [libnl](https://www.infradead.org/~tgr/libnl/) to talk directly\
+to kernel and retrieve their data.\
+In addition, wireless module uses
+the [802.11](https://github.com/torvalds/linux/blob/master/include/uapi/linux/nl80211.h)
+API.
+
+### dev
+
+#### prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install)
+- CMake
+- libnl and libpulse present on the system
+
+```shell
+RUST_LOG=trace cargo run -- -l stdout
 ```
 
 ### credits
 
-Clément Dommerc for providing me with the C code for the lib `netlink`, wireless part.
+Clément Dommerc for providing me with the C code for the lib `netlink`, wireless
+part.
 
 ### license
+
 Mozilla Public License 2.0

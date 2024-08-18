@@ -20,7 +20,7 @@ const TICK_RATE: Duration = Duration::from_millis(50);
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    trace::init(cli.logs).context("failed to init tracing")?;
+    let _g = trace::init(cli.logs).context("failed to init tracing")?;
 
     let home = env::var("HOME")?;
     let mut config_dir = env::var(XDG_CONFIG_HOME)
