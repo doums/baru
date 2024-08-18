@@ -4,14 +4,12 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::pulse::Pulse;
 use crate::util::read_and_parse;
 use crate::{Config as MainConfig, ModuleMsg};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{fs, io};
@@ -208,12 +206,7 @@ impl<'a> Bar for Temperature<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(
-    key: char,
-    main_config: MainConfig,
-    _: Arc<Mutex<Pulse>>,
-    tx: Sender<ModuleMsg>,
-) -> Result<(), Error> {
+pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
     let config = InternalConfig::try_from(&main_config)?;
     debug!("{:#?}", config);
     let temp_dir = find_temp_dir(config.coretemp)?;

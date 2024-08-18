@@ -11,6 +11,7 @@ pub mod pulse;
 pub mod trace;
 pub mod util;
 
+use anyhow::{anyhow, Result};
 use error::Error;
 use module::{Bar, ModuleData};
 use modules::battery::Config as BatteryConfig;
@@ -24,11 +25,10 @@ use modules::sound::Config as SoundConfig;
 use modules::temperature::Config as TemperatureConfig;
 use modules::wired::Config as WiredConfig;
 use modules::wireless::Config as WirelessConfig;
-use pulse::Pulse;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Mutex};
 use std::thread;
+use tracing::{error, info, instrument};
 
 #[derive(Debug)]
 pub struct ModuleMsg(char, Option<String>, Option<String>);
@@ -55,7 +55,6 @@ pub struct Baru<'a> {
     config: &'a Config,
     modules: Vec<ModuleData<'a>>,
     format: &'a str,
-    pulse: &'a Arc<Mutex<Pulse>>,
     markup_matches: Vec<MarkupMatch>,
     channel: (Sender<ModuleMsg>, Receiver<ModuleMsg>),
 }
@@ -64,7 +63,8 @@ pub struct Baru<'a> {
 struct MarkupMatch(char, usize);
 
 impl<'a> Baru<'a> {
-    pub fn with_config(config: &'a Config, pulse: &'a Arc<Mutex<Pulse>>) -> Result<Self, Error> {
+    #[instrument(skip_all)]
+    pub fn with_config(config: &'a Config) -> Result<Self> {
         let mut modules = vec![];
         let markup_matches = parse_format(&config.format);
         for markup in &markup_matches {
@@ -72,7 +72,6 @@ impl<'a> Baru<'a> {
         }
         Ok(Baru {
             config,
-            pulse,
             channel: mpsc::channel(),
             modules,
             format: &config.format,
@@ -80,32 +79,42 @@ impl<'a> Baru<'a> {
         })
     }
 
-    pub fn start(&self) -> Result<(), Error> {
+    #[instrument(skip_all)]
+    pub fn start(&self) -> Result<()> {
+        // check if any module needs pulse, i.e. sound or mic modules
+        let need_pulse = self.modules.iter().any(|m| m.key == 's' || m.key == 'i');
+        if need_pulse {
+            pulse::init(self.config);
+        }
         for data in &self.modules {
             let builder = thread::Builder::new().name(format!("mod_{}", data.module.name()));
             let cloned_m_conf = self.config.clone();
             let tx1 = mpsc::Sender::clone(&self.channel.0);
-            let pulse = Arc::clone(self.pulse);
             let run = data.module.run_fn();
             let key = data.key;
+            let c_name = data.module.name().to_string();
             builder.spawn(move || -> Result<(), Error> {
-                run(key, cloned_m_conf, pulse, tx1)?;
+                info!("[{}] module starting", c_name);
+                run(key, cloned_m_conf, tx1)
+                    .inspect_err(|e| error!("[{}] module failed: {}", c_name, e))?;
                 Ok(())
             })?;
         }
         Ok(())
     }
 
-    fn module_output(&self, key: char) -> Result<&str, Error> {
+    #[instrument(skip(self))]
+    fn module_output(&self, key: char) -> Result<&str> {
         let module = self
             .modules
             .iter()
             .find(|data| data.key == key)
-            .ok_or(format!("module for key \"{}\" not found", key))?;
+            .ok_or(anyhow!("module for key \"{}\" not found", key))?;
         Ok(module.output())
     }
 
-    pub fn update(&mut self) -> Result<(), Error> {
+    #[instrument(skip(self))]
+    pub fn update(&mut self) -> Result<()> {
         let messages: Vec<ModuleMsg> = self.channel.1.try_iter().collect();
         for module in &mut self.modules {
             let mut iter = messages.iter().rev();
@@ -123,11 +132,13 @@ impl<'a> Baru<'a> {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub fn modules(&self) -> Vec<&str> {
         self.modules.iter().map(|m| m.module.name()).collect()
     }
 }
 
+#[instrument]
 fn parse_format(format: &str) -> Vec<MarkupMatch> {
     let mut matches = vec![];
     let mut iter = format.char_indices().peekable();

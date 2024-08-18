@@ -16,12 +16,10 @@ use crate::modules::wired::Wired;
 use crate::modules::wireless::Wireless;
 use crate::Config;
 use crate::ModuleMsg;
-use crate::Pulse;
 use std::convert::TryFrom;
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
 
-pub type RunPtr = fn(char, Config, Arc<Mutex<Pulse>>, Sender<ModuleMsg>) -> Result<(), Error>;
+pub type RunPtr = fn(char, Config, Sender<ModuleMsg>) -> Result<(), Error>;
 
 pub trait Bar {
     fn name(&self) -> &str;

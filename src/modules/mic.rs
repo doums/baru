@@ -4,14 +4,13 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::pulse::Pulse;
+use crate::pulse::PULSE;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, instrument};
+use tracing::{debug, error, instrument};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);
@@ -104,16 +103,12 @@ impl<'a> Bar for Mic<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(
-    key: char,
-    main_config: MainConfig,
-    pulse: Arc<Mutex<Pulse>>,
-    tx: Sender<ModuleMsg>,
-) -> Result<(), Error> {
+pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
+    let pulse = PULSE.get().ok_or("pulse module not initialized")?;
     loop {
         iteration_start = Instant::now();
         if let Some(data) = pulse.lock().unwrap().source_data() {

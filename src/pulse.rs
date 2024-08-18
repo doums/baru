@@ -2,14 +2,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use tracing::instrument;
-
 use crate::error::Error;
 use crate::Config;
+use anyhow::Result;
+use once_cell::sync::OnceCell;
 use std::os::raw::c_char;
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::{ffi::CString, ptr};
+use tracing::{error, info, instrument, warn};
 
 const PULSE_RATE: u32 = 50_000_000; // in nanosecond
 
@@ -27,6 +29,26 @@ pub struct Pulse(
     Receiver<PulseData>,
     Receiver<PulseData>,
 );
+
+pub static PULSE: OnceCell<Arc<Mutex<Pulse>>> = OnceCell::new();
+
+#[instrument(skip_all)]
+pub fn init(config: &Config) {
+    PULSE
+        .set({
+            info!("initializing pulse module");
+            let pulse = Pulse::new(config)
+                .inspect_err(|e| {
+                    error!("error pulse module: {}", e);
+                })
+                .unwrap();
+            Arc::new(Mutex::new(pulse))
+        })
+        .inspect_err(|_| {
+            warn!("error initializing pulse module: already initialized");
+        })
+        .ok();
+}
 
 impl Pulse {
     #[instrument(skip_all)]

@@ -4,14 +4,12 @@
 
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
-use crate::Pulse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use tracing::{debug, instrument};
@@ -117,12 +115,7 @@ impl<'a> Bar for Cpu<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(
-    key: char,
-    main_config: MainConfig,
-    _: Arc<Mutex<Pulse>>,
-    tx: Sender<ModuleMsg>,
-) -> Result<(), Error> {
+pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     debug!("{:#?}", config);
     let mut prev_idle = 0;

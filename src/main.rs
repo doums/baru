@@ -4,13 +4,11 @@
 
 use anyhow::{Context, Result};
 use baru::cli::Cli;
-use baru::pulse::Pulse;
 use baru::{trace, util, Baru, Config};
 use clap::Parser;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info};
@@ -43,10 +41,7 @@ fn main() -> Result<()> {
         Some(ms) => Duration::from_millis(ms as u64),
         None => TICK_RATE,
     };
-    let pulse = Arc::new(Mutex::new(Pulse::new(&config).inspect_err(|e| {
-        error!("baru: error while creating pulse module, {}", e);
-    })?));
-    let mut baru = Baru::with_config(&config, &pulse)
+    let mut baru = Baru::with_config(&config)
         .inspect_err(|e| error!("failed to create baru instance {}", e))?;
     info!("baru instance initialized");
 
