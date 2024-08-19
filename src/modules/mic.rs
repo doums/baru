@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, error, instrument};
+use tracing::{debug, instrument};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);

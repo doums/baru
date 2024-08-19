@@ -67,12 +67,12 @@ impl<'a> Default for InternalConfig<'a> {
     }
 }
 
-#[instrument]
+#[instrument(skip(path))]
 fn check_input_file(path: &str, n: u32) -> bool {
     fs::metadata(format!("{path}/temp{n}_input"))
         .map(|m| m.is_file())
-        .inspect_err(|_e| {
-            warn!("input file not found: temp{n}_input");
+        .inspect_err(|e| {
+            warn!("input file not found `temp{n}_input`, {}", e);
         })
         .unwrap_or(false)
 }

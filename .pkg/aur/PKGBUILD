@@ -3,7 +3,7 @@
 pkgname=baru
 pkgver=0.1.0
 pkgrel=1
-pkgdesc='A system monitor written in Rust and C'
+pkgdesc='A simple system monitor for WM statusbar'
 arch=('x86_64')
 url='https://github.com/doums/baru'
 license=('MPL2')

@@ -3,11 +3,11 @@
 
 ## baru
 
-A simple system monitor for WM statusbars
+A simple system monitor for WM statusbar
 
 ![baru](https://raw.githubusercontent.com/doums/baru/master/public/baru.png)
 
-Baru is a lightweight system monitor for WM status-bars.\
+Baru is a lightweight system monitor for WM status-bar.\
 It can be used as a provider with any status-bar that can read from `stdout`.\
 Like [xmobar](https://codeberg.org/xmobar/xmobar),
 [lemonbar](https://github.com/LemonBoy/bar),

@@ -1,6 +1,7 @@
 [package]
 name = "baru"
 version = "0.4.0"
+description = "A simple system monitor for WM statusbar"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2021"
 links = "netlink,audio"
