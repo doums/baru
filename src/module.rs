@@ -12,6 +12,7 @@ use crate::modules::memory::Memory;
 use crate::modules::mic::Mic;
 use crate::modules::sound::Sound;
 use crate::modules::temperature::Temperature;
+use crate::modules::weather::Weather;
 use crate::modules::wired::Wired;
 use crate::modules::wireless::Wireless;
 use crate::Config;
@@ -41,6 +42,7 @@ pub enum Module<'a> {
     Sound(Sound<'a>),
     Temperature(Temperature<'a>),
     Wireless(Wireless<'a>),
+    Weather(Weather<'a>),
 }
 
 impl<'a> TryFrom<(char, &'a Config)> for Module<'a> {
@@ -56,6 +58,7 @@ impl<'a> TryFrom<(char, &'a Config)> for Module<'a> {
             'f' => Ok(Module::CpuFreq(CpuFreq::with_config(config))),
             'i' => Ok(Module::Mic(Mic::with_config(config))),
             'm' => Ok(Module::Memory(Memory::with_config(config))),
+            'r' => Ok(Module::Weather(Weather::with_config(config))),
             's' => Ok(Module::Sound(Sound::with_config(config))),
             't' => Ok(Module::Temperature(Temperature::with_config(config))),
             'w' => Ok(Module::Wireless(Wireless::with_config(config))),
@@ -77,6 +80,7 @@ impl<'a> Bar for Module<'a> {
             Module::Wired(m) => m.name(),
             Module::Sound(m) => m.name(),
             Module::Temperature(m) => m.name(),
+            Module::Weather(m) => m.name(),
             Module::Wireless(m) => m.name(),
         }
     }
@@ -92,6 +96,7 @@ impl<'a> Bar for Module<'a> {
             Module::Mic(m) => m.run_fn(),
             Module::Sound(m) => m.run_fn(),
             Module::Temperature(m) => m.run_fn(),
+            Module::Weather(m) => m.run_fn(),
             Module::Wired(m) => m.run_fn(),
             Module::Wireless(m) => m.run_fn(),
         }
@@ -109,6 +114,7 @@ impl<'a> Bar for Module<'a> {
             Module::Mic(m) => m.placeholder(),
             Module::Sound(m) => m.placeholder(),
             Module::Temperature(m) => m.placeholder(),
+            Module::Weather(m) => m.placeholder(),
             Module::Wireless(m) => m.placeholder(),
         }
     }
@@ -125,6 +131,7 @@ impl<'a> Bar for Module<'a> {
             Module::Mic(m) => m.format(),
             Module::Sound(m) => m.format(),
             Module::Temperature(m) => m.format(),
+            Module::Weather(m) => m.format(),
             Module::Wireless(m) => m.format(),
         }
     }

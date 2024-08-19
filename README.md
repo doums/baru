@@ -33,6 +33,7 @@ Like [xmobar](https://codeberg.org/xmobar/xmobar),
 * brightness
 * cpu usage, frequency and temperature
 * memory (percent or used/total in gigabyte/gibibyte)
+* weather (wttr.in)
 * dynamic and customizable labels
 * customizable format output
 * configuration in YAML
@@ -137,8 +138,8 @@ baru -l file
 
 ### implementation details
 
-Baru gathers the information from `/sys` and `/proc` filesystems\
-(filled by the kernel). Except audio and network modules which use C libraries.\
+Baru gathers the information from `/sys` and `/proc` filesystems (filled by the kernel).\
+Except audio and network modules which use C libraries.\
 All modules are threaded and loaded on-demand.\
 Thanks to this modular design (as well Rust and C), baru is lightweight and
 efficient.\

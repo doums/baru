@@ -11,5 +11,6 @@ pub mod memory;
 pub mod mic;
 pub mod sound;
 pub mod temperature;
+pub mod weather;
 pub mod wired;
 pub mod wireless;

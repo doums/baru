@@ -7,9 +7,10 @@ mod error;
 mod module;
 mod modules;
 mod netlink;
-pub mod pulse;
+mod pulse;
 pub mod trace;
 pub mod util;
+mod http;
 
 use anyhow::{anyhow, Result};
 use error::Error;
@@ -23,6 +24,7 @@ use modules::memory::Config as MemoryConfig;
 use modules::mic::Config as MicConfig;
 use modules::sound::Config as SoundConfig;
 use modules::temperature::Config as TemperatureConfig;
+use modules::weather::Config as WeatherConfig;
 use modules::wired::Config as WiredConfig;
 use modules::wireless::Config as WirelessConfig;
 use serde::{Deserialize, Serialize};
@@ -31,6 +33,10 @@ use std::thread;
 use tracing::{error, info, instrument};
 
 #[derive(Debug)]
+/// Message sent by modules.
+/// `0`: module key,
+/// `1`: value,
+/// `2`: label
 pub struct ModuleMsg(char, Option<String>, Option<String>);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -47,6 +53,7 @@ pub struct Config {
     mic: Option<MicConfig>,
     sound: Option<SoundConfig>,
     temperature: Option<TemperatureConfig>,
+    weather: Option<WeatherConfig>,
     wired: Option<WiredConfig>,
     wireless: Option<WirelessConfig>,
 }

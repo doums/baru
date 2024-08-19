@@ -25,6 +25,7 @@
 # f => cpu frequency
 # m => memory
 # i => mic
+# r => weather
 # s => sound
 # t => temperature
 # w => wireless
@@ -401,6 +402,76 @@ mic:
   # The module format.
   #
   format: '%l_%v'
+
+
+# # # # # # # # # #
+# Weather module  #
+# # # # # # # # # #
+
+weather:
+  # The weather data is fetched from https://wttr.in/ API.
+  # Takes the following options:
+
+  # tick: u32, default: 5
+  #
+  # The refresh rate in **minutes** of the weather data.
+  #
+  tick: 5
+
+  # location: String, default: None
+  #
+  # If not provided, it defaults to the current location based on the IP address.
+  # see https://wttr.in/:help
+  #
+  location: 'Monte+Cinto'
+
+  # wttr_format: String, default: %C+%t
+  #
+  # wttr.in `format` URL parameter
+  # see https://github.com/chubin/wttr.in?tab=readme-ov-file#one-line-output
+  #
+  wttr_format: '%C+%t'
+
+  # unit: enum Unit { Metric, MetricMs, Uscs }, default: Metric
+  #
+  # wttr.in unit URL parameters
+  # - Metric: Celsius for temperature, km/h for wind speed
+  # - MetricMs: Celsius for temperature, m/s for wind speed
+  # - Uscs: Fahrenheit for temperature, mph for wind speed
+  # see https://wttr.in/:help
+  #
+  unit: 'Metric'
+
+  # lang: String, default: None
+  #
+  # wttr.in `lang` URL parameter (two-letter language code)
+  # see https://wttr.in/:help
+  #
+  lang: 'en'
+
+  # compact_temp: Bool, default: false
+  #
+  # Trim temperature output to only the value° (and minus sign) without the unit.
+  #
+  compact_temp: false
+
+  # placeholder: String, default: -
+  #
+  # Value to display when there is no data available yet.
+  #
+  placeholder: '-'
+
+  # label: String, default: wtr
+  #
+  # The module label.
+  #
+  label: wtr
+
+  # format: String, default: %l:%v
+  #
+  # The module format.
+  #
+  format: '%l:%v'
 
 
 # # # # # # # # #
