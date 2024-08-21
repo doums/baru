@@ -409,51 +409,78 @@ mic:
 # # # # # # # # # #
 
 weather:
-  # The weather data is fetched from https://wttr.in/ API.
-  # Takes the following options:
+  # Module to display the current weather condition and temperature.
+  # The weather condition is either shown as an icon or as a text.
+  # The data is fetched from https://openweathermap.org/current API.
+  # It takes the following options:
 
-  # tick: u32, default: 5
+  # tick: u32, default: 120
   #
-  # The refresh rate in **minutes** of the weather data.
+  # The refresh rate in **seconds** of the weather data.
   #
-  tick: 5
+  tick: 120
 
-  # location: String, default: None
+  # location: { lat: f32, lon: f32 } | String, required
   #
-  # If not provided, it defaults to the current location based on the IP address.
-  # see https://wttr.in/:help
+  # The location of the weather data. It can be either coordinates
+  # (latitude and longitude) or a city name/zip-code.
+  # ⚠ city name/zip-code is deprecated by the openweather API.
   #
-  location: 'Monte+Cinto'
+  location:
+    lat: 42.38
+    lon: 8.94
 
-  # wttr_format: String, default: %C+%t
+  # api_key: String, required
   #
-  # wttr.in `format` URL parameter
-  # see https://github.com/chubin/wttr.in?tab=readme-ov-file#one-line-output
+  # Your openweathermap API key.
+  # see https://home.openweathermap.org/api_keys
   #
-  wttr_format: '%C+%t'
+  api_key: 'xxx'
 
-  # unit: enum Unit { Metric, MetricMs, Uscs }, default: Metric
+  # unit: standard | metric | imperial, default: metric
   #
-  # wttr.in unit URL parameters
-  # - Metric: Celsius for temperature, km/h for wind speed
-  # - MetricMs: Celsius for temperature, m/s for wind speed
-  # - Uscs: Fahrenheit for temperature, mph for wind speed
-  # see https://wttr.in/:help
+  # The unit of the temperature.
+  # - standard: Kelvin
+  # - metric: Celsius
+  # - imperial: Fahrenheit
   #
-  unit: 'Metric'
+  unit: 'metric'
 
   # lang: String, default: None
   #
-  # wttr.in `lang` URL parameter (two-letter language code)
-  # see https://wttr.in/:help
+  # Two-letter language code
   #
   lang: 'en'
 
-  # compact_temp: Bool, default: false
+  # icons: List of IconSet, default: None
   #
-  # Trim temperature output to only the value° (and minus sign) without the unit.
+  # Possible icons:
+  # clear_sky partly_cloudy cloudy very_cloudy shower_rain rain
+  # thunderstorm snow mist default
   #
-  compact_temp: false
+  # For each weather condition, you can provide a list of two icons variants.
+  # First is for the day and second for the night.
+  # Or provide a single icon for both.
+  # Each icon is optional.
+  #
+  icons:
+    clear_sky: ['󰖙', '󰖔']
+    partly_cloudy: ['󰖕', '󰼱']
+    cloudy: '󰖐'
+    very_cloudy: '󰖐'
+    shower_rain: '󰖖'
+    rain: '󰖖'
+    thunderstorm: '󰖓'
+    snow: '󰖘'
+    mist: '󰖑'
+    default: '󰖐'
+
+  # text_mode: Bool, default: true
+  #
+  # Display the weather condition as a short text (instead of an icon).
+  # It is the default if no icon is provided.
+  #
+  text_mode: false
 
   # placeholder: String, default: -
   #
@@ -467,11 +494,11 @@ weather:
   #
   label: wtr
 
-  # format: String, default: %l:%v
+  # format: String, default: %v
   #
   # The module format.
   #
-  format: '%l:%v'
+  format: '%v'
 
 
 # # # # # # # # #

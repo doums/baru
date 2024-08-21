@@ -33,7 +33,7 @@ Like [xmobar](https://codeberg.org/xmobar/xmobar),
 * brightness
 * cpu usage, frequency and temperature
 * memory (percent or used/total in gigabyte/gibibyte)
-* weather (wttr.in)
+* current weather condition and temperature ([OpenWeather](https://openweathermap.org/))
 * dynamic and customizable labels
 * customizable format output
 * configuration in YAML
@@ -120,6 +120,23 @@ wireless:
   label: 'w'
   disconnected_label: '\'
   format: '%v %l'
+weather:
+  tick: 300 # seconds
+  # your openweathermap api key
+  api_key: 1234567890
+  location: 'Metz'
+  unit: metric
+  icons:
+    clear_sky: ['󰖙', '󰖔'] # day, night
+    partly_cloudy: ['󰖕', '󰼱']
+    cloudy: '󰖐'
+    very_cloudy: '󰖐'
+    shower_rain: '󰖖'
+    rain: '󰖖'
+    thunderstorm: '󰖓'
+    snow: '󰖘'
+    mist: '󰖑'
+  format: '%v'
 ```
 
 ### usage
