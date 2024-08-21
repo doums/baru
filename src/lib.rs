@@ -4,13 +4,13 @@
 
 pub mod cli;
 mod error;
+mod http;
 mod module;
 mod modules;
 mod netlink;
 mod pulse;
 pub mod trace;
 pub mod util;
-mod http;
 
 use anyhow::{anyhow, Result};
 use error::Error;
@@ -43,6 +43,7 @@ pub struct ModuleMsg(char, Option<String>, Option<String>);
 pub struct Config {
     format: String,
     pub tick: Option<u32>,
+    failed_icon: Option<String>,
     pulse_tick: Option<u32>,
     battery: Option<BatteryConfig>,
     brightness: Option<BrightnessConfig>,
@@ -87,25 +88,26 @@ impl<'a> Baru<'a> {
     }
 
     #[instrument(skip_all)]
-    pub fn start(&self) -> Result<()> {
+    pub fn start(&mut self) -> Result<()> {
         // check if any module needs pulse, i.e. sound or mic modules
         let need_pulse = self.modules.iter().any(|m| m.key == 's' || m.key == 'i');
         if need_pulse {
             pulse::init(self.config);
         }
-        for data in &self.modules {
+        for data in &mut self.modules {
             let builder = thread::Builder::new().name(format!("mod_{}", data.module.name()));
             let cloned_m_conf = self.config.clone();
             let tx1 = mpsc::Sender::clone(&self.channel.0);
             let run = data.module.run_fn();
             let key = data.key;
             let c_name = data.module.name().to_string();
-            builder.spawn(move || -> Result<(), Error> {
-                info!("[{}] module starting", c_name);
+            let handle = builder.spawn(move || -> Result<(), Error> {
                 run(key, cloned_m_conf, tx1)
                     .inspect_err(|e| error!("[{}] module failed: {}", c_name, e))?;
                 Ok(())
             })?;
+            data.start(handle);
+            info!("[{}] module started", data.module.name());
         }
         Ok(())
     }
@@ -124,6 +126,7 @@ impl<'a> Baru<'a> {
     pub fn update(&mut self) -> Result<()> {
         let messages: Vec<ModuleMsg> = self.channel.1.try_iter().collect();
         for module in &mut self.modules {
+            module.update_state().ok();
             let mut iter = messages.iter().rev();
             let message = iter.find(|v| v.0 == module.key);
             if let Some(value) = message {

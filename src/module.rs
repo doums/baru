@@ -17,8 +17,14 @@ use crate::modules::wired::Wired;
 use crate::modules::wireless::Wireless;
 use crate::Config;
 use crate::ModuleMsg;
+
+use anyhow::{anyhow, Result};
 use std::convert::TryFrom;
 use std::sync::mpsc::Sender;
+use std::thread::JoinHandle;
+use tracing::{error, info, instrument};
+
+const MODULE_FAILED_ICON: &str = "✗";
 
 pub type RunPtr = fn(char, Config, Sender<ModuleMsg>) -> Result<(), Error>;
 
@@ -137,19 +143,39 @@ impl<'a> Bar for Module<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum ModuleState {
+    NotStarted,
+    Running,
+    /// Module's `run` function returned without errors
+    Finished,
+    /// Module's `run` function returned an error or panicked
+    Failed,
+}
+
 #[derive(Debug)]
 pub struct ModuleData<'a> {
     pub key: char,
     pub module: Module<'a>,
     data: Option<String>,
+    state: ModuleState,
+    handle: Option<JoinHandle<Result<(), Error>>>,
+    failed_placeholder: String,
 }
 
 impl<'a> ModuleData<'a> {
-    pub fn new(key: char, config: &'a Config) -> Result<Self, Error> {
+    pub fn new(key: char, config: &'a Config) -> Result<Self> {
         Ok(ModuleData {
             key,
             module: Module::try_from((key, config))?,
             data: None,
+            state: ModuleState::NotStarted,
+            handle: None,
+            failed_placeholder: config
+                .failed_icon
+                .as_ref()
+                .map(|icon| format!("{}:{}", &key, icon))
+                .unwrap_or_else(|| format!("{}:{}", &key, MODULE_FAILED_ICON)),
         })
     }
 
@@ -167,10 +193,53 @@ impl<'a> ModuleData<'a> {
     }
 
     pub fn output(&self) -> &str {
+        if matches!(self.state, ModuleState::Failed) {
+            return &self.failed_placeholder;
+        }
+
         if let Some(data) = &self.data {
             data
         } else {
             self.module.placeholder()
         }
+    }
+
+    pub fn start(&mut self, handle: JoinHandle<Result<(), Error>>) {
+        self.handle = Some(handle);
+        self.state = ModuleState::Running;
+    }
+
+    #[instrument(skip_all)]
+    pub fn update_state(&mut self) -> Result<()> {
+        let Some(handle) = &self.handle else {
+            return Ok(());
+        };
+        if !handle.is_finished() {
+            return Ok(());
+        }
+
+        // module thread has finished for some reason, join it
+        // and update the state accordingly
+        self.state = match self
+            .handle
+            .take()
+            .ok_or(anyhow!("failed to unwrap handle"))?
+            .join()
+        {
+            Ok(Ok(_)) => {
+                info!("[{}] module finished", self.module.name());
+                ModuleState::Finished
+            }
+            Ok(Err(e)) => {
+                error!("[{}] module failed: {}", self.module.name(), e);
+                ModuleState::Failed
+            }
+            Err(_) => {
+                let msg = format!("[{}] module panicked", self.module.name());
+                error!("{}", &msg);
+                ModuleState::Failed
+            }
+        };
+        Ok(())
     }
 }

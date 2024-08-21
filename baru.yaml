@@ -46,6 +46,11 @@ tick: 100
 #
 pulse_tick: 100
 
+# failed_icon: String, default: ✗
+#
+# The icon printed when a module has failed.
+#
+failed_icon: '✗'
 
 # Each module take a "format" option.
 # This option is a string and the following markups will be replaced respectively by the value and the label of the module:
