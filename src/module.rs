@@ -235,8 +235,7 @@ impl<'a> ModuleData<'a> {
                 ModuleState::Failed
             }
             Err(_) => {
-                let msg = format!("[{}] module panicked", self.module.name());
-                error!("{}", &msg);
+                error!("[{}] module panicked", self.module.name());
                 ModuleState::Failed
             }
         };

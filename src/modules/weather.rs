@@ -57,7 +57,10 @@ impl WeatherIcons {
             11 => &self.thunderstorm,
             13 => &self.snow,
             50 => &self.mist,
-            _ => &self.clear_sky,
+            _ => {
+                warn!("unknown weather icon code: {}", code);
+                &self.clear_sky
+            }
         }
     }
 }

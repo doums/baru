@@ -15,13 +15,7 @@ Like [xmobar](https://codeberg.org/xmobar/xmobar),
 
 ---
 
-- [features](#features)
-- [prerequisite](#prerequisite)
-- [install](#install)
-- [configuration](#configuration)
-- [usage](#usage)
-- [credits](#credits)
-- [license](#license)
+[features](#features) ∎ [prerequisite](#prerequisite) ∎ [install](#install) ∎ [configuration](#configuration) ∎ [usage](#usage) ∎ [credits](#credits) ∎ [license](#license)
 
 ### features
 
@@ -33,8 +27,9 @@ Like [xmobar](https://codeberg.org/xmobar/xmobar),
 * brightness
 * cpu usage, frequency and temperature
 * memory (percent or used/total in gigabyte/gibibyte)
-* current weather condition and temperature ([OpenWeather](https://openweathermap.org/))
-* dynamic and customizable labels
+* weather current condition and
+  temperature ([OpenWeatherMap](https://openweathermap.org/))
+* dynamic and customizable labels, play nicely with icons and [nerd-fonts](https://www.nerdfonts.com/)
 * customizable format output
 * configuration in YAML
 
@@ -127,8 +122,8 @@ weather:
   location: 'Metz'
   unit: metric
   icons:
-    clear_sky: ['󰖙', '󰖔'] # day, night
-    partly_cloudy: ['󰖕', '󰼱']
+    clear_sky: [ '󰖙', '󰖔' ] # day, night
+    partly_cloudy: [ '󰖕', '󰼱' ]
     cloudy: '󰖐'
     very_cloudy: '󰖐'
     shower_rain: '󰖖'
@@ -147,7 +142,8 @@ baru -h
 
 When spawning baru from your WM/status-bar you can pass the `-l file` flag\
 if you want baru to log into a file (useful for debugging).\
-Logs are written to the directory `$XDG_CACHE_HOME/baru/` (default to `$HOME/.cache/baru/`).
+Logs are written to the directory `$XDG_CACHE_HOME/baru/` (default
+to `$HOME/.cache/baru/`).
 
 ```shell
 baru -l file
@@ -155,7 +151,8 @@ baru -l file
 
 ### implementation details
 
-Baru gathers the information from `/sys` and `/proc` filesystems (filled by the kernel).\
+Baru gathers the information from `/sys` and `/proc` filesystems (filled by the
+kernel).\
 Except audio and network modules which use C libraries.\
 All modules are threaded and loaded on-demand.\
 Thanks to this modular design (as well Rust and C), baru is lightweight and
