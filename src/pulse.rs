@@ -8,7 +8,7 @@ use anyhow::Result;
 use once_cell::sync::OnceCell;
 use std::os::raw::c_char;
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::thread::{self, JoinHandle};
 use std::{ffi::CString, ptr};
 use tracing::{error, info, instrument, warn};
@@ -30,7 +30,7 @@ pub struct Pulse(
     Receiver<PulseData>,
 );
 
-pub static PULSE: OnceCell<Arc<Mutex<Pulse>>> = OnceCell::new();
+pub static PULSE: OnceCell<Mutex<Pulse>> = OnceCell::new();
 
 #[instrument(skip_all)]
 pub fn init(config: &Config) {
@@ -42,7 +42,7 @@ pub fn init(config: &Config) {
                     error!("error pulse module: {}", e);
                 })
                 .unwrap();
-            Arc::new(Mutex::new(pulse))
+            Mutex::new(pulse)
         })
         .inspect_err(|_| {
             warn!("error initializing pulse module: already initialized");
