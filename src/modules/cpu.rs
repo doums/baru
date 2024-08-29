@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -115,14 +116,19 @@ impl<'a> Bar for Cpu<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
+pub fn run(
+    running: &AtomicBool,
+    key: char,
+    main_config: MainConfig,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     debug!("{:#?}", config);
     let mut prev_idle = 0;
     let mut prev_total = 0;
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
-    loop {
+    while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
         let proc_stat = File::open(config.proc_stat)?;
         let mut reader = BufReader::new(proc_stat);
@@ -158,4 +164,5 @@ pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<
             thread::sleep(config.tick - iteration_end);
         }
     }
+    Ok(())
 }

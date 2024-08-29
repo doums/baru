@@ -8,6 +8,7 @@ use crate::util::read_and_parse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::fs::{read_dir, DirEntry};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -177,12 +178,17 @@ impl<'a> Bar for CpuFreq<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
+pub fn run(
+    running: &AtomicBool,
+    key: char,
+    main_config: MainConfig,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::try_from(&main_config)?;
     debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
-    loop {
+    while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
         let freqs: Vec<f32> = read_dir(Path::new(SYSFS_CPUFREQ))?
             .filter_map(|entry| entry.ok())
@@ -216,6 +222,7 @@ pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<
             thread::sleep(config.tick - iteration_end);
         }
     }
+    Ok(())
 }
 
 fn humanize(average: f32, unit: Unit) -> String {

@@ -1,6 +1,6 @@
 [package]
 name = "baru"
-version = "0.4.1"
+version = "0.4.2"
 description = "A simple system monitor for WM statusbar"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2021"
@@ -22,6 +22,7 @@ once_cell = "1.19.0"
 chrono = "0.4"
 regex = "1"
 reqwest = { version = "0.12.6", features = ["blocking", "json"] }
+signal-hook = "0.3.17"
 
 [build-dependencies]
 cmake = "0.1"

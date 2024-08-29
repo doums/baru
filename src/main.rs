@@ -4,11 +4,12 @@
 
 use anyhow::{Context, Result};
 use baru::cli::Cli;
-use baru::{trace, util, Baru, Config};
+use baru::{signal, trace, util, Baru, Config, RUN};
 use clap::Parser;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info};
@@ -21,6 +22,8 @@ const TICK_RATE: Duration = Duration::from_millis(50);
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let _g = trace::init(cli.logs).context("failed to init tracing")?;
+
+    signal::catch_signals()?;
 
     let home = env::var("HOME")?;
     let mut config_dir = env::var(XDG_CONFIG_HOME)
@@ -56,7 +59,7 @@ fn main() -> Result<()> {
     let mut iteration_end: Duration;
 
     info!("launching main loop");
-    loop {
+    while RUN.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
         baru.update()
             .inspect_err(|e| error!("failed to update: {}", e))?;
@@ -65,4 +68,8 @@ fn main() -> Result<()> {
             thread::sleep(tick - iteration_end);
         }
     }
+
+    baru.cleanup();
+    info!("exiting");
+    Ok(())
 }

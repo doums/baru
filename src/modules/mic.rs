@@ -7,10 +7,11 @@ use crate::module::{Bar, RunPtr};
 use crate::pulse::PULSE;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, instrument};
+use tracing::{debug, error, instrument};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(50);
@@ -103,15 +104,27 @@ impl<'a> Bar for Mic<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
+pub fn run(
+    running: &AtomicBool,
+    key: char,
+    main_config: MainConfig,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
     let pulse = PULSE.get().ok_or("pulse module not initialized")?;
-    loop {
+    while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
-        if let Some(data) = pulse.lock().unwrap().source_data() {
+        if let Some(data) = pulse
+            .lock()
+            .map_err(|e| {
+                error!("failed to lock pulse module: {}", e);
+                Error::new("failed to lock pulse module")
+            })?
+            .source_data()
+        {
             let label = match data.1 {
                 true => config.mute_label,
                 false => config.label,
@@ -127,4 +140,5 @@ pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<
             thread::sleep(config.tick - iteration_end);
         }
     }
+    Ok(())
 }

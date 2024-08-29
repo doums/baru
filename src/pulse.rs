@@ -24,35 +24,30 @@ pub struct PulseData(pub u32, pub bool);
 #[repr(C)]
 pub struct CallbackContext(Sender<PulseData>, Sender<PulseData>);
 
-pub struct Pulse(
-    JoinHandle<Result<(), Error>>,
-    Receiver<PulseData>,
-    Receiver<PulseData>,
-);
+/// 0: sink, 1: source
+pub struct Pulse(Receiver<PulseData>, Receiver<PulseData>);
 
 pub static PULSE: OnceCell<Mutex<Pulse>> = OnceCell::new();
 
 #[instrument(skip_all)]
-pub fn init(config: &Config) {
+pub fn init(config: &Config) -> Result<JoinHandle<Result<(), Error>>> {
+    let (pulse, handle) = Pulse::new(config).inspect_err(|e| {
+        error!("error pulse module: {}", e);
+    })?;
+
+    info!("initializing pulse module");
     PULSE
-        .set({
-            info!("initializing pulse module");
-            let pulse = Pulse::new(config)
-                .inspect_err(|e| {
-                    error!("error pulse module: {}", e);
-                })
-                .unwrap();
-            Mutex::new(pulse)
-        })
+        .set(Mutex::new(pulse))
         .inspect_err(|_| {
             warn!("error initializing pulse module: already initialized");
         })
         .ok();
+    Ok(handle)
 }
 
 impl Pulse {
     #[instrument(skip_all)]
-    pub fn new(config: &Config) -> Result<Self, Error> {
+    pub fn new(config: &Config) -> Result<(Self, JoinHandle<Result<(), Error>>), Error> {
         let (sink_tx, sink_rx) = mpsc::channel();
         let (source_tx, source_rx) = mpsc::channel();
         let tick = match config.pulse_tick {
@@ -67,7 +62,7 @@ impl Pulse {
         if let Some(c) = &config.mic {
             source_name = c.source_name.clone();
         }
-        let builder = thread::Builder::new().name("pulse_mod".into());
+        let builder = thread::Builder::new().name("pulse".into());
         let handle = builder.spawn(move || -> Result<(), Error> {
             let cb_context = CallbackContext(sink_tx, source_tx);
             pulse_run(
@@ -78,17 +73,18 @@ impl Pulse {
                 sink_cb,
                 source_cb,
             );
+            info!("pulse module stopped");
             Ok(())
         })?;
-        Ok(Pulse(handle, sink_rx, source_rx))
+        Ok((Pulse(sink_rx, source_rx), handle))
     }
 
     pub fn sink_data(&self) -> Option<PulseData> {
-        self.1.try_iter().last()
+        self.0.try_iter().last()
     }
 
     pub fn source_data(&self) -> Option<PulseData> {
-        self.2.try_iter().last()
+        self.1.try_iter().last()
     }
 }
 
@@ -113,6 +109,7 @@ extern "C" fn source_cb(context: *const CallbackContext, volume: u32, mute: bool
 #[link(name = "audio", kind = "static")]
 extern "C" {
     fn run(
+        run: *const bool,
         tick: u32,
         sink_name: *const c_char,
         source_name: *const c_char,
@@ -143,7 +140,16 @@ pub fn pulse_run(
         c_string_source = CString::new(s).expect("CString::new failed");
         ptr_source = c_string_source.as_ptr();
     };
+
     unsafe {
-        run(tick, ptr_sink, ptr_source, context_ptr, sink_cb, source_cb);
+        run(
+            super::RUN.as_ptr(),
+            tick,
+            ptr_sink,
+            ptr_source,
+            context_ptr,
+            sink_cb,
+            source_cb,
+        );
     }
 }

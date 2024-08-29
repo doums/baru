@@ -164,8 +164,8 @@ void iterate(t_main *main) {
     clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
 }
 
-void run(uint32_t tick, const char *sink_name, const char *source_name, void *cb_context, send_cb sink_cb,
-         send_cb source_cb) {
+void run(bool *running, uint32_t tick, const char *sink_name, const char *source_name, void *cb_context,
+        send_cb sink_cb, send_cb source_cb) {
     pa_proplist *proplist;
     t_main main;
     t_data sink;
@@ -223,7 +223,7 @@ void run(uint32_t tick, const char *sink_name, const char *source_name, void *cb
     pa_context_set_subscribe_callback(main.context, subscription_cb, &main);
 
     // iterate main loop
-    while (alive) {
+    while (*running == true) {
         iterate(&main);
     }
 

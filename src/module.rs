@@ -20,13 +20,14 @@ use crate::ModuleMsg;
 
 use anyhow::{anyhow, Result};
 use std::convert::TryFrom;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::Sender;
 use std::thread::JoinHandle;
 use tracing::{error, info, instrument};
 
 const MODULE_FAILED_ICON: &str = "✗";
 
-pub type RunPtr = fn(char, Config, Sender<ModuleMsg>) -> Result<(), Error>;
+pub type RunPtr = fn(&AtomicBool, char, Config, Sender<ModuleMsg>) -> Result<(), Error>;
 
 pub trait Bar {
     fn name(&self) -> &str;
@@ -240,5 +241,16 @@ impl<'a> ModuleData<'a> {
             }
         };
         Ok(())
+    }
+
+    #[instrument(skip_all)]
+    pub fn _terminate(&mut self) {
+        if let Some(handle) = self.handle.take() {
+            match handle.join() {
+                Ok(Ok(_)) => info!("[{}] module terminated", self.module.name()),
+                Ok(Err(e)) => error!("[{}] module failed: {}", self.module.name(), e),
+                Err(_) => error!("[{}] module panicked", self.module.name()),
+            };
+        }
     }
 }

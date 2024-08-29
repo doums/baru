@@ -7,6 +7,7 @@ use crate::module::{Bar, RunPtr};
 use crate::netlink::{self, WirelessState};
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -132,12 +133,17 @@ impl<'a> Bar for Wireless<'a> {
 }
 
 #[instrument(skip_all)]
-pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<(), Error> {
+pub fn run(
+    running: &AtomicBool,
+    key: char,
+    main_config: MainConfig,
+    tx: Sender<ModuleMsg>,
+) -> Result<(), Error> {
     let config = InternalConfig::from(&main_config);
     debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
-    loop {
+    while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
         let label;
         let mut essid = "".to_owned();
@@ -182,4 +188,5 @@ pub fn run(key: char, main_config: MainConfig, tx: Sender<ModuleMsg>) -> Result<
             thread::sleep(config.tick - iteration_end);
         }
     }
+    Ok(())
 }

@@ -9,6 +9,7 @@ mod module;
 mod modules;
 mod netlink;
 mod pulse;
+pub mod signal;
 pub mod trace;
 pub mod util;
 
@@ -27,10 +28,16 @@ use modules::temperature::Config as TemperatureConfig;
 use modules::weather::Config as WeatherConfig;
 use modules::wired::Config as WiredConfig;
 use modules::wireless::Config as WirelessConfig;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
+use std::thread::JoinHandle;
 use tracing::{error, info, instrument};
+
+// Global application state, used to terminate the main-loop and all modules
+pub static RUN: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(true));
 
 #[derive(Debug)]
 /// Message sent by modules.
@@ -65,6 +72,7 @@ pub struct Baru<'a> {
     format: &'a str,
     markup_matches: Vec<MarkupMatch>,
     channel: (Sender<ModuleMsg>, Receiver<ModuleMsg>),
+    pulse: Option<JoinHandle<Result<(), Error>>>,
 }
 
 #[derive(Debug)]
@@ -84,6 +92,7 @@ impl<'a> Baru<'a> {
             modules,
             format: &config.format,
             markup_matches,
+            pulse: None,
         })
     }
 
@@ -92,7 +101,7 @@ impl<'a> Baru<'a> {
         // check if any module needs pulse, i.e. sound or mic modules
         let need_pulse = self.modules.iter().any(|m| m.key == 's' || m.key == 'i');
         if need_pulse {
-            pulse::init(self.config);
+            self.pulse = Some(pulse::init(self.config)?);
         }
         for data in &mut self.modules {
             let builder = thread::Builder::new().name(format!("mod_{}", data.module.name()));
@@ -102,8 +111,9 @@ impl<'a> Baru<'a> {
             let key = data.key;
             let c_name = data.module.name().to_string();
             let handle = builder.spawn(move || -> Result<(), Error> {
-                run(key, cloned_m_conf, tx1)
+                run(&RUN, key, cloned_m_conf, tx1)
                     .inspect_err(|e| error!("[{}] module failed: {}", c_name, e))?;
+                info!("[{}] module stopped", c_name);
                 Ok(())
             })?;
             data.start(handle);
@@ -145,6 +155,17 @@ impl<'a> Baru<'a> {
     #[instrument(skip(self))]
     pub fn modules(&self) -> Vec<&str> {
         self.modules.iter().map(|m| m.module.name()).collect()
+    }
+
+    #[instrument(skip_all)]
+    pub fn cleanup(&mut self) {
+        if let Some(pulse) = self.pulse.take() {
+            match pulse.join() {
+                Ok(Ok(_)) => info!("pulse module terminated"),
+                Ok(Err(e)) => error!("pulse module failed: {}", e),
+                Err(_) => error!("pulse module panicked"),
+            };
+        }
     }
 }
 

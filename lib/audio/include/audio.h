@@ -29,8 +29,6 @@
 */
 #define VOLUME(N) (uint32_t)(((uint64_t)N * 100 + (uint64_t)PA_VOLUME_NORM / 2) / (uint64_t)PA_VOLUME_NORM)
 
-static bool alive = true;
-
 typedef struct timespec
         t_timespec;
 
@@ -62,7 +60,8 @@ typedef struct main {
     t_data *source;
 } t_main;
 
-void run(uint32_t tick,
+void run(bool *running,
+         uint32_t tick,
          const char *sink_name,
          const char *source_name,
          void *cb_context,
