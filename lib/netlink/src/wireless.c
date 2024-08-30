@@ -4,6 +4,11 @@
 
 // By Clément Dommerc
 
+#include <netlink/genl/genl.h>
+#include <netlink/genl/ctrl.h>
+#include <net/if.h>
+#include <errno.h>
+
 #include "../include/netlink.h"
 
 // Based on NetworkManager/src/platform/wifi/wifi-utils-nl80211.c

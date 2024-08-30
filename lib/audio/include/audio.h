@@ -7,15 +7,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <errno.h>
-#include <string.h>
 #include <pulse/context.h>
-#include <pulse/proplist.h>
 #include <pulse/mainloop.h>
-#include <pulse/def.h>
 #include <pulse/introspect.h>
-#include <pulse/subscribe.h>
 #include <time.h>
 
 #define PREFIX_ERROR "libaudio"

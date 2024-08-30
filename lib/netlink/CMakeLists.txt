@@ -3,7 +3,7 @@ project(netlink)
 include(FindPkgConfig)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_FLAGS "-W -Wall -Wextra -Werror")
 
 add_library(netlink STATIC

@@ -7,26 +7,9 @@
 #ifndef NETLINK_H
 #define NETLINK_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string.h>
-#include <time.h>
-#include <stdarg.h>
-#include <dirent.h>
-#include <regex.h>
 #include <stdbool.h>
-#include <limits.h>
-#include <errno.h>
-#include <sys/socket.h>
-#include <net/if.h>
 #include <netlink/netlink.h>
-#include <netlink/genl/genl.h>
-#include <netlink/genl/ctrl.h>
-#include <netlink/route/addr.h>
 #include <linux/nl80211.h>
 #include <linux/if_ether.h>
 
