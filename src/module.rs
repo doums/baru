@@ -5,8 +5,8 @@
 use crate::error::Error;
 use crate::modules::battery::Battery;
 use crate::modules::brightness::Brightness;
-use crate::modules::cpu::Cpu;
 use crate::modules::cpu_freq::CpuFreq;
+use crate::modules::cpu_usage::CpuUsage;
 use crate::modules::date_time::DateTime;
 use crate::modules::memory::Memory;
 use crate::modules::mic::Mic;
@@ -40,7 +40,7 @@ pub trait Bar {
 pub enum Module<'a> {
     Battery(Battery<'a>),
     Brightness(Brightness<'a>),
-    Cpu(Cpu<'a>),
+    CpuUsage(CpuUsage<'a>),
     CpuFreq(CpuFreq<'a>),
     DateTime(DateTime<'a>),
     Memory(Memory<'a>),
@@ -59,7 +59,7 @@ impl<'a> TryFrom<(char, &'a Config)> for Module<'a> {
         match key {
             'a' => Ok(Module::Battery(Battery::with_config(config))),
             'b' => Ok(Module::Brightness(Brightness::with_config(config))),
-            'c' => Ok(Module::Cpu(Cpu::with_config(config))),
+            'c' => Ok(Module::CpuUsage(CpuUsage::with_config(config))),
             'd' => Ok(Module::DateTime(DateTime::with_config(config))),
             'e' => Ok(Module::Wired(Wired::with_config(config))),
             'f' => Ok(Module::CpuFreq(CpuFreq::with_config(config))),
@@ -79,7 +79,7 @@ impl<'a> Bar for Module<'a> {
         match self {
             Module::Battery(m) => m.name(),
             Module::Brightness(m) => m.name(),
-            Module::Cpu(m) => m.name(),
+            Module::CpuUsage(m) => m.name(),
             Module::CpuFreq(m) => m.name(),
             Module::DateTime(m) => m.name(),
             Module::Memory(m) => m.name(),
@@ -96,7 +96,7 @@ impl<'a> Bar for Module<'a> {
         match self {
             Module::Battery(m) => m.run_fn(),
             Module::Brightness(m) => m.run_fn(),
-            Module::Cpu(m) => m.run_fn(),
+            Module::CpuUsage(m) => m.run_fn(),
             Module::CpuFreq(m) => m.run_fn(),
             Module::DateTime(m) => m.run_fn(),
             Module::Memory(m) => m.run_fn(),
@@ -113,7 +113,7 @@ impl<'a> Bar for Module<'a> {
         match self {
             Module::Battery(m) => m.placeholder(),
             Module::Brightness(m) => m.placeholder(),
-            Module::Cpu(m) => m.placeholder(),
+            Module::CpuUsage(m) => m.placeholder(),
             Module::CpuFreq(m) => m.placeholder(),
             Module::DateTime(m) => m.placeholder(),
             Module::Memory(m) => m.placeholder(),
@@ -130,7 +130,7 @@ impl<'a> Bar for Module<'a> {
         match self {
             Module::Battery(m) => m.format(),
             Module::Brightness(m) => m.format(),
-            Module::Cpu(m) => m.format(),
+            Module::CpuUsage(m) => m.format(),
             Module::CpuFreq(m) => m.format(),
             Module::DateTime(m) => m.format(),
             Module::Memory(m) => m.format(),

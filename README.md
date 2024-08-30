@@ -17,7 +17,7 @@ Like [xmobar](https://codeberg.org/xmobar/xmobar),
 
 [features](#features) ∎ [prerequisite](#prerequisite) ∎ [install](#install) ∎ [configuration](#configuration) ∎ [usage](#usage) ∎ [credits](#credits) ∎ [license](#license)
 
-### features
+### Features
 
 * date and time
 * battery (level, status, design level based)
@@ -33,25 +33,25 @@ Like [xmobar](https://codeberg.org/xmobar/xmobar),
 * customizable format output
 * configuration in YAML
 
-### prerequisite
+### Prerequisite
 
 The following system libraries are required:
 
 - libnl (for wired and wireless modules)
 - libpulse (for sound and mic modules)
 
-### install
+### Install
 
 - Arch Linux (AUR) [package](https://aur.archlinux.org/packages/baru)
 - latest [release](https://github.com/doums/baru/releases)
 
-### configuration
+### Configuration
 
 The binary looks for the config file `baru.yaml` located
 in `$XDG_CONFIG_HOME/baru/` (default to `$HOME/.config/baru/`).\
-If the config file is not found, baru prints an error and exits.\
-All options are
-detailed [here](https://github.com/doums/baru/blob/master/baru.yaml).
+If the config file is not found, baru prints an error and exits.
+
+You can find the full config details [here](https://github.com/doums/baru/blob/master/baru.yaml).
 
 TIPS: To test and debug your config run baru from the terminal like this:
 
@@ -59,11 +59,36 @@ TIPS: To test and debug your config run baru from the terminal like this:
 RUST_LOG=debug baru -l stdout
 ```
 
+Use the root `format` option to customize baru output.\
+You can pick which modules you want to display. Using the special markup `%x`
+where `x` is the letter of the module.
+These markups are replaced by the output of the corresponding modules.
+
+Modules available:
+- `a` battery
+- `b` brightness
+- `c` cpu usage
+- `d` datetime
+- `e` wired
+- `f` cpu frequency
+- `m` memory
+- `i` mic
+- `r` weather
+- `s` sound
+- `t` temperature
+- `w` wireless
+
+Module output:\
+Each module takes a `format` option.\
+`%l` and `%v` are respectively the label and the current value of the module.
+
 #### Config example
 
 ```yaml
 format: '%m  %f  %c  %t  %b  %i  %s   %w%e  %a    %d'
 tick: 50
+
+# modules configuration
 battery:
   full_design: true
   low_level: 30
@@ -72,11 +97,11 @@ battery:
   discharging_label: 'b'
   low_label: '!'
   unknown_label: '?'
-  format: '%l %v'
+  format: '%l %v' # display label and value
 brightness:
   label: 'l'
   format: '%l %v'
-cpu:
+cpu_usage:
   label: 'c'
   high_label: '!'
   format: '%v %l'
@@ -107,7 +132,7 @@ wired:
   discrete: true
   label: 'e'
   disconnected_label: '\'
-  format: '%l'
+  format: '%l' # display label only
 wireless:
   interface: wlan0
   display: Essid
@@ -134,7 +159,7 @@ weather:
   format: '%v'
 ```
 
-### usage
+### Usage
 
 ```shell
 baru -h
@@ -149,7 +174,7 @@ to `$HOME/.cache/baru/`).
 baru -l file
 ```
 
-### implementation details
+### Implementation details
 
 Baru gathers the information from `/sys` and `/proc` filesystems (filled by the
 kernel).\
@@ -171,9 +196,9 @@ In addition, wireless module uses
 the [802.11](https://github.com/torvalds/linux/blob/master/include/uapi/linux/nl80211.h)
 API.
 
-### dev
+### Dev
 
-#### prerequisites
+#### Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - CMake
@@ -183,11 +208,11 @@ API.
 RUST_LOG=trace cargo run -- -l stdout
 ```
 
-### credits
+### Credits
 
 Clément Dommerc for providing me with the C code for the lib `netlink`, wireless
 part.
 
-### license
+### License
 
 Mozilla Public License 2.0

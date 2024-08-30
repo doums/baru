@@ -10,27 +10,27 @@
 
 # format: String, required
 #
-# The format of the output.
+# The global output.
 #
-# A module can be enabled by markup of this form: "%x",
-# where x is the corresponding letter for that module.
-# These markups will be replaced by the output of the corresponding module.
-# Here are the letters:
+# You can pick which modules you want to display. Using the special markup `%x`
+# where `x` is the letter of the module.
+# These markups are replaced by the output of the corresponding modules.
 #
-# a => battery
-# b => brightness
-# c => cpu
-# d => datetime
-# e => wired
-# f => cpu frequency
-# m => memory
-# i => mic
-# r => weather
-# s => sound
-# t => temperature
-# w => wireless
+# Modules available:
+# a → battery
+# b → brightness
+# c → cpu usage
+# d → datetime
+# e → wired
+# f → cpu frequency
+# m → memory
+# i → mic
+# r → weather
+# s → sound
+# t → temperature
+# w → wireless
 #
-# The character "%" can be escaped by prepending a backslash: \%
+# The character "%" can be escaped by prepending a backslash: `\%`
 #
 format: '%c  %t  %b  %s   %w%e %a   %d'
 
@@ -52,10 +52,10 @@ pulse_tick: 100
 #
 failed_icon: '✗'
 
-# Each module take a "format" option.
-# This option is a string and the following markups will be replaced respectively by the value and the label of the module:
-# %v
-# %l
+# Module output:
+# Each module takes a `format` string option.
+# `%l` and `%v` are respectively the label and the current value of the module.
+# Note: for some module, the label can be dynamic. See below.
 
 
 # # # # # # # # # #
@@ -170,11 +170,11 @@ brightness:
   format: '%l:%v'
 
 
-# # # # # # # #
-# Cpu module  #
-# # # # # # # #
+# # # # # # # # # # #
+# Cpu usage module  #
+# # # # # # # # # # #
 
-cpu:
+cpu_usage:
 # Takes the following options:
 
   # tick: u32, default: 500

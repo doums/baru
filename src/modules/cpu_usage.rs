@@ -48,7 +48,7 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
         let mut high_level = HIGH_LEVEL;
         let mut label = LABEL;
         let mut high_label = HIGH_LABEL;
-        if let Some(c) = &config.cpu {
+        if let Some(c) = &config.cpu_usage {
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
             }
@@ -73,16 +73,16 @@ impl<'a> From<&'a MainConfig> for InternalConfig<'a> {
 }
 
 #[derive(Debug)]
-pub struct Cpu<'a> {
+pub struct CpuUsage<'a> {
     placeholder: &'a str,
     format: &'a str,
 }
 
-impl<'a> Cpu<'a> {
+impl<'a> CpuUsage<'a> {
     pub fn with_config(config: &'a MainConfig) -> Self {
         let mut placeholder = PLACEHOLDER;
         let mut format = FORMAT;
-        if let Some(c) = &config.cpu {
+        if let Some(c) = &config.cpu_usage {
             if let Some(p) = &c.placeholder {
                 placeholder = p
             }
@@ -90,16 +90,16 @@ impl<'a> Cpu<'a> {
                 format = v;
             }
         }
-        Cpu {
+        CpuUsage {
             placeholder,
             format,
         }
     }
 }
 
-impl<'a> Bar for Cpu<'a> {
+impl<'a> Bar for CpuUsage<'a> {
     fn name(&self) -> &str {
-        "cpu"
+        "cpu_usage"
     }
 
     fn run_fn(&self) -> RunPtr {

@@ -18,8 +18,8 @@ use error::Error;
 use module::{Bar, ModuleData};
 use modules::battery::Config as BatteryConfig;
 use modules::brightness::Config as BrightnessConfig;
-use modules::cpu::Config as CpuConfig;
 use modules::cpu_freq::Config as CpuFreqConfig;
+use modules::cpu_usage::Config as CpuUsageConfig;
 use modules::date_time::Config as DateTimeConfig;
 use modules::memory::Config as MemoryConfig;
 use modules::mic::Config as MicConfig;
@@ -54,7 +54,7 @@ pub struct Config {
     pulse_tick: Option<u32>,
     battery: Option<BatteryConfig>,
     brightness: Option<BrightnessConfig>,
-    cpu: Option<CpuConfig>,
+    cpu_usage: Option<CpuUsageConfig>,
     cpu_freq: Option<CpuFreqConfig>,
     date_time: Option<DateTimeConfig>,
     memory: Option<MemoryConfig>,

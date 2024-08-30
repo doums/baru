@@ -4,8 +4,8 @@
 
 pub mod battery;
 pub mod brightness;
-pub mod cpu;
 pub mod cpu_freq;
+pub mod cpu_usage;
 pub mod date_time;
 pub mod memory;
 pub mod mic;
