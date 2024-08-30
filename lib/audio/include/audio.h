@@ -6,6 +6,7 @@
 #define AUDIO_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <pulse/context.h>
