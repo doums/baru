@@ -120,7 +120,7 @@ pub fn run(
         let percentage = 100 * brightness / max_brightness;
         tx.send(ModuleMsg(
             key,
-            Some(format!("{:3}%", percentage)),
+            Some(format!("{percentage:3}%")),
             Some(config.label.to_string()),
         ))?;
         iteration_end = iteration_start.elapsed();

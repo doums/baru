@@ -4,7 +4,7 @@
 
 use anyhow::{Context, Result};
 use baru::cli::Cli;
-use baru::{signal, trace, util, Baru, Config, RUN};
+use baru::{Baru, Config, RUN, signal, trace, util};
 use clap::Parser;
 use std::env;
 use std::fs;

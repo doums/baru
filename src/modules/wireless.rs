@@ -170,7 +170,7 @@ pub fn run(
                     if let Some(s) = signal {
                         tx.send(ModuleMsg(
                             key,
-                            Some(format!("{:3}%", s)),
+                            Some(format!("{s:3}%")),
                             Some(label.to_string()),
                         ))?;
                     } else {

@@ -228,7 +228,7 @@ fn build_url(config: &InternalConfig) -> String {
         config.api_key,
     );
     if let Some(lang) = config.lang {
-        url.push_str(&format!("&lang={}", lang));
+        url.push_str(&format!("&lang={lang}"));
     }
     url
 }

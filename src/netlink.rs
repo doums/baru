@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{CStr, CString, c_void};
 use std::os::raw::{c_char, c_int};
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ pub struct WirelessData {
 }
 
 #[link(name = "netlink", kind = "static")]
-extern "C" {
+unsafe extern "C" {
     fn get_wireless_data(interface: *const c_char) -> *const NlWirelessData;
     fn get_wired_data(interface: *const c_char) -> *const NlWiredData;
     fn free_data(data: *const c_void);

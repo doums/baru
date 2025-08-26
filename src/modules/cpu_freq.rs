@@ -7,7 +7,7 @@ use crate::module::{Bar, RunPtr};
 use crate::util::read_and_parse;
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
-use std::fs::{read_dir, DirEntry};
+use std::fs::{DirEntry, read_dir};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -90,7 +90,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
                 high_label = v;
             }
         };
-        let policy_path = format!("{}/policy0", SYSFS_CPUFREQ);
+        let policy_path = format!("{SYSFS_CPUFREQ}/policy0");
         let entries: Vec<DirEntry> = read_dir(Path::new(&policy_path))?
             .filter_map(|entry| entry.ok())
             .collect();

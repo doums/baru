@@ -8,7 +8,7 @@ use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fs::{self, File};
-use std::io::{self, prelude::*, BufReader};
+use std::io::{self, BufReader, prelude::*};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -119,8 +119,8 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             low_level,
             tick,
             uevent,
-            now_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, NOW_ATTRIBUTE),
-            full_attribute: format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, full_attr),
+            now_attribute: format!("{POWER_SUPPLY}_{attribute_prefix}_{NOW_ATTRIBUTE}"),
+            full_attribute: format!("{POWER_SUPPLY}_{attribute_prefix}_{full_attr}"),
             full_label,
             charging_label,
             discharging_label,
@@ -208,7 +208,7 @@ pub fn run(
         };
         tx.send(ModuleMsg(
             key,
-            Some(format!("{:3}%", battery_level)),
+            Some(format!("{battery_level:3}%")),
             Some(label.to_string()),
         ))?;
         iteration_end = iteration_start.elapsed();
@@ -242,8 +242,7 @@ fn parse_attributes(
     }
     if now.is_none() || full.is_none() || status.is_none() {
         return Err(Error::new(format!(
-            "unable to parse the required attributes in {}",
-            uevent
+            "unable to parse the required attributes in {uevent}"
         )));
     }
     Ok((now.unwrap(), full.unwrap(), status.unwrap()))
@@ -274,32 +273,17 @@ fn find_attribute_prefix<'e>(path: &str) -> Result<&'e str, Error> {
     let content = fs::read_to_string(path)?;
     let mut unit = None;
     if content.contains(&format!(
-        "{}_{}_{}=",
-        POWER_SUPPLY, ENERGY_PREFIX, FULL_DESIGN_ATTRIBUTE
-    )) && content.contains(&format!(
-        "{}_{}_{}=",
-        POWER_SUPPLY, ENERGY_PREFIX, FULL_ATTRIBUTE
-    )) && content.contains(&format!(
-        "{}_{}_{}=",
-        POWER_SUPPLY, ENERGY_PREFIX, NOW_ATTRIBUTE
-    )) {
+        "{POWER_SUPPLY}_{ENERGY_PREFIX}_{FULL_DESIGN_ATTRIBUTE}="
+    )) && content.contains(&format!("{POWER_SUPPLY}_{ENERGY_PREFIX}_{FULL_ATTRIBUTE}="))
+        && content.contains(&format!("{POWER_SUPPLY}_{ENERGY_PREFIX}_{NOW_ATTRIBUTE}="))
+    {
         unit = Some(ENERGY_PREFIX);
     } else if content.contains(&format!(
-        "{}_{}_{}=",
-        POWER_SUPPLY, CHARGE_PREFIX, FULL_DESIGN_ATTRIBUTE
-    )) && content.contains(&format!(
-        "{}_{}_{}=",
-        POWER_SUPPLY, CHARGE_PREFIX, FULL_ATTRIBUTE
-    )) && content.contains(&format!(
-        "{}_{}_{}=",
-        POWER_SUPPLY, CHARGE_PREFIX, NOW_ATTRIBUTE
-    )) {
+        "{POWER_SUPPLY}_{CHARGE_PREFIX}_{FULL_DESIGN_ATTRIBUTE}="
+    )) && content.contains(&format!("{POWER_SUPPLY}_{CHARGE_PREFIX}_{FULL_ATTRIBUTE}="))
+        && content.contains(&format!("{POWER_SUPPLY}_{CHARGE_PREFIX}_{NOW_ATTRIBUTE}="))
+    {
         unit = Some(CHARGE_PREFIX);
     }
-    unit.ok_or_else(|| {
-        Error::new(format!(
-            "unable to find the required attributes in {}",
-            path
-        ))
-    })
+    unit.ok_or_else(|| Error::new(format!("unable to find the required attributes in {path}")))
 }

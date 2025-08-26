@@ -7,8 +7,8 @@ use std::{env, fs};
 
 use anyhow::Result;
 use tracing_appender::{non_blocking::WorkerGuard, rolling};
-use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::LevelFilter;
 
 use crate::cli::Logs;
 use crate::util;

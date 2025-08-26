@@ -13,7 +13,7 @@ pub mod signal;
 pub mod trace;
 pub mod util;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use error::Error;
 use module::{Bar, ModuleData};
 use modules::battery::Config as BatteryConfig;

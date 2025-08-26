@@ -7,8 +7,8 @@ use crate::module::{Bar, RunPtr};
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -156,7 +156,7 @@ pub fn run(
         }
         tx.send(ModuleMsg(
             key,
-            Some(format!("{:3}%", usage)),
+            Some(format!("{usage:3}%")),
             Some(label.to_string()),
         ))?;
         iteration_end = iteration_start.elapsed();

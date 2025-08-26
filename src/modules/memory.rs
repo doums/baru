@@ -220,12 +220,12 @@ pub fn run(
         match config.display {
             Display::GB | Display::GiB => tx.send(ModuleMsg(
                 key,
-                Some(format!("{}/{}", used, total)),
+                Some(format!("{used}/{total}")),
                 Some(label.to_string()),
             ))?,
             Display::Percentage => tx.send(ModuleMsg(
                 key,
-                Some(format!("{:3}%", percentage)),
+                Some(format!("{percentage:3}%")),
                 Some(label.to_string()),
             ))?,
         };
@@ -239,9 +239,9 @@ pub fn run(
 
 fn humanize<'a>(v1: f32, v2: f32, u1: &'a str, u2: &'a str) -> String {
     if v1 >= 1.0 {
-        format!("{:4.1}{}", v1, u1)
+        format!("{v1:4.1}{u1}")
     } else {
-        format!("{:4.0}{}", v2, u2)
+        format!("{v2:4.0}{u2}")
     }
 }
 
@@ -253,5 +253,5 @@ fn find_meminfo<'a>(regex: &Regex, meminfo: &'a str, error: &'a str) -> Result<i
         .ok_or_else(|| error.to_string())?
         .as_str()
         .parse::<i32>()
-        .map_err(|err| format!("error while parsing meminfo: {}", err))
+        .map_err(|err| format!("error while parsing meminfo: {err}"))
 }

@@ -69,11 +69,16 @@ impl<'a> Default for InternalConfig<'a> {
 }
 
 #[instrument(skip(path))]
-fn check_input_file(path: &str, n: u32) -> bool {
+fn check_input_file(path: &str, n: u32, warn: bool) -> bool {
     fs::metadata(format!("{path}/temp{n}_input"))
         .map(|m| m.is_file())
         .inspect_err(|e| {
-            warn!("input file not found `temp{n}_input`, {}", e);
+            let msg = format!("input file not found `temp{n}_input`, {e}");
+            if warn {
+                warn!(msg);
+            } else {
+                debug!("{msg}, skipping");
+            }
         })
         .unwrap_or(false)
 }
@@ -89,7 +94,7 @@ fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
 
     match core_inputs {
         CoreInputs::Single(n) => {
-            if check_input_file(temp_dir, *n) {
+            if check_input_file(temp_dir, *n, true) {
                 Some(vec![*n])
             } else {
                 None
@@ -104,7 +109,7 @@ fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
                     return None;
                 }
                 let inputs = (start..end + 1)
-                    .filter(|i| check_input_file(temp_dir, *i))
+                    .filter(|i| check_input_file(temp_dir, *i, false))
                     .collect();
                 return Some(inputs);
             }
@@ -113,7 +118,7 @@ fn get_inputs(core_inputs: &CoreInputs, temp_dir: &str) -> Option<Vec<u32>> {
         }
         CoreInputs::List(list) => Some(
             list.iter()
-                .filter(|i| check_input_file(temp_dir, **i))
+                .filter(|i| check_input_file(temp_dir, **i, true))
                 .copied()
                 .collect(),
         ),
@@ -225,7 +230,7 @@ pub fn run(
         iteration_start = Instant::now();
         let mut inputs = vec![];
         for i in &config.inputs {
-            inputs.push(read_and_parse(&format!("{}/temp{}_input", temp_dir, i))?)
+            inputs.push(read_and_parse(&format!("{temp_dir}/temp{i}_input"))?)
         }
         let sum: i32 = inputs.iter().sum();
         let average = ((sum as f32 / inputs.len() as f32) / 1000_f32).round() as i32;
@@ -235,7 +240,7 @@ pub fn run(
         }
         tx.send(ModuleMsg(
             key,
-            Some(format!("{:3}°", average)),
+            Some(format!("{average:3}°")),
             Some(label.to_string()),
         ))?;
         iteration_end = iteration_start.elapsed();
@@ -247,12 +252,8 @@ pub fn run(
 }
 
 fn find_temp_dir(str_path: &str) -> Result<String, Error> {
-    let entries = fs::read_dir(str_path).map_err(|err| {
-        format!(
-            "error while reading the directory \"{}\": {}",
-            str_path, err
-        )
-    })?;
+    let entries = fs::read_dir(str_path)
+        .map_err(|err| format!("error while reading the directory \"{str_path}\": {err}"))?;
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
@@ -263,7 +264,6 @@ fn find_temp_dir(str_path: &str) -> Result<String, Error> {
         }
     }
     Err(Error::new(format!(
-        "error while resolving coretemp path: no directory found under \"{}\"",
-        str_path
+        "error while resolving coretemp path: no directory found under \"{str_path}\""
     )))
 }
