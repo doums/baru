@@ -8,7 +8,7 @@ A simple system monitor for WM statusbar
 ![baru](https://raw.githubusercontent.com/doums/baru/master/public/baru.png)
 
 Baru is a lightweight system monitor for WM status-bar.\
-It can be used as a provider with any status-bar that can read from `stdout`.\
+Intended to be used as a provider with any status-bar that can read from `stdout`.\
 Like [xmobar](https://codeberg.org/xmobar/xmobar),
 [lemonbar](https://github.com/LemonBoy/bar),
 [dwm](https://dwm.suckless.org/status_monitor/) etc…
@@ -149,7 +149,7 @@ weather:
   icons:
     clear_sky: [ '󰖙', '󰖔' ] # day, night
     partly_cloudy: [ '󰖕', '󰼱' ]
-    cloudy: '󰖐'
+    cloudy: '󰖐' # one icon for both day and night
     very_cloudy: '󰖐'
     shower_rain: '󰖖'
     rain: '󰖖'
