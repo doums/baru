@@ -12,7 +12,7 @@ void print_and_exit(char *err) {
 void *alloc_mem(size_t i) {
     void *p;
 
-    if ((p = malloc(i)) == NULL) {
+    if ((p = malloc(i)) == nullptr) {
         print_and_exit("malloc failed");
     }
     memset(p, 0, i);

@@ -7,8 +7,6 @@
 #ifndef NETLINK_H
 #define NETLINK_H
 
-#include <unistd.h>
-#include <stdbool.h>
 #include <netlink/netlink.h>
 #include <linux/nl80211.h>
 #include <linux/if_ether.h>
@@ -28,7 +26,7 @@ typedef struct      s_wireless {
     bool            signal_found;
     int             nl80211_id;
     unsigned int    if_index;
-    char            *if_name;
+    const char      *if_name;
     uint8_t         bssid[ETH_ALEN];
     char            *essid;
     int             signal;
@@ -47,8 +45,8 @@ typedef struct  s_wired_data {
     bool        has_ip;
 }               t_wired_data;
 
-t_wireless_data *get_wireless_data(char *interface);
-t_wired_data    *get_wired_data(char *interface);
+t_wireless_data *get_wireless_data(const char *interface);
+t_wired_data    *get_wired_data(const char *interface);
 void            free_data(void *data);
 
 /* HELPER */

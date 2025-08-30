@@ -30,39 +30,43 @@ bool has_ip(struct nl_cache *cache, int if_index) {
     if (nl_cache_is_empty(cache)) {
         return false;
     }
-    for (obj = nl_cache_get_first(cache); obj != NULL; obj = nl_cache_get_next(obj)) {
+    for (obj = nl_cache_get_first(cache); obj != nullptr; obj = nl_cache_get_next(obj)) {
         addr = (struct rtnl_addr *) obj;
         index = rtnl_addr_get_ifindex(addr);
         family = rtnl_addr_get_family(addr);
         if (index == if_index
             && (family == AF_INET || family == AF_INET6)
-            && rtnl_addr_get_local(addr) != NULL) {
+            && rtnl_addr_get_local(addr) != nullptr) {
             return true;
         }
     }
     return false;
 }
 
-t_wired_data *get_wired_data(char *interface) {
+t_wired_data *get_wired_data(const char *interface) {
     t_wired_data *data;
     struct nl_sock *sk;
     struct nl_cache *cache;
     struct rtnl_link *link;
     int if_index;
 
-    if ((sk = nl_socket_alloc()) == NULL) {
+    if ((sk = nl_socket_alloc()) == nullptr) {
         print_and_exit("nl_socket_alloc failed");
     }
     if (nl_connect(sk, NETLINK_ROUTE) != 0) {
         fprintf(stderr, "%s: nl_connect failed\n", PREFIX_ERROR);
-        return NULL;
+        nl_socket_free(sk);
+        return nullptr;
     }
     if (rtnl_addr_alloc_cache(sk, &cache) != 0) {
+        nl_socket_free(sk);
         print_and_exit("rtnl_addr_alloc_cache failed");
     }
     if (rtnl_link_get_kernel(sk, 0, interface, &link) < 0) {
         fprintf(stderr, "%s: interface not found\n", PREFIX_ERROR);
-        return NULL;
+        nl_socket_free(sk);
+        nl_cache_free(cache);
+        return nullptr;
     }
     data = alloc_mem(sizeof(t_wired_data));
     if_index = rtnl_link_get_ifindex(link);

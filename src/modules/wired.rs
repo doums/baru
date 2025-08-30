@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, warn};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
@@ -129,19 +129,28 @@ pub fn run(
     debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
+    let mut no_data_logged = false;
     while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
-        if let Some(state) = netlink::wired_data(config.interface) {
-            if let WiredState::Connected = state {
+        let data = netlink::wired_data(config.interface);
+        if !no_data_logged && data.is_none() {
+            warn!("no data for interface: {}", config.interface);
+            no_data_logged = true;
+        }
+        match data {
+            Some(WiredState::Connected) => {
                 tx.send(ModuleMsg(key, None, Some(config.label.to_string())))?;
-            } else if config.discrete {
-                tx.send(ModuleMsg(key, None, None))?;
-            } else {
-                tx.send(ModuleMsg(
-                    key,
-                    None,
-                    Some(config.disconnected_label.to_string()),
-                ))?;
+            }
+            _ => {
+                if config.discrete {
+                    tx.send(ModuleMsg(key, None, None))?;
+                } else {
+                    tx.send(ModuleMsg(
+                        key,
+                        None,
+                        Some(config.disconnected_label.to_string()),
+                    ))?;
+                }
             }
         }
         iteration_end = iteration_start.elapsed();

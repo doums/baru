@@ -30,10 +30,10 @@ static void find_ssid(uint8_t *ies, uint32_t ies_len, uint8_t **ssid, uint32_t *
     *ssid = ies + 2;
 }
 
-void resolve_essid(t_wireless *wireless, struct nlattr *attr) {
+void resolve_essid(t_wireless *wireless, const struct nlattr *attr) {
     uint32_t bss_ies_len = nla_len(attr);
     uint8_t *bss_ies = nla_data(attr);
-    uint8_t *ssid = NULL;
+    uint8_t *ssid = nullptr;
     uint32_t ssid_len = 0;
 
     find_ssid(bss_ies, bss_ies_len, &ssid, &ssid_len);
@@ -56,16 +56,16 @@ static int station_cb(struct nl_msg *msg, void *data) {
     struct nlattr *s_info[NL80211_STA_INFO_MAX + 1];
     static struct nla_policy stats_policy[NL80211_STA_INFO_MAX + 1];
 
-    if (nla_parse(tb, NL80211_ATTR_MAX, attr, attrlen, NULL) < 0) {
+    if (nla_parse(tb, NL80211_ATTR_MAX, attr, attrlen, nullptr) < 0) {
         return NL_SKIP;
     }
-    if (tb[NL80211_ATTR_STA_INFO] == NULL) {
+    if (tb[NL80211_ATTR_STA_INFO] == nullptr) {
         return NL_SKIP;
     }
     if (nla_parse_nested(s_info, NL80211_STA_INFO_MAX, tb[NL80211_ATTR_STA_INFO], stats_policy) < 0) {
         return NL_SKIP;
     }
-    if (s_info[NL80211_STA_INFO_SIGNAL] != NULL) {
+    if (s_info[NL80211_STA_INFO_SIGNAL] != nullptr) {
         wireless->signal_found = true;
         wireless->signal = nl80211_xbm_to_percent((int8_t) nla_get_u8(s_info[NL80211_STA_INFO_SIGNAL]));
     }
@@ -86,23 +86,23 @@ static int scan_cb(struct nl_msg *msg, void *data) {
             [NL80211_BSS_STATUS] = {.type = NLA_U32},
     };
 
-    if (nla_parse(tb, NL80211_ATTR_MAX, attr, attrlen, NULL) < 0) {
+    if (nla_parse(tb, NL80211_ATTR_MAX, attr, attrlen, nullptr) < 0) {
         return NL_SKIP;
     }
-    if (tb[NL80211_ATTR_BSS] == NULL) {
+    if (tb[NL80211_ATTR_BSS] == nullptr) {
         return NL_SKIP;
     }
     if (nla_parse_nested(bss, NL80211_BSS_MAX, tb[NL80211_ATTR_BSS], bss_policy) < 0) {
         return NL_SKIP;
     }
-    if (bss[NL80211_BSS_STATUS] == NULL) {
+    if (bss[NL80211_BSS_STATUS] == nullptr) {
         return NL_SKIP;
     }
     status = nla_get_u32(bss[NL80211_BSS_STATUS]);
     if (status != NL80211_BSS_STATUS_ASSOCIATED && status != NL80211_BSS_STATUS_IBSS_JOINED) {
         return NL_SKIP;
     }
-    if (bss[NL80211_BSS_BSSID] == NULL) {
+    if (bss[NL80211_BSS_BSSID] == nullptr) {
         return NL_SKIP;
     }
     memcpy(wireless->bssid, nla_data(bss[NL80211_BSS_BSSID]), ETH_ALEN);
@@ -113,19 +113,19 @@ static int scan_cb(struct nl_msg *msg, void *data) {
 }
 
 static int send_for_station(t_wireless *wireless) {
-    struct nl_msg *msg = NULL;
+    struct nl_msg *msg = nullptr;
     int err;
 
     if ((err = nl_socket_modify_cb(wireless->socket, NL_CB_VALID, NL_CB_CUSTOM, station_cb, wireless)) < 0) {
         printf("%s, station nl_socket_modify_cb failed, %s\n", PREFIX_ERROR, nl_geterror(err));
         return -1;
     }
-    if ((msg = nlmsg_alloc()) == NULL) {
+    if ((msg = nlmsg_alloc()) == nullptr) {
         printf("%s, station nlmsg_alloc failed\n", PREFIX_ERROR);
         return -1;
     }
     if (genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ, wireless->nl80211_id, 0, NLM_F_DUMP, NL80211_CMD_GET_STATION, 0) ==
-        NULL) {
+        nullptr) {
         printf("%s, station genlmsg_put failed\n", PREFIX_ERROR);
         nlmsg_free(msg);
         return -1;
@@ -156,12 +156,12 @@ static int send_for_scan(t_wireless *wireless) {
         printf("%s, scan nl_socket_modify_cb failed, %s\n", PREFIX_ERROR, nl_geterror(err));
         return -1;
     }
-    if ((msg = nlmsg_alloc()) == NULL) {
+    if ((msg = nlmsg_alloc()) == nullptr) {
         printf("%s, scan nlmsg_alloc failed\n", PREFIX_ERROR);
         return -1;
     }
     if (genlmsg_put(msg, NL_AUTO_PORT, NL_AUTO_SEQ, wireless->nl80211_id, 0, NLM_F_DUMP, NL80211_CMD_GET_SCAN, 0) ==
-        NULL) {
+        nullptr) {
         printf("%s, scan genlmsg_put failed\n", PREFIX_ERROR);
         nlmsg_free(msg);
         return -1;
@@ -178,7 +178,7 @@ static int send_for_scan(t_wireless *wireless) {
     return 0;
 }
 
-t_wireless_data *get_wireless_data(char *interface) {
+t_wireless_data *get_wireless_data(const char *interface) {
     t_wireless wireless;
     t_wireless_data *data;
 
@@ -187,27 +187,27 @@ t_wireless_data *get_wireless_data(char *interface) {
     memset(&wireless, 0, sizeof(t_wireless));
     wireless.if_name = interface;
     wireless.socket = nl_socket_alloc();
-    if (wireless.socket == NULL) {
+    if (wireless.socket == nullptr) {
         print_and_exit("nl_socket_alloc failed\n");
     }
     if (genl_connect(wireless.socket) != 0) {
         nl_socket_free(wireless.socket);
         fprintf(stderr, "%s: genl_connect failed\n", PREFIX_ERROR);
-        return NULL;
+        return nullptr;
     }
     if ((wireless.nl80211_id = genl_ctrl_resolve(wireless.socket, NL80211)) < 0) {
         fprintf(stderr, "%s: genl_ctrl_resolve failed; %s\n", PREFIX_ERROR, nl_geterror(wireless.nl80211_id));
         nl_socket_free(wireless.socket);
-        return NULL;
+        return nullptr;
     }
     if ((wireless.if_index = if_nametoindex(wireless.if_name)) == 0) {
         fprintf(stderr, "%s: if_nametoindex failed, %s\n", PREFIX_ERROR, strerror(errno));
         nl_socket_free(wireless.socket);
-        return NULL;
+        return nullptr;
     }
     if (send_for_scan(&wireless) < 0 || send_for_station(&wireless) < 0) {
         nl_socket_free(wireless.socket);
-        return NULL;
+        return nullptr;
     }
     data = alloc_mem(sizeof(t_wireless_data));
     data->signal = -1;
@@ -222,7 +222,7 @@ t_wireless_data *get_wireless_data(char *interface) {
 }
 
 void free_data(void *data) {
-    if (data != NULL) {
+    if (data != nullptr) {
         free(data);
     }
 }

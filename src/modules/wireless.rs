@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, warn};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(500);
@@ -143,12 +143,18 @@ pub fn run(
     debug!("{:#?}", config);
     let mut iteration_start: Instant;
     let mut iteration_end: Duration;
+    let mut no_data_logged = false;
     while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
         let label;
         let mut essid = "".to_owned();
         let mut signal = None;
-        if let Some(state) = netlink::wireless_data(config.interface) {
+        let data = netlink::wireless_data(config.interface);
+        if !no_data_logged && data.is_none() {
+            warn!("no data for interface: {}", config.interface);
+            no_data_logged = true;
+        }
+        if let Some(state) = data {
             if let WirelessState::Connected(data) = state {
                 label = config.label;
                 if let Some(strength) = data.signal {
