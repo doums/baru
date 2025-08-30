@@ -19,7 +19,7 @@ jobs:
       sha256: ${{ steps.gen_sha256.outputs.sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies
@@ -39,7 +39,7 @@ jobs:
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
           echo "$sha256" > baru.sha256sum
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: baru
           path: ${{ env.ARTIFACT_DIR }}
@@ -55,7 +55,7 @@ jobs:
       SHA256: ${{ needs.build.outputs.sha256 }}
     steps:
       - name: Download binary artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: baru
       - name: Integrity check
@@ -80,7 +80,7 @@ jobs:
       REPOSITORY: ${{ github.repository }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Download sources
         run: curl -LfsSo "$PKGNAME-$RELEASE_TAG".tar.gz "https://github.com/$REPOSITORY/archive/refs/tags/$RELEASE_TAG.tar.gz"
       - name: Update PKGBUILD
@@ -88,7 +88,7 @@ jobs:
       - name: Show PKGBUILD
         run: cat "$PKGBUILD"
       - name: Publish
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: ${{ env.PKGNAME }}
           pkgbuild: ${{ env.PKGBUILD }}
