@@ -1,6 +1,6 @@
 [package]
 name = "baru"
-version = "0.4.3"
+version = "0.4.4"
 description = "A simple system monitor for WM statusbar"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2024"

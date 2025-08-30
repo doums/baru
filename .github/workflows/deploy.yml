@@ -39,7 +39,7 @@ jobs:
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
           echo "$sha256" > baru.sha256sum
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: baru
           path: ${{ env.ARTIFACT_DIR }}
