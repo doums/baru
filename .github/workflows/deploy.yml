@@ -3,7 +3,7 @@ name: Deployment
 on:
   push:
     tags:
-      - v*
+      - "v*"
 
 jobs:
   test:
@@ -15,82 +15,104 @@ jobs:
     needs: test
     env:
       ARTIFACT_DIR: artifact
+      BINARY_NAME: baru-linux-x86_64
     outputs:
       sha256: ${{ steps.gen_sha256.outputs.sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
       - name: Install dependencies
         run: sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libpulse-dev
+
       - name: Build
         run: cargo build --release --locked
+
       - name: Prepare artifact
         run: |
-          mkdir $ARTIFACT_DIR
-          mv -f target/release/baru $ARTIFACT_DIR/
-      - name: Gen sha256
-        id: gen_sha256
-        working-directory: ${{ env.ARTIFACT_DIR }}
+          mkdir ${{ env.ARTIFACT_DIR }}
+          mv -f target/release/baru ${{ env.ARTIFACT_DIR }}/${{ env.BINARY_NAME }}
+          cd ${{ env.ARTIFACT_DIR }}
+          sha256sum ${{ env.BINARY_NAME }} > ${{ env.BINARY_NAME }}.sha256sum
+          ls -lh
+
+      - name: Print build info
         run: |
-          sha256=$(sha256sum baru)
-          echo "$sha256"
-          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
-          echo "$sha256" > baru.sha256sum
+          echo "--------------------------------------------"
+          echo "binary name: ${{ env.BINARY_NAME }}"
+          echo "sha256sum: $(cat ${{ env.ARTIFACT_DIR }}/${{ env.BINARY_NAME }}.sha256sum)"
+          echo "file size: $(du -h ${{ env.ARTIFACT_DIR }}/${{ env.BINARY_NAME }} | cut -f1)"
+          echo "--------------------------------------------"
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: baru
+          name: baru-linux-x86_64
           path: ${{ env.ARTIFACT_DIR }}
-          retention-days: 2
+          retention-days: 7
+          if-no-files-found: error
 
   release:
-    name: Release
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      SHA256: ${{ needs.build.outputs.sha256 }}
     steps:
       - name: Download binary artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
-          name: baru
-      - name: Integrity check
-        run: |
-          sha256sum -c baru.sha256sum
-          [ "$SHA256" == "$(cat baru.sha256sum)" ] && echo "sha256 OK"
+          name: baru-linux-x86_64
+          path: artifacts
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
           files: |
-            baru
-            baru.sha256sum
+            artifacts/*
 
   aur-packaging:
     name: Publish AUR package
     needs: release
     runs-on: ubuntu-latest
     env:
-      PKGNAME: baru
-      PKGBUILD: ./.pkg/aur/PKGBUILD
-      RELEASE_TAG: ${{ github.ref_name }}
-      REPOSITORY: ${{ github.repository }}
+      PKGBUILD: ./.pkg/arch/PKGBUILD
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-      - name: Download sources
-        run: curl -LfsSo "$PKGNAME-$RELEASE_TAG".tar.gz "https://github.com/$REPOSITORY/archive/refs/tags/$RELEASE_TAG.tar.gz"
+        uses: actions/checkout@v6
+
+      - name: Get tarball sha256sum
+        id: tarball
+        run: |
+          curl -LfsSo sources.tar.gz "https://github.com/doums/baru/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+          sha256sum=$(sha256sum sources.tar.gz | awk '{print $1}')
+          echo "tarball sha256sum: $sha256sum"
+          echo "sha256sum=$sha256sum" >> "$GITHUB_OUTPUT"
+
       - name: Update PKGBUILD
-        run: ./.pkg/aur/update.sh
-      - name: Show PKGBUILD
-        run: cat "$PKGBUILD"
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          SHA256SUM: ${{ steps.tarball.outputs.sha256sum }}
+        run: |
+          # strip v prefix
+          version="${RELEASE_TAG#v}"
+          # ⚠ Dashes are not allowed in package version, replace any - by _
+          pkgver=${version//-/_}
+          echo "pkgver: $pkgver"
+          # update version and sha256sum
+          sed -i "s/pkgver=.*/pkgver=$pkgver/" ${{ env.PKGBUILD }}
+          sed -i "s/sha256sums=(.*)/sha256sums=('$SHA256SUM')/" ${{ env.PKGBUILD }}
+          echo "--------------------------------------------"
+          cat ${{ env.PKGBUILD }}
+
       - name: Publish
-        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
         with:
-          pkgname: ${{ env.PKGNAME }}
+          pkgname: baru
           pkgbuild: ${{ env.PKGBUILD }}
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}

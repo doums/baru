@@ -14,15 +14,16 @@ conflicts=('baru')
 options=(!debug)
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('xxx')
+_pkgdir="$pkgname-$pkgver"
 
 build() {
-  cd "$pkgname-$pkgver"
+  cd "$srcdir/$_pkgdir"
   cargo build --release --locked
 }
 
 package() {
-  cd "$pkgname-$pkgver"
-  install -Dvm 755 "target/release/baru" "$pkgdir/usr/bin/baru"
-  install -Dvm 644 "baru.yaml" "$pkgdir/usr/share/baru/baru.yaml"
+  cd "$srcdir/$_pkgdir"
+  install -Dvm 755 "$srcdir/target/release/baru" "$pkgdir/usr/bin/baru"
+  install -Dvm 644 "$srcdir/$_pkgdir/baru.yaml" "$pkgdir/usr/share/baru/baru.yaml"
 }
 

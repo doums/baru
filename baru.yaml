@@ -113,6 +113,12 @@ battery:
   #
   discharging_label: bat
 
+  # not_charging_label: String, default: 'bat
+  #
+  # The label printed when the battery is in "Not charging" state.
+  #
+  not_charging_label: "'bat"
+
   # low_label: String, default: !ba
   #
   # The label printed when the battery is discharging and the level is low.
