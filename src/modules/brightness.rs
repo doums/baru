@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::util::read_and_parse;
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -19,7 +19,7 @@ const TICK_RATE: Duration = Duration::from_millis(50);
 const LABEL: &str = "bri";
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     placeholder: Option<String>,
     sys_path: Option<String>,

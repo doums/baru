@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::{Config as MainConfig, ModuleMsg};
 use chrono::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -18,7 +18,7 @@ const DATE_FORMAT: &str = "%a. %-e %B %Y, %-kh%M";
 const TICK_RATE: Duration = Duration::from_millis(500);
 const FORMAT: &str = "%v";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     date_format: Option<String>,
     tick: Option<u32>,

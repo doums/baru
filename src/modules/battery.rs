@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::convert::TryFrom;
 use std::fs::{self, File};
 use std::io::{self, BufReader, prelude::*};
@@ -31,12 +31,13 @@ const FULL_LABEL: &str = "*ba";
 const CHARGING_LABEL: &str = "^ba";
 const DISCHARGING_LABEL: &str = "bat";
 const LOW_LABEL: &str = "!ba";
+const NOT_CHARGING_LABEL: &str = "'ba";
 const UNKNOWN_LABEL: &str = ".ba";
 const LOW_LEVEL: u32 = 10;
 const TICK_RATE: Duration = Duration::from_millis(500);
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     name: Option<String>,
     low_level: Option<u32>,
@@ -47,6 +48,7 @@ pub struct Config {
     charging_label: Option<String>,
     discharging_label: Option<String>,
     low_label: Option<String>,
+    not_charging_label: Option<String>,
     unknown_label: Option<String>,
     format: Option<String>,
 }
@@ -62,6 +64,7 @@ pub struct InternalConfig<'a> {
     charging_label: &'a str,
     discharging_label: &'a str,
     low_label: &'a str,
+    not_charging_label: &'a str,
     unknown_label: &'a str,
 }
 
@@ -77,6 +80,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
         let mut charging_label = CHARGING_LABEL;
         let mut discharging_label = DISCHARGING_LABEL;
         let mut low_label = LOW_LABEL;
+        let mut not_charging_label = NOT_CHARGING_LABEL;
         let mut unknown_label = UNKNOWN_LABEL;
         if let Some(c) = &config.battery {
             if let Some(n) = &c.name {
@@ -85,10 +89,10 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             if let Some(v) = &c.low_level {
                 low_level = *v;
             }
-            if let Some(b) = c.full_design {
-                if b {
-                    full_design = true;
-                }
+            if let Some(b) = c.full_design
+                && b
+            {
+                full_design = true;
             }
             if let Some(t) = c.tick {
                 tick = Duration::from_millis(t as u64)
@@ -104,6 +108,9 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             }
             if let Some(v) = &c.low_label {
                 low_label = v;
+            }
+            if let Some(v) = &c.not_charging_label {
+                not_charging_label = v;
             }
             if let Some(v) = &c.unknown_label {
                 unknown_label = v;
@@ -125,6 +132,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             charging_label,
             discharging_label,
             low_label,
+            not_charging_label,
             unknown_label,
         })
     }
@@ -204,6 +212,7 @@ pub fn run(
                 }
             }
             "Charging" => config.charging_label,
+            "Not charging" => config.not_charging_label,
             _ => config.unknown_label,
         };
         tx.send(ModuleMsg(
@@ -249,22 +258,22 @@ fn parse_attributes(
 }
 
 fn parse_attribute(line: &io::Result<String>, attribute: &str) -> Option<i32> {
-    if let Ok(l) = line {
-        if l.starts_with(attribute) {
-            let s = l.split('=').nth(1);
-            if let Some(v) = s {
-                return v.parse::<i32>().ok();
-            }
+    if let Ok(l) = line
+        && l.starts_with(attribute)
+    {
+        let s = l.split('=').nth(1);
+        if let Some(v) = s {
+            return v.parse::<i32>().ok();
         }
     }
     None
 }
 
 fn parse_status(line: &io::Result<String>) -> Option<String> {
-    if let Ok(l) = line {
-        if l.starts_with(STATUS_ATTRIBUTE) {
-            return l.split('=').nth(1).map(|s| s.to_string());
-        }
+    if let Ok(l) = line
+        && l.starts_with(STATUS_ATTRIBUTE)
+    {
+        return l.split('=').nth(1).map(|s| s.to_string());
     }
     None
 }

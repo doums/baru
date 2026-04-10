@@ -7,7 +7,7 @@ use crate::module::{Bar, RunPtr};
 use crate::util::read_and_parse;
 use crate::{Config as MainConfig, ModuleMsg};
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::convert::TryFrom;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
@@ -25,7 +25,7 @@ const LABEL: &str = "tem";
 const HIGH_LABEL: &str = "!te";
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 enum CoreInputs {
     Single(u32),
@@ -33,7 +33,7 @@ enum CoreInputs {
     List(Vec<u32>),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     coretemp: Option<String>,
     high_level: Option<u32>,
@@ -257,10 +257,10 @@ fn find_temp_dir(str_path: &str) -> Result<String, Error> {
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
-        if path.is_dir() {
-            if let Some(p) = path.to_str() {
-                return Ok(p.to_string());
-            }
+        if path.is_dir()
+            && let Some(p) = path.to_str()
+        {
+            return Ok(p.to_string());
         }
     }
     Err(Error::new(format!(

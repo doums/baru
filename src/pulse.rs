@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::Config;
 use crate::error::Error;
+use crate::Config;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use std::os::raw::c_char;
-use std::sync::Mutex;
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::Mutex;
 use std::thread::{self, JoinHandle};
 use std::{ffi::CString, ptr};
 use tracing::{error, info, instrument, warn};

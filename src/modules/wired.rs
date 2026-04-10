@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::netlink::{self, WiredState};
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -15,13 +15,13 @@ use tracing::{debug, instrument, warn};
 
 const PLACEHOLDER: &str = "-";
 const TICK_RATE: Duration = Duration::from_millis(1000);
-const INTERFACE: &str = "enp0s31f6";
+const INTERFACE: &str = "en0";
 const DISCRETE: bool = false;
 const LABEL: &str = "eth";
 const DISCONNECTED_LABEL: &str = ".et";
 const FORMAT: &str = "%l";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
     interface: Option<String>,

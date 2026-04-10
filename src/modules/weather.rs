@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::http::HTTP_CLIENT;
 use crate::module::{Bar, RunPtr};
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::convert::TryFrom;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
@@ -25,14 +25,14 @@ const DEFAULT_LOCATION: Location = Location::Coordinates(Coord {
     lon: 8.94,
 });
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 enum IconSet {
     DayOnly(String),
     DayAndNight((String, String)),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 struct WeatherIcons {
     clear_sky: Option<IconSet>,
     partly_cloudy: Option<IconSet>,
@@ -66,7 +66,7 @@ impl WeatherIcons {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, Default)]
 #[serde(rename_all = "snake_case")]
 enum Unit {
     Standard,
@@ -95,13 +95,13 @@ impl Unit {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 struct Coord {
     lat: f32,
     lon: f32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 enum Location {
     /// deprecated - city name, zip-code or city ID
@@ -110,7 +110,7 @@ enum Location {
     Coordinates(Coord),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     location: Location,
     api_key: String,

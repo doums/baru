@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::netlink::{self, WirelessState};
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -22,13 +22,13 @@ const LABEL: &str = "wle";
 const DISCONNECTED_LABEL: &str = ".wl";
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Deserialize, Copy, Clone)]
 enum Display {
     Essid,
     Signal,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
     display: Option<Display>,

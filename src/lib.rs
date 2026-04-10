@@ -29,7 +29,7 @@ use modules::weather::Config as WeatherConfig;
 use modules::wired::Config as WiredConfig;
 use modules::wireless::Config as WirelessConfig;
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
@@ -46,7 +46,7 @@ pub static RUN: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(true));
 /// `2`: label
 pub struct ModuleMsg(char, Option<String>, Option<String>);
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     format: String,
     pub tick: Option<u32>,
@@ -174,10 +174,11 @@ fn parse_format(format: &str) -> Vec<MarkupMatch> {
     let mut matches = vec![];
     let mut iter = format.char_indices().peekable();
     while let Some((i, c)) = iter.next() {
-        if c == '%' && (i == 0 || &format[i - 1..i] != "\\") {
-            if let Some(val) = iter.peek() {
-                matches.push(MarkupMatch(val.1, val.0));
-            }
+        if c == '%'
+            && (i == 0 || &format[i - 1..i] != "\\")
+            && let Some(val) = iter.peek()
+        {
+            matches.push(MarkupMatch(val.1, val.0));
         }
     }
     matches

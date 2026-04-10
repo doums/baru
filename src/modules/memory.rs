@@ -7,7 +7,7 @@ use crate::module::{Bar, RunPtr};
 use crate::util::read_and_trim;
 use crate::{Config as MainConfig, ModuleMsg};
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -23,14 +23,14 @@ const LABEL: &str = "mem";
 const HIGH_LABEL: &str = "!me";
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Deserialize, Copy, Clone)]
 enum Display {
     GB,
     GiB,
     Percentage,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     high_level: Option<u32>,
     display: Option<Display>,

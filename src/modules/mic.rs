@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::pulse::PULSE;
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -19,7 +19,7 @@ const MUTE_LABEL: &str = ".mi";
 const LABEL: &str = "mic";
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub source_name: Option<String>,
     tick: Option<u32>,

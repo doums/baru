@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::util::read_and_parse;
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fs::{DirEntry, read_dir};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
@@ -29,7 +29,7 @@ const SCALING_CUR_FREQ: &str = "scaling_cur_freq";
 const UNIT: Unit = Unit::Smart;
 const MAX_FREQ: bool = false;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
     unit: Option<Unit>,
@@ -41,7 +41,7 @@ pub struct Config {
     format: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Deserialize, Copy, Clone)]
 enum Unit {
     MHz,
     GHz,

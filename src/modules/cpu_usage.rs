@@ -5,7 +5,7 @@
 use crate::error::Error;
 use crate::module::{Bar, RunPtr};
 use crate::{Config as MainConfig, ModuleMsg};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -23,7 +23,7 @@ const LABEL: &str = "cpu";
 const HIGH_LABEL: &str = "!cp";
 const FORMAT: &str = "%l:%v";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     tick: Option<u32>,
     high_level: Option<u32>,
