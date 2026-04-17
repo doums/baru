@@ -85,28 +85,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Get tarball sha256sum
-        id: tarball
-        run: |
-          curl -LfsSo sources.tar.gz "https://github.com/doums/baru/archive/refs/tags/${{ github.ref_name }}.tar.gz"
-          sha256sum=$(sha256sum sources.tar.gz | awk '{print $1}')
-          echo "tarball sha256sum: $sha256sum"
-          echo "sha256sum=$sha256sum" >> "$GITHUB_OUTPUT"
-
       - name: Update PKGBUILD
         env:
           RELEASE_TAG: ${{ github.ref_name }}
-          SHA256SUM: ${{ steps.tarball.outputs.sha256sum }}
         run: |
           # strip v prefix
           version="${RELEASE_TAG#v}"
           # ⚠ Dashes are not allowed in package version, replace any - by _
           pkgver=${version//-/_}
           echo "pkgver: $pkgver"
-          # update version and sha256sum
+          # update pkgver
           sed -i "s/pkgver=.*/pkgver=$pkgver/" ${{ env.PKGBUILD }}
-          sed -i "s/sha256sums=(.*)/sha256sums=('$SHA256SUM')/" ${{ env.PKGBUILD }}
-          echo "--------------------------------------------"
+          echo '--------------------------------------------'
           cat ${{ env.PKGBUILD }}
 
       - name: Publish
@@ -114,6 +104,7 @@ jobs:
         with:
           pkgname: baru
           pkgbuild: ${{ env.PKGBUILD }}
+          updpkgsums: true
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
