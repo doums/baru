@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use crate::Config;
+use crate::ModuleMsg;
 use crate::error::Error;
 use crate::modules::battery::Battery;
 use crate::modules::brightness::Brightness;
@@ -15,10 +17,8 @@ use crate::modules::temperature::Temperature;
 use crate::modules::weather::Weather;
 use crate::modules::wired::Wired;
 use crate::modules::wireless::Wireless;
-use crate::Config;
-use crate::ModuleMsg;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::convert::TryFrom;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::Sender;
@@ -175,8 +175,8 @@ impl<'a> ModuleData<'a> {
             failed_placeholder: config
                 .failed_icon
                 .as_ref()
-                .map(|icon| format!("{}:{}", &key, icon))
-                .unwrap_or_else(|| format!("{}:{}", &key, MODULE_FAILED_ICON)),
+                .map(|icon| format!("{}:{}", key, icon))
+                .unwrap_or_else(|| format!("{}:{}", key, MODULE_FAILED_ICON)),
         })
     }
 

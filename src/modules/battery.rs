@@ -7,8 +7,7 @@ use crate::module::{Bar, RunPtr};
 use crate::{Config as MainConfig, ModuleMsg};
 use serde::Deserialize;
 use std::convert::TryFrom;
-use std::fs::{self, File};
-use std::io::{self, BufReader, prelude::*};
+use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -68,6 +67,27 @@ pub struct InternalConfig<'a> {
     unknown_label: &'a str,
 }
 
+#[derive(Debug)]
+enum BatteryStatus {
+    Full,
+    Discharging,
+    Charging,
+    NotCharging,
+    Unknown,
+}
+
+impl From<&str> for BatteryStatus {
+    fn from(value: &str) -> Self {
+        match value {
+            "Full" => Self::Full,
+            "Discharging" => Self::Discharging,
+            "Charging" => Self::Charging,
+            "Not charging" => Self::NotCharging,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
     type Error = Error;
 
@@ -120,7 +140,7 @@ impl<'a> TryFrom<&'a MainConfig> for InternalConfig<'a> {
             true => FULL_DESIGN_ATTRIBUTE,
             false => FULL_ATTRIBUTE,
         };
-        let uevent = format!("{}{}/{}", SYS_PATH, &name, UEVENT);
+        let uevent = format!("{}{}/{}", SYS_PATH, name, UEVENT);
         let attribute_prefix = find_attribute_prefix(&uevent)?;
         Ok(InternalConfig {
             low_level,
@@ -202,18 +222,18 @@ pub fn run(
         let capacity = capacity as u64;
         let energy = energy as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        let label = match status.as_str() {
-            "Full" => config.full_label,
-            "Discharging" => {
+        let label = match status {
+            BatteryStatus::Full => config.full_label,
+            BatteryStatus::Discharging => {
                 if battery_level <= config.low_level {
                     config.low_label
                 } else {
                     config.discharging_label
                 }
             }
-            "Charging" => config.charging_label,
-            "Not charging" => config.not_charging_label,
-            _ => config.unknown_label,
+            BatteryStatus::Charging => config.charging_label,
+            BatteryStatus::NotCharging => config.not_charging_label,
+            BatteryStatus::Unknown => config.unknown_label,
         };
         tx.send(ModuleMsg(
             key,
@@ -232,50 +252,57 @@ fn parse_attributes(
     uevent: &str,
     now_attribute: &str,
     full_attribute: &str,
-) -> Result<(i32, i32, String), Error> {
-    let file = File::open(uevent)?;
-    let f = BufReader::new(file);
+) -> Result<(i32, i32, BatteryStatus), Error> {
     let mut now = None;
     let mut full = None;
     let mut status = None;
-    for line in f.lines() {
-        if now.is_none() {
-            now = parse_attribute(&line, now_attribute);
+    for line in fs::read_to_string(uevent)
+        .map_err(|e| Error::new(format!("failed to read uevent file {uevent}: {e}")))?
+        .lines()
+    {
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        if now.is_none() && key == now_attribute {
+            now = Some(
+                value
+                    .parse()
+                    .map_err(|e| Error::new(format!("failed to parse value for {key}: {e}")))?,
+            )
         }
-        if full.is_none() {
-            full = parse_attribute(&line, full_attribute);
+        if full.is_none() && key == full_attribute {
+            full = Some(
+                value
+                    .parse()
+                    .map_err(|e| Error::new(format!("failed to parse value for {key}: {e}")))?,
+            )
         }
-        if status.is_none() {
-            status = parse_status(&line);
+        if status.is_none() && key == STATUS_ATTRIBUTE {
+            status = Some(BatteryStatus::from(value));
+        }
+        if now.is_some() && full.is_some() && status.is_some() {
+            break;
         }
     }
-    if now.is_none() || full.is_none() || status.is_none() {
+    if now.is_none() {
         return Err(Error::new(format!(
-            "unable to parse the required attributes in {uevent}"
+            "attribute '{}' not found in {}",
+            now_attribute, uevent
+        )));
+    }
+    if full.is_none() {
+        return Err(Error::new(format!(
+            "attribute '{}' not found in {}",
+            full_attribute, uevent
+        )));
+    }
+    if status.is_none() {
+        return Err(Error::new(format!(
+            "attribute '{}' not found in {}",
+            STATUS_ATTRIBUTE, uevent
         )));
     }
     Ok((now.unwrap(), full.unwrap(), status.unwrap()))
-}
-
-fn parse_attribute(line: &io::Result<String>, attribute: &str) -> Option<i32> {
-    if let Ok(l) = line
-        && l.starts_with(attribute)
-    {
-        let s = l.split('=').nth(1);
-        if let Some(v) = s {
-            return v.parse::<i32>().ok();
-        }
-    }
-    None
-}
-
-fn parse_status(line: &io::Result<String>) -> Option<String> {
-    if let Ok(l) = line
-        && l.starts_with(STATUS_ATTRIBUTE)
-    {
-        return l.split('=').nth(1).map(|s| s.to_string());
-    }
-    None
 }
 
 fn find_attribute_prefix<'e>(path: &str) -> Result<&'e str, Error> {

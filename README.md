@@ -90,7 +90,6 @@ tick: 50
 
 # modules configuration
 battery:
-  full_design: true
   low_level: 30
   full_label: '*'
   charging_label: '^'

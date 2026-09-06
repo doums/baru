@@ -93,7 +93,7 @@ battery:
   #
   # Whether or not the current level is calculated based on the full design value.
   #
-  full_design: true
+  full_design: false
 
   # full_label: String, default: *ba
   #

@@ -100,7 +100,7 @@ jobs:
           cat ${{ env.PKGBUILD }}
 
       - name: Publish
-        uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
+        uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
         with:
           pkgname: baru
           pkgbuild: ${{ env.PKGBUILD }}
