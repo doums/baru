@@ -6,7 +6,7 @@ use crate::Config;
 use crate::error::Error;
 use anyhow::Result;
 use once_cell::sync::OnceCell;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_void};
 use std::sync::Mutex;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
@@ -15,13 +15,12 @@ use tracing::{error, info, instrument, warn};
 
 const PULSE_RATE: u32 = 50_000_000; // in nanosecond
 
-pub type Callback = extern "C" fn(*const CallbackContext, u32, bool);
+pub type Callback = extern "C" fn(*const c_void, u32, bool);
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub struct PulseData(pub u32, pub bool);
 
-#[repr(C)]
 pub struct CallbackContext(Sender<PulseData>, Sender<PulseData>);
 
 /// 0: sink, 1: source
@@ -88,18 +87,18 @@ impl Pulse {
     }
 }
 
-extern "C" fn sink_cb(context: *const CallbackContext, volume: u32, mute: bool) {
+extern "C" fn sink_cb(context: *const c_void, volume: u32, mute: bool) {
     unsafe {
-        (*context)
+        (*(context as *const CallbackContext))
             .0
             .send(PulseData(volume, mute))
             .expect("in pulse module, failed to send sink data");
     }
 }
 
-extern "C" fn source_cb(context: *const CallbackContext, volume: u32, mute: bool) {
+extern "C" fn source_cb(context: *const c_void, volume: u32, mute: bool) {
     unsafe {
-        (*context)
+        (*(context as *const CallbackContext))
             .1
             .send(PulseData(volume, mute))
             .expect("in pulse module, failed to send source data");
@@ -113,7 +112,7 @@ unsafe extern "C" {
         tick: u32,
         sink_name: *const c_char,
         source_name: *const c_char,
-        cb_context: *const CallbackContext,
+        cb_context: *const c_void,
         sink_cb: Callback,
         source_cb: Callback,
     );
@@ -147,7 +146,7 @@ pub fn pulse_run(
             tick,
             ptr_sink,
             ptr_source,
-            context_ptr,
+            context_ptr as *const c_void,
             sink_cb,
             source_cb,
         );
