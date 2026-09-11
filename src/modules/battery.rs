@@ -214,18 +214,16 @@ pub fn run(
     let mut iteration_end: Duration;
     while running.load(Ordering::Relaxed) {
         iteration_start = Instant::now();
-        let (energy, capacity, status) = parse_attributes(
+        let (now, full, status) = parse_attributes(
             &config.uevent,
             &config.now_attribute,
             &config.full_attribute,
         )?;
-        let capacity = capacity as u64;
-        let energy = energy as u64;
-        let battery_level = u32::try_from(100_u64 * energy / capacity)?;
+        let cap = f32::round(100_f32 * (now as f32) / (full as f32)).clamp(0.0, 100.0) as u32;
         let label = match status {
             BatteryStatus::Full => config.full_label,
             BatteryStatus::Discharging => {
-                if battery_level <= config.low_level {
+                if cap <= config.low_level {
                     config.low_label
                 } else {
                     config.discharging_label
@@ -237,7 +235,7 @@ pub fn run(
         };
         tx.send(ModuleMsg(
             key,
-            Some(format!("{battery_level:3}%")),
+            Some(format!("{cap:3}%")),
             Some(label.to_string()),
         ))?;
         iteration_end = iteration_start.elapsed();
